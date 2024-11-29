@@ -1,0 +1,215 @@
+.blackjack-container {
+    width: 100%;
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 2rem;
+    background: rgba(0, 0, 0, 0.7);
+    border-radius: 20px;
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+  }
+  
+  .game-info {
+    margin-bottom: 2rem;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    text-align: center;
+  }
+  
+  .bet-controls {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-top: 1rem;
+  }
+  
+  .bet-controls input {
+    padding: 0.5rem;
+    border: 2px solid #ffd700;
+    border-radius: 5px;
+    background: rgba(0, 0, 0, 0.5);
+    color: #ffffff;
+    width: 100px;
+    text-align: center;
+  }
+  
+  .bet-controls input:focus {
+    outline: none;
+    border-color: #ffed4a;
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+  }
+  
+  .game-controls {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin: 2rem 0;
+  }
+  
+  button {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 5px;
+    background: linear-gradient(45deg, #ffd700, #ffed4a);
+    color: #000000;
+    font-weight: bold;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  
+  button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(255, 215, 0, 0.4);
+  }
+  
+  button:disabled {
+    background: #666666;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+  
+  .game-table {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    margin-top: 2rem;
+  }
+  
+  .dealer-hand,
+  .player-hand {
+    padding: 2rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 15px;
+    text-align: center;
+  }
+  
+  .dealer-hand h2,
+  .player-hand h2 {
+    color: #ffd700;
+    margin-bottom: 1rem;
+    font-family: 'Jersey 15', sans-serif;
+  }
+  
+  .game-result {
+    margin-top: 2rem;
+    text-align: center;
+    padding: 1rem;
+    background: rgba(255, 215, 0, 0.1);
+    border-radius: 10px;
+  }
+  
+  .game-result h2 {
+    color: #ffd700;
+    font-family: 'Jersey 15', sans-serif;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+  }
+  
+  /* Responsive Design */
+  @media (max-width: 768px) {
+    .blackjack-container {
+      margin: 1rem;
+      padding: 1rem;
+    }
+  
+    .bet-controls {
+      flex-direction: column;
+      align-items: center;
+    }
+  
+    .bet-controls input {
+      width: 80%;
+    }
+  
+    button {
+      width: 100%;
+    }
+  }
+  
+  .blackjack-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+  
+  .game-table {
+    margin-top: 20px;
+    padding: 20px;
+    background-color: #277714;
+    border-radius: 10px;
+    color: white;
+  }
+  
+  .dealer-hand, .player-hand {
+    margin: 20px 0;
+    padding: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 5px;
+  }
+  
+  .cards {
+    display: flex;
+    gap: 10px;
+    margin: 10px 0;
+  }
+  
+  .card {
+    background: white;
+    color: black;
+    padding: 10px 15px;
+    border-radius: 5px;
+    font-weight: bold;
+    min-width: 30px;
+    text-align: center;
+  }
+  
+  .game-controls {
+    display: flex;
+    gap: 10px;
+    margin: 20px 0;
+  }
+  
+  .game-controls button {
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+  }
+  
+  .bet-controls {
+    display: flex;
+    gap: 10px;
+    margin: 20px 0;
+  }
+  
+  .bet-controls input {
+    padding: 5px;
+    width: 100px;
+  }
+  
+  .error-message {
+    color: red;
+    margin: 10px 0;
+  }
+  
+  .game-result {
+    margin: 20px 0;
+    padding: 20px;
+    background-color: rgba(255, 255, 255, 0.9);
+    border-radius: 5px;
+    text-align: center;
+  }
+  
+  .deposit-controls {
+    display: flex;
+    gap: 10px;
+    margin: 20px 0;
+    justify-content: center;
+  }
+  
+  .deposit-controls input {
+    padding: 5px;
+    width: 100px;
+  }
