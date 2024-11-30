@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useWeb3 } from '../context/Web3Context';
 import { useContractInteraction } from '../hooks/useContractInteraction';
 import '../styles/Account.css';
@@ -11,12 +11,42 @@ function Account() {
   const [withdrawAmount, setWithdrawAmount] = useState('0.01');
   const [transactionError, setTransactionError] = useState(null);
   const [hasActiveAccount, setHasActiveAccount] = useState(false);
+  const [currentBalance, setCurrentBalance] = useState('0');
+
+  // Add effect to check account status on load
+  useEffect(() => {
+    const checkAccount = async () => {
+      if (account) {
+        const isActive = await checkTreasuryAccount();
+        setHasActiveAccount(isActive);
+      }
+    };
+    checkAccount();
+  }, [account, checkTreasuryAccount]);
+
+  // Add effect to fetch and update balance
+  useEffect(() => {
+    const fetchBalance = async () => {
+      if (account && hasActiveAccount) {
+        try {
+          const balance = await getAccountBalance();
+          setCurrentBalance(balance);
+        } catch (err) {
+          console.error('Error fetching balance:', err);
+        }
+      }
+    };
+    fetchBalance();
+  }, [account, hasActiveAccount, getAccountBalance]);
 
   const handleDeposit = async () => {
     try {
       setTransactionError(null);
       await depositToTreasury(depositAmount);
       setHasActiveAccount(true);
+      // Force a balance update in the navbar
+      const balance = await getAccountBalance();
+      window.dispatchEvent(new CustomEvent('balanceUpdate', { detail: balance }));
     } catch (err) {
       console.error('Error depositing:', err);
       setTransactionError(err.message);
@@ -27,8 +57,25 @@ function Account() {
     try {
       setTransactionError(null);
       await withdrawFromTreasury(withdrawAmount);
+      // Force a balance update in the navbar
+      const balance = await getAccountBalance();
+      window.dispatchEvent(new CustomEvent('balanceUpdate', { detail: balance }));
     } catch (err) {
       console.error('Error withdrawing:', err);
+      setTransactionError(err.message);
+    }
+  };
+
+  const handleCloseAccount = async () => {
+    try {
+      setTransactionError(null);
+      await withdrawFromTreasury(currentBalance);
+      setHasActiveAccount(false);
+      setCurrentBalance('0');
+      // Force a balance update in the navbar
+      window.dispatchEvent(new CustomEvent('balanceUpdate', { detail: '0' }));
+    } catch (err) {
+      console.error('Error closing account:', err);
       setTransactionError(err.message);
     }
   };
@@ -68,38 +115,46 @@ function Account() {
         </div>
       ) : (
         <div className="account-controls">
-          <div className="deposit-section">
-            <h2>Deposit Funds</h2>
-            <div className="deposit-controls">
-              <input
-                type="number"
-                min="0.01"
-                step="0.01"
-                value={depositAmount}
-                onChange={(e) => setDepositAmount(e.target.value)}
-                placeholder="Deposit amount"
-              />
-              <button onClick={handleDeposit}>
-                Deposit
-              </button>
+          <div className="transaction-section">
+            <div className="transaction-row">
+              <h2>Deposit to Account</h2>
+              <div className="transaction-controls">
+                <input
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  value={depositAmount}
+                  onChange={(e) => setDepositAmount(e.target.value)}
+                  placeholder="Deposit amount"
+                />
+                <button onClick={handleDeposit}>
+                  Deposit
+                </button>
+              </div>
+            </div>
+
+            <div className="transaction-row">
+              <h2>Withdraw from Account</h2>
+              <div className="transaction-controls">
+                <input
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  value={withdrawAmount}
+                  onChange={(e) => setWithdrawAmount(e.target.value)}
+                  placeholder="Withdraw amount"
+                />
+                <button onClick={handleWithdraw}>
+                  Withdraw
+                </button>
+              </div>
             </div>
           </div>
 
-          <div className="withdraw-section">
-            <h2>Withdraw Funds</h2>
-            <div className="withdraw-controls">
-              <input
-                type="number"
-                min="0.01"
-                step="0.01"
-                value={withdrawAmount}
-                onChange={(e) => setWithdrawAmount(e.target.value)}
-                placeholder="Withdraw amount"
-              />
-              <button onClick={handleWithdraw}>
-                Withdraw
-              </button>
-            </div>
+          <div className="close-account-section">
+            <button onClick={handleCloseAccount} className="close-account-button">
+              Withdraw and Close Account
+            </button>
           </div>
         </div>
       )}

@@ -2,27 +2,38 @@ import { Link } from 'react-router-dom';
 import { useWeb3 } from '../context/Web3Context';
 import { useContractInteraction } from '../hooks/useContractInteraction';
 import { useEffect, useState } from 'react';
+import '../styles/Navbar.css';
 
 function Navbar() {
   const { account, connectWallet } = useWeb3();
   const { getAccountBalance } = useContractInteraction();
   const [balance, setBalance] = useState('0');
 
-  useEffect(() => {
-    const fetchBalance = async () => {
-      if (account) {
-        try {
-          const balance = await getAccountBalance();
-          setBalance(balance);
-        } catch (err) {
-          console.error('Error fetching balance:', err);
-        }
+  const fetchBalance = async () => {
+    if (account) {
+      try {
+        const balance = await getAccountBalance();
+        setBalance(balance);
+      } catch (err) {
+        console.error('Error fetching balance:', err);
       }
-    };
+    }
+  };
 
+  useEffect(() => {
     fetchBalance();
     const interval = setInterval(fetchBalance, 5000);
-    return () => clearInterval(interval);
+
+    // Listen for balance updates
+    const handleBalanceUpdate = (event) => {
+      setBalance(event.detail);
+    };
+    window.addEventListener('balanceUpdate', handleBalanceUpdate);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('balanceUpdate', handleBalanceUpdate);
+    };
   }, [account, getAccountBalance]);
 
   const formatAddress = (address) => {
@@ -32,18 +43,20 @@ function Navbar() {
 
   return (
     <nav className="navbar">
-      <div className="navbar-brand">
-        <Link to="/" className="navbar-logo">
-          Casino
-        </Link>
-      </div>
-      <div className="navbar-links">
-        <Link to="/blackjack" className="nav-link">
-          Blackjack
-        </Link>
-        <Link to="/account" className="nav-link">
-          My Account
-        </Link>
+      <div className="navbar-left">
+        <div className="navbar-brand">
+          <Link to="/" className="navbar-logo">
+            Casino
+          </Link>
+        </div>
+        <div className="navbar-links">
+          <Link to="/blackjack" className="nav-link">
+            Blackjack
+          </Link>
+          <Link to="/account" className="nav-link">
+            My Account
+          </Link>
+        </div>
       </div>
       <div className="navbar-right">
         {account && <div className="navbar-balance">Balance: {balance} ETH</div>}

@@ -1,0 +1,110 @@
+.navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem;
+  background: rgba(0, 0, 0, 0.95);
+  color: white;
+  z-index: 1000;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 800;
+}
+
+.navbar-left {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+}
+
+.navbar-brand {
+  font-family: 'Jersey 15', sans-serif;
+  font-size: 2rem;
+}
+
+.navbar-logo {
+  color: #ffd700;
+  text-decoration: none;
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+}
+
+.navbar-links {
+  display: flex;
+  gap: 2rem;
+}
+
+.nav-link {
+  color: #ffd700;
+  text-decoration: none;
+  font-size: 1.1rem;
+  transition: color 0.3s ease;
+}
+
+.nav-link:hover {
+  color: #ffd700;
+}
+
+.navbar-right {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.navbar-balance {
+  padding: 0.5rem 1rem;
+  background: rgba(255, 215, 0, 0.1);
+  border-radius: 5px;
+  color: #ffd700;
+  font-weight: bold;
+}
+
+.connect-button {
+  padding: 0.5rem 1rem;
+  background: linear-gradient(45deg, #ffd700, #ffb700);
+  border: none;
+  border-radius: 5px;
+  color: #000;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.connect-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 2px 8px rgba(255, 215, 0, 0.4);
+}
+
+.wallet-address {
+  font-family: monospace;
+  padding: 0.5rem 1rem;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 5px;
+  color: #ffd700;
+}
+
+/* Add responsive design for smaller screens */
+@media (max-width: 768px) {
+  .navbar {
+    padding: 1rem;
+  }
+
+  .navbar-links {
+    gap: 1rem;
+  }
+
+  .navbar-right {
+    gap: 0.8rem;
+  }
+
+  .navbar-balance {
+    font-size: 0.9rem;
+  }
+
+  .wallet-address {
+    font-size: 0.9rem;
+  }
+} 

@@ -1,33 +1,170 @@
 .account-container {
   max-width: 800px;
   margin: 0 auto;
-  padding: 20px;
+  padding: 2rem;
 }
 
-.account-controls {
+.account-container h1 {
+    text-align: center;
+}
+
+.open-account {
+  background-color: #000000 !important;
+  padding: 2rem;
+  border-radius: 15px;
+  text-align: center;
+}
+
+.open-account p {
+  color: #ffd700 !important;
+  font-size: 1.5rem;
+  margin-bottom: 1.5rem;
+  font-weight: bold;
+}
+
+.deposit-controls {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.deposit-controls input {
+  padding: 0.8rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  width: 150px;
+  font-size: 1rem;
+}
+
+.deposit-controls input:focus {
+  outline: none;
+  border-color: #ffd700;
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+}
+
+.deposit-controls button {
+  background: linear-gradient(45deg, #ffd700, #ffb700);
+  color: #000000;
+  border: none;
+  padding: 0.8rem 1.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.3s ease;
+  min-width: 120px;
+}
+
+.deposit-controls button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(255, 215, 0, 0.4);
+}
+
+.transaction-section {
   display: flex;
   flex-direction: column;
-  gap: 30px;
-  margin-top: 20px;
+  gap: 2rem;
+  margin-bottom: 2rem;
 }
 
-.deposit-section,
-.withdraw-section {
+.transaction-row {
   background: rgba(255, 255, 255, 0.1);
-  padding: 20px;
-  border-radius: 10px;
+  padding: 2rem;
+  border-radius: 15px;
 }
 
-.deposit-section h2,
-.withdraw-section h2 {
-  margin-bottom: 15px;
+.transaction-row h2 {
+  margin-bottom: 1.5rem;
   color: #ffd700;
+}
+
+.transaction-controls {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.transaction-controls input {
+  padding: 0.8rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  width: 150px;
+  font-size: 1rem;
+}
+
+.transaction-controls input:focus {
+  outline: none;
+  border-color: #ffd700;
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+}
+
+.transaction-controls button {
+  background: linear-gradient(45deg, #ffd700, #ffb700);
+  color: #000000;
+  border: none;
+  padding: 0.8rem 1.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.3s ease;
+  min-width: 120px;
+}
+
+.transaction-controls button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(255, 215, 0, 0.4);
+}
+
+.close-account-section {
+  text-align: center;
+  margin-top: 2rem;
+}
+
+.close-account-button {
+  background: linear-gradient(45deg, #ff4444, #ff6b6b);
+  color: white;
+  border: none;
+  padding: 1rem 2rem;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.close-account-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(255, 68, 68, 0.4);
 }
 
 .error-message {
   color: #ff4444;
-  margin-top: 10px;
-  padding: 10px;
+  margin-top: 1rem;
+  padding: 1rem;
   background: rgba(255, 68, 68, 0.1);
-  border-radius: 5px;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.connect-wallet {
+  text-align: center;
+  margin-top: 2rem;
+}
+
+.connect-wallet button {
+  background: linear-gradient(45deg, #ffd700, #ffb700);
+  color: #000000;
+  border: none;
+  padding: 1rem 2rem;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.connect-wallet button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(255, 215, 0, 0.4);
 } 
