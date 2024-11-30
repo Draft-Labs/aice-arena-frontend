@@ -6,6 +6,7 @@ import '../styles/Blackjack.css';
 function Blackjack() {
   const { 
     account, 
+    ownerAccount, 
     isLoading, 
     error: web3Error, 
     blackjackContract,
@@ -25,6 +26,7 @@ function Blackjack() {
   const [transactionError, setTransactionError] = useState(null);
   const [casinoBalance, setCasinoBalance] = useState('0');
   const [depositAmount, setDepositAmount] = useState('0.1');
+  const [withdrawAmount, setWithdrawAmount] = useState('0.01');
 
   const cardValueToString = (cardValue) => {
     if (cardValue === 1 || cardValue === 14) return 'A';
@@ -74,20 +76,30 @@ function Blackjack() {
 
   const resolveBetWithContract = async (result) => {
     try {
-      if (!blackjackContract) {
-        throw new Error("Contract not initialized");
+      if (!blackjackContract || !ownerAccount) {
+        throw new Error("Contract or owner not initialized");
       }
 
       const multiplier = getWinMultiplier(result);
       
-      // Call the contract's resolveGames function
-      const tx = await blackjackContract.resolveGames(
+      // Connect contract to owner account for resolution
+      const ownerContract = blackjackContract.connect(ownerAccount);
+      
+      // Call the contract's resolveGames function with proper gas limit
+      const tx = await ownerContract.resolveGames(
         [account], // array of players
-        [multiplier] // array of multipliers
+        [multiplier], // array of multipliers
+        {
+          gasLimit: 500000
+        }
       );
       
       await tx.wait();
       console.log('Bet resolved successfully');
+      
+      // Refresh the casino balance after resolution
+      const newBalance = await getAccountBalance();
+      setCasinoBalance(newBalance);
       
     } catch (err) {
       console.error('Error resolving bet:', err);
@@ -228,6 +240,18 @@ function Blackjack() {
     }
   };
 
+  const handleWithdraw = async () => {
+    try {
+      setTransactionError(null);
+      await withdrawFromTreasury(withdrawAmount);
+      const newBalance = await getAccountBalance();
+      setCasinoBalance(newBalance);
+    } catch (err) {
+      console.error('Error withdrawing:', err);
+      setTransactionError(err.message);
+    }
+  };
+
   if (isLoading) return <div>Loading Web3...</div>;
   if (web3Error) return (
     <div>
@@ -247,21 +271,23 @@ function Blackjack() {
       ) : (
         <div className="game-info">
           <p>Connected Account: {account}</p>
-          <p>Casino Balance: {casinoBalance} ETH</p>
+          <p>Available Winnings: {casinoBalance} ETH</p>
           
-          <div className="deposit-controls">
-            <input
-              type="number"
-              min="0.01"
-              step="0.01"
-              value={depositAmount}
-              onChange={(e) => setDepositAmount(e.target.value)}
-              placeholder="Deposit amount"
-            />
-            <button onClick={handleDeposit}>
-              Deposit to Casino
-            </button>
-          </div>
+          {casinoBalance > 0 && (
+            <div className="withdraw-controls">
+              <input
+                type="number"
+                min="0.01"
+                step="0.01"
+                value={withdrawAmount}
+                onChange={(e) => setWithdrawAmount(e.target.value)}
+                placeholder="Amount to withdraw"
+              />
+              <button onClick={() => withdrawFromTreasury(withdrawAmount)}>
+                Withdraw Winnings
+              </button>
+            </div>
+          )}
 
           <div className="bet-controls">
             <input

@@ -3,7 +3,7 @@ import { useWeb3 } from '../context/Web3Context';
 import { ethers } from 'ethers';
 
 export function useContractInteraction() {
-  const { blackjackContract, treasuryContract, account } = useWeb3();
+  const { blackjackContract, treasuryContract, account, ownerAccount } = useWeb3();
 
   const placeBet = useCallback(async (amount) => {
     try {
@@ -17,11 +17,15 @@ export function useContractInteraction() {
       console.log('Placing bet...', {
         amount,
         betAmountWei: betAmountWei.toString(),
-        account
+        account,
+        blackjackAddress: await blackjackContract.getAddress(),
+        treasuryAddress: await treasuryContract.getAddress()
       });
 
       // Check if treasury has enough funds to cover potential win
       const houseFunds = await treasuryContract.getHouseFunds();
+      console.log('House funds:', ethers.formatEther(houseFunds));
+      
       const betAmountBigInt = ethers.toBigInt(betAmountWei);
       if (houseFunds < betAmountBigInt * ethers.toBigInt(2)) {
         throw new Error('Insufficient house funds to cover potential win');
@@ -33,29 +37,18 @@ export function useContractInteraction() {
         throw new Error('Player already has an active bet');
       }
 
-      try {
-        // Place bet with ETH from wallet
-        console.log('Placing bet transaction...');
-        const tx = await blackjackContract.placeBet({
-          value: betAmountWei,
-          gasLimit: 500000
-        });
+      // Place bet with ETH from wallet
+      console.log('Placing bet transaction...');
+      const tx = await blackjackContract.placeBet({
+        value: betAmountWei,
+        gasLimit: 500000
+      });
 
-        console.log('Transaction sent:', tx.hash);
-        const receipt = await tx.wait();
-        console.log('Transaction confirmed:', receipt);
+      console.log('Transaction sent:', tx.hash);
+      const receipt = await tx.wait();
+      console.log('Transaction confirmed:', receipt);
 
-        return true;
-      } catch (txError) {
-        console.error('Transaction error details:', {
-          error: txError,
-          errorMessage: txError.message,
-          errorData: txError.data,
-          errorCode: txError.code
-        });
-        throw new Error(`Transaction failed: ${txError.message}`);
-      }
-
+      return true;
     } catch (error) {
       console.error('Detailed error:', error);
       throw error;
@@ -143,12 +136,33 @@ export function useContractInteraction() {
     }
   }, [treasuryContract, account]);
 
+  const resolveGameAsOwner = useCallback(async (playerAddress, multiplier) => {
+    try {
+      if (!blackjackContract || !ownerAccount) {
+        throw new Error('Contract or owner not initialized');
+      }
+
+      const ownerContract = blackjackContract.connect(ownerAccount);
+      const tx = await ownerContract.resolveGames(
+        [playerAddress],
+        [multiplier],
+        { gasLimit: 500000 }
+      );
+      await tx.wait();
+      return true;
+    } catch (error) {
+      console.error('Error resolving game:', error);
+      throw error;
+    }
+  }, [blackjackContract, ownerAccount]);
+
   return {
     placeBet,
     hit,
     stand,
     depositToTreasury,
     withdrawFromTreasury,
-    getAccountBalance
+    getAccountBalance,
+    resolveGameAsOwner
   };
 }
