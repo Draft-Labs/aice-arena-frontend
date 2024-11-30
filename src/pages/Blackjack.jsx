@@ -13,7 +13,7 @@ function Blackjack() {
     connectWallet 
   } = useWeb3();
   
-  const { placeBet, hit, stand, depositToTreasury, withdrawFromTreasury, getAccountBalance } = useContractInteraction();
+  const { placeBet, hit, stand, depositToTreasury, withdrawFromTreasury, getAccountBalance, resolveGameAsOwner, checkTreasuryAccount } = useContractInteraction();
   const [betAmount, setBetAmount] = useState('0.01');
   const [gameState, setGameState] = useState({
     playerHand: [],
@@ -27,6 +27,8 @@ function Blackjack() {
   const [casinoBalance, setCasinoBalance] = useState('0');
   const [depositAmount, setDepositAmount] = useState('0.1');
   const [withdrawAmount, setWithdrawAmount] = useState('0.01');
+  const [hasActiveAccount, setHasActiveAccount] = useState(false);
+  const [showDepositForm, setShowDepositForm] = useState(false);
 
   const cardValueToString = (cardValue) => {
     if (cardValue === 1 || cardValue === 14) return 'A';
@@ -82,19 +84,9 @@ function Blackjack() {
 
       const multiplier = getWinMultiplier(result);
       
-      // Connect contract to owner account for resolution
-      const ownerContract = blackjackContract.connect(ownerAccount);
+      // Use the resolveGameAsOwner function instead of direct contract call
+      await resolveGameAsOwner(account, multiplier);
       
-      // Call the contract's resolveGames function with proper gas limit
-      const tx = await ownerContract.resolveGames(
-        [account], // array of players
-        [multiplier], // array of multipliers
-        {
-          gasLimit: 500000
-        }
-      );
-      
-      await tx.wait();
       console.log('Bet resolved successfully');
       
       // Refresh the casino balance after resolution
@@ -243,14 +235,50 @@ function Blackjack() {
   const handleWithdraw = async () => {
     try {
       setTransactionError(null);
+      
+      // Convert withdrawal amount to a number and validate
+      const amount = parseFloat(withdrawAmount);
+      if (isNaN(amount) || amount <= 0) {
+        throw new Error('Invalid withdrawal amount');
+      }
+      
+      // Check if amount is greater than balance
+      const currentBalance = parseFloat(casinoBalance);
+      if (amount > currentBalance) {
+        throw new Error('Insufficient balance for withdrawal');
+      }
+
+      console.log('Initiating withdrawal...', {
+        amount,
+        currentBalance,
+        withdrawAmount,
+        hasActiveAccount
+      });
+
       await withdrawFromTreasury(withdrawAmount);
+      
+      // Refresh balance after withdrawal
       const newBalance = await getAccountBalance();
       setCasinoBalance(newBalance);
+      
+      // Check account status after withdrawal
+      const isActive = await checkTreasuryAccount();
+      setHasActiveAccount(isActive);
     } catch (err) {
       console.error('Error withdrawing:', err);
       setTransactionError(err.message);
     }
   };
+
+  useEffect(() => {
+    const checkAccount = async () => {
+      if (account) {
+        const isActive = await checkTreasuryAccount();
+        setHasActiveAccount(isActive);
+      }
+    };
+    checkAccount();
+  }, [account, checkTreasuryAccount]);
 
   if (isLoading) return <div>Loading Web3...</div>;
   if (web3Error) return (
@@ -268,26 +296,32 @@ function Blackjack() {
         <div className="connect-wallet">
           <button onClick={connectWallet}>Connect Wallet</button>
         </div>
+      ) : !hasActiveAccount ? (
+        <div className="open-account">
+          <p>Please open an account to play Blackjack</p>
+          <div className="deposit-controls">
+            <input
+              type="number"
+              min="0.01"
+              step="0.01"
+              value={depositAmount}
+              onChange={(e) => setDepositAmount(e.target.value)}
+              placeholder="Initial deposit amount"
+            />
+            <button onClick={handleDeposit}>
+              Open Account
+            </button>
+          </div>
+          {transactionError && (
+            <div className="error-message">
+              Error: {transactionError}
+            </div>
+          )}
+        </div>
       ) : (
         <div className="game-info">
           <p>Connected Account: {account}</p>
-          <p>Available Winnings: {casinoBalance} ETH</p>
-          
-          {casinoBalance > 0 && (
-            <div className="withdraw-controls">
-              <input
-                type="number"
-                min="0.01"
-                step="0.01"
-                value={withdrawAmount}
-                onChange={(e) => setWithdrawAmount(e.target.value)}
-                placeholder="Amount to withdraw"
-              />
-              <button onClick={() => withdrawFromTreasury(withdrawAmount)}>
-                Withdraw Winnings
-              </button>
-            </div>
-          )}
+          <p>Available Balance: {casinoBalance} ETH</p>
 
           <div className="bet-controls">
             <input
@@ -305,6 +339,22 @@ function Blackjack() {
               Place Bet
             </button>
           </div>
+
+          {casinoBalance > 0 && (
+            <div className="withdraw-controls">
+              <input
+                type="number"
+                min="0.01"
+                step="0.01"
+                value={withdrawAmount}
+                onChange={(e) => setWithdrawAmount(e.target.value)}
+                placeholder="Amount to withdraw"
+              />
+              <button onClick={handleWithdraw}>
+                Withdraw Funds
+              </button>
+            </div>
+          )}
           
           {transactionError && (
             <div className="error-message">

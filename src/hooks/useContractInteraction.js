@@ -113,8 +113,38 @@ export function useContractInteraction() {
       }
 
       const amountWei = ethers.parseEther(amount.toString());
-      const tx = await treasuryContract.withdraw(amountWei);
-      await tx.wait();
+      
+      // Check if account is active
+      const hasAccount = await treasuryContract.activeAccounts(account);
+      if (!hasAccount) {
+        // If no active account, open one with minimum deposit
+        const minDeposit = ethers.parseEther("0.01");
+        const tx = await treasuryContract.openAccount({ value: minDeposit });
+        await tx.wait();
+        console.log('Account opened');
+      }
+
+      // First check the balance
+      const balance = await treasuryContract.getPlayerBalance(account);
+      if (balance < amountWei) {
+        throw new Error('Insufficient balance for withdrawal');
+      }
+
+      console.log('Withdrawing...', {
+        amount,
+        amountWei: amountWei.toString(),
+        balance: balance.toString(),
+        account
+      });
+
+      const tx = await treasuryContract.withdraw(amountWei, {
+        gasLimit: 500000
+      });
+      
+      console.log('Withdrawal transaction sent:', tx.hash);
+      const receipt = await tx.wait();
+      console.log('Withdrawal confirmed:', receipt);
+      
       return true;
     } catch (error) {
       console.error('Error withdrawing from treasury:', error);
@@ -156,6 +186,16 @@ export function useContractInteraction() {
     }
   }, [blackjackContract, ownerAccount]);
 
+  const checkTreasuryAccount = useCallback(async () => {
+    try {
+      if (!treasuryContract || !account) return false;
+      return await treasuryContract.activeAccounts(account);
+    } catch (error) {
+      console.error('Error checking treasury account:', error);
+      return false;
+    }
+  }, [treasuryContract, account]);
+
   return {
     placeBet,
     hit,
@@ -163,6 +203,7 @@ export function useContractInteraction() {
     depositToTreasury,
     withdrawFromTreasury,
     getAccountBalance,
-    resolveGameAsOwner
+    resolveGameAsOwner,
+    checkTreasuryAccount
   };
 }
