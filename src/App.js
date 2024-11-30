@@ -1,7 +1,8 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Web3Provider } from './context/Web3Context';
 import Navbar from './components/Navbar';
-import Treasury from './pages/Treasury';
+import Home from './pages/Home';
+import Account from './pages/Account';
 import Blackjack from './pages/Blackjack';
 import './App.css';
 
@@ -12,9 +13,9 @@ function App() {
         <div className="App">
           <Navbar />
           <Routes>
-            <Route path="/treasury" element={<Treasury />} />
+            <Route path="/account" element={<Account />} />
             <Route path="/blackjack" element={<Blackjack />} />
-            <Route path="/" element={<Treasury />} />
+            <Route path="/" element={<Home />} />
           </Routes>
         </div>
       </Router>

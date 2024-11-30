@@ -1,0 +1,48 @@
+.home-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+}
+
+.house-info {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 2rem;
+  border-radius: 15px;
+  margin: 2rem 0;
+}
+
+.treasury-amount {
+  font-size: 3rem;
+  color: #ffd700;
+  font-weight: bold;
+  margin: 1rem 0;
+}
+
+.account-prompt,
+.connect-prompt,
+.game-selection {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 2rem;
+  border-radius: 15px;
+  margin: 2rem 0;
+}
+
+.cta-button,
+.game-button {
+  display: inline-block;
+  padding: 1rem 2rem;
+  margin-top: 1rem;
+  background: linear-gradient(45deg, #ffd700, #ffb700);
+  color: #000;
+  text-decoration: none;
+  border-radius: 8px;
+  font-weight: bold;
+  transition: all 0.3s ease;
+}
+
+.cta-button:hover,
+.game-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(255, 215, 0, 0.4);
+} 

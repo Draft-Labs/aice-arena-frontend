@@ -1,0 +1,33 @@
+.account-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.account-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+  margin-top: 20px;
+}
+
+.deposit-section,
+.withdraw-section {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 20px;
+  border-radius: 10px;
+}
+
+.deposit-section h2,
+.withdraw-section h2 {
+  margin-bottom: 15px;
+  color: #ffd700;
+}
+
+.error-message {
+  color: #ff4444;
+  margin-top: 10px;
+  padding: 10px;
+  background: rgba(255, 68, 68, 0.1);
+  border-radius: 5px;
+} 
