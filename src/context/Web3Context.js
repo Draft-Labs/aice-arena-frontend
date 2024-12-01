@@ -39,10 +39,20 @@ export const Web3Provider = ({ children }) => {
   const initializeContracts = async (provider) => {
     try {
       const signer = await provider.getSigner();
-      const ownerSigner = await provider.getSigner(0); // First account is owner in hardhat
+      
+      // Get the owner account (first account in hardhat)
+      const accounts = await provider.listAccounts();
+      if (!accounts || accounts.length === 0) {
+        throw new Error('No accounts found');
+      }
+
+      const ownerAddress = accounts[0].address; // Get the address property
+      console.log('Owner address:', ownerAddress);
+      
+      const ownerSigner = await provider.getSigner(ownerAddress);
       setOwnerAccount(ownerSigner);
 
-      // Contract addresses (replace with your deployed contract addresses)
+      // Contract addresses
       const blackjackAddress = "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512";
       const treasuryAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
 
@@ -52,13 +62,16 @@ export const Web3Provider = ({ children }) => {
         BlackjackABI.abi,
         signer
       );
+
+      const blackjackOwner = blackjack.connect(ownerSigner);
+      
       const treasury = new ethers.Contract(
         treasuryAddress,
         TreasuryABI.abi,
         signer
       );
 
-      setBlackjackContract(blackjack);
+      setBlackjackContract(blackjackOwner); // Use the owner-connected contract
       setTreasuryContract(treasury);
       setIsLoading(false);
     } catch (err) {

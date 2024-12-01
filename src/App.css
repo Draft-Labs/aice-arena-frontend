@@ -8,13 +8,15 @@
   align-items: center;
   background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
   color: #ffffff;
-  font-family: 'Arial', sans-serif;
+  font-family: 'Orbitron', sans-serif;
   padding: 2rem;
   padding-top: 80px;
+  justify-content: center;
 }
 
-h1, h2, h3, h4, h5, h6 {
-  font-family: 'Jersey 15', sans-serif;
+h1, h2, h3, h4, h5, h6, p {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 600;
   letter-spacing: 2px;
 }
 

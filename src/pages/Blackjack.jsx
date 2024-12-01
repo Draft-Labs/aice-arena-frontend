@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useWeb3 } from '../context/Web3Context';
 import { useContractInteraction } from '../hooks/useContractInteraction';
+import LoadingIcons from 'react-loading-icons';
 import '../styles/Blackjack.css';
 
 function Blackjack() {
@@ -280,7 +281,7 @@ function Blackjack() {
     checkAccount();
   }, [account, checkTreasuryAccount]);
 
-  if (isLoading) return <div>Loading Web3...</div>;
+  if (isLoading) return <LoadingIcons.Bars />;
   if (web3Error) return (
     <div>
       <div>Error: {web3Error}</div>

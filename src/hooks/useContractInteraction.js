@@ -155,14 +155,18 @@ export function useContractInteraction() {
   const getAccountBalance = useCallback(async () => {
     try {
       if (!treasuryContract || !account) {
-        throw new Error('Treasury contract or account not initialized');
+        console.log('Treasury state:', {
+          hasContract: !!treasuryContract,
+          hasAccount: !!account
+        });
+        return '0'; // Return '0' instead of throwing when not initialized
       }
 
       const balance = await treasuryContract.getPlayerBalance(account);
       return ethers.formatEther(balance);
     } catch (error) {
       console.error('Error getting account balance:', error);
-      throw error;
+      return '0'; // Return '0' on error
     }
   }, [treasuryContract, account]);
 
@@ -172,13 +176,25 @@ export function useContractInteraction() {
         throw new Error('Contract or owner not initialized');
       }
 
-      const ownerContract = blackjackContract.connect(ownerAccount);
-      const tx = await ownerContract.resolveGames(
+      console.log('Resolving game...', {
+        player: playerAddress,
+        multiplier,
+        owner: await ownerAccount.getAddress()
+      });
+
+      // The contract should already be connected to the owner account
+      const tx = await blackjackContract.resolveGames(
         [playerAddress],
         [multiplier],
-        { gasLimit: 500000 }
+        { 
+          gasLimit: 500000,
+        }
       );
-      await tx.wait();
+
+      console.log('Resolution transaction sent:', tx.hash);
+      const receipt = await tx.wait();
+      console.log('Resolution confirmed:', receipt);
+
       return true;
     } catch (error) {
       console.error('Error resolving game:', error);

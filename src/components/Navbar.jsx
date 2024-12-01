@@ -16,7 +16,10 @@ function Navbar() {
         setBalance(balance);
       } catch (err) {
         console.error('Error fetching balance:', err);
+        setBalance('0');
       }
+    } else {
+      setBalance('0');
     }
   };
 
@@ -26,7 +29,7 @@ function Navbar() {
 
     // Listen for balance updates
     const handleBalanceUpdate = (event) => {
-      setBalance(event.detail);
+      setBalance(event.detail || '0');
     };
     window.addEventListener('balanceUpdate', handleBalanceUpdate);
 
