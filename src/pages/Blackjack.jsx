@@ -79,13 +79,9 @@ function Blackjack() {
 
   const resolveBetWithContract = async (result) => {
     try {
-      if (!blackjackContract || !ownerAccount) {
-        throw new Error("Contract or owner not initialized");
-      }
-
       const multiplier = getWinMultiplier(result);
       
-      // Use the resolveGameAsOwner function instead of direct contract call
+      // Use the player's account to resolve their own bet
       await resolveGameAsOwner(account, multiplier);
       
       console.log('Bet resolved successfully');

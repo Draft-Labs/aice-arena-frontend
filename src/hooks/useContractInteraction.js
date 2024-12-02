@@ -172,17 +172,17 @@ export function useContractInteraction() {
 
   const resolveGameAsOwner = useCallback(async (playerAddress, multiplier) => {
     try {
-      if (!blackjackContract || !ownerAccount) {
-        throw new Error('Contract or owner not initialized');
+      if (!blackjackContract || !account) {
+        throw new Error('Contract or account not initialized');
       }
 
       console.log('Resolving game...', {
         player: playerAddress,
         multiplier,
-        owner: await ownerAccount.getAddress()
+        account
       });
 
-      // The contract should already be connected to the owner account
+      // Now any player can resolve their own game
       const tx = await blackjackContract.resolveGames(
         [playerAddress],
         [multiplier],
@@ -200,7 +200,7 @@ export function useContractInteraction() {
       console.error('Error resolving game:', error);
       throw error;
     }
-  }, [blackjackContract, ownerAccount]);
+  }, [blackjackContract, account]);
 
   const checkTreasuryAccount = useCallback(async () => {
     try {
