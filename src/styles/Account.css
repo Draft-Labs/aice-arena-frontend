@@ -167,4 +167,23 @@
 .connect-wallet button:hover {
   transform: translateY(-2px);
   box-shadow: 0 5px 15px rgba(255, 215, 0, 0.4);
+}
+
+.balance-display {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 2rem;
+  border-radius: 15px;
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.balance-display h2 {
+  color: #ffd700;
+  margin-bottom: 1rem;
+}
+
+.balance-display p {
+  font-size: 2rem;
+  color: #ffffff;
+  font-weight: bold;
 } 

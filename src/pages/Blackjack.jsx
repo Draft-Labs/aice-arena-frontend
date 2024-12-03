@@ -14,7 +14,7 @@ function Blackjack() {
     connectWallet 
   } = useWeb3();
   
-  const { placeBet, hit, stand, depositToTreasury, withdrawFromTreasury, getAccountBalance, resolveGameAsOwner, checkTreasuryAccount } = useContractInteraction();
+  const { placeBet, hit, stand, depositToTreasury, withdrawFromTreasury, getAccountBalance, submitGameResult, checkTreasuryAccount } = useContractInteraction();
   const [betAmount, setBetAmount] = useState('0.01');
   const [gameState, setGameState] = useState({
     playerHand: [],
@@ -66,23 +66,33 @@ function Blackjack() {
     switch (result) {
       case 'You win!':
       case 'Dealer busts! You win!':
-        return 2; // Player gets 2x their bet (original bet + winnings)
+        return 2; // Player gets 2x their bet
       case 'Push!':
         return 1; // Player gets their original bet back
       case 'Dealer wins!':
       case 'BUST! You lose!':
         return 0; // Player loses their bet
       default:
+        console.log('Unknown result:', result);
         return 0;
     }
   };
 
-  const resolveBetWithContract = async (result) => {
+  const resolveBetWithContract = async (result, dealerHand = gameState.dealerHand, playerHand = gameState.playerHand) => {
     try {
       const multiplier = getWinMultiplier(result);
+
+      console.log('Resolving bet with multiplier:', {
+        result,
+        multiplier,
+        playerHand,
+        dealerHand,
+        playerScore: calculateHandScore(playerHand),
+        dealerScore: calculateHandScore(dealerHand),
+        isBust: calculateHandScore(playerHand) > 21
+      });
       
-      // Use the player's account to resolve their own bet
-      await resolveGameAsOwner(account, multiplier);
+      await submitGameResult(playerHand, dealerHand, multiplier);
       
       console.log('Bet resolved successfully');
       
@@ -122,7 +132,12 @@ function Blackjack() {
 
     } catch (err) {
       console.error("Error in handlePlaceBet:", err);
-      setTransactionError(err.message);
+      // Check if the error is related to rate limiting
+      if (err.message.includes('ActionRateLimited')) {
+        setTransactionError('Bet placed too soon. Please wait a few more seconds.');
+      } else {
+        setTransactionError(err.message);
+      }
     }
   };
 
@@ -134,22 +149,49 @@ function Blackjack() {
       const updatedHand = [...gameState.playerHand, newCard];
       const newScore = calculateHandScore(updatedHand);
 
-      setGameState(prev => ({
-        ...prev,
-        playerHand: updatedHand,
-        playerScore: newScore
-      }));
+      console.log('Hit action:', {
+        previousHand: gameState.playerHand,
+        newCard,
+        updatedHand,
+        newScore,
+        dealerHand: gameState.dealerHand,
+        dealerScore: calculateHandScore(gameState.dealerHand)
+      });
+
+      // Update state first
+      await new Promise(resolve => {
+        setGameState(prev => {
+          console.log('Updating game state:', {
+            oldHand: prev.playerHand,
+            newHand: updatedHand
+          });
+          return {
+            ...prev,
+            playerHand: updatedHand,
+            playerScore: newScore
+          };
+        });
+        resolve();
+      });
 
       if (newScore > 21) {
         const result = 'BUST! You lose!';
+        
+        console.log('Player bust:', {
+          finalHand: updatedHand,
+          finalScore: newScore,
+          dealerHand: gameState.dealerHand,
+          dealerScore: calculateHandScore(gameState.dealerHand)
+        });
+
         setGameState(prev => ({
           ...prev,
           isPlaying: false,
           result
         }));
         
-        // Resolve the bet when player busts
-        await resolveBetWithContract(result);
+        // Pass the updated hand directly to resolveBetWithContract
+        await resolveBetWithContract(result, gameState.dealerHand, updatedHand);
       }
 
     } catch (err) {
@@ -174,6 +216,18 @@ function Blackjack() {
       const playerScore = calculateHandScore(gameState.playerHand);
       let result;
 
+      console.log('Determining game result:', {
+        playerScore,
+        dealerScore,
+        playerHand: gameState.playerHand,
+        dealerHand: currentDealerHand,
+        rawDealerHand: currentDealerHand.map(card => ({
+          card,
+          value: card % 13 || 13,
+          score: calculateHandScore([card])
+        }))
+      });
+
       if (dealerScore > 21) {
         result = 'Dealer busts! You win!';
       } else if (dealerScore > playerScore) {
@@ -184,17 +238,30 @@ function Blackjack() {
         result = 'Push!';
       }
 
-      // Update game state
-      setGameState(prev => ({
-        ...prev,
-        dealerHand: currentDealerHand,
-        dealerScore: dealerScore,
-        isPlaying: false,
-        result
-      }));
+      console.log('Game result determined:', result);
 
-      // Resolve the bet with the contract
-      await resolveBetWithContract(result);
+      // Update game state and wait for it to complete
+      await new Promise(resolve => {
+        setGameState(prev => {
+          console.log('Updating final game state:', {
+            oldDealerHand: prev.dealerHand,
+            newDealerHand: currentDealerHand,
+            dealerScore,
+            result
+          });
+          return {
+            ...prev,
+            dealerHand: currentDealerHand,
+            dealerScore: dealerScore,
+            isPlaying: false,
+            result
+          };
+        });
+        resolve();
+      });
+
+      // Resolve the bet with the contract using the current dealer hand
+      await resolveBetWithContract(result, currentDealerHand);
 
     } catch (err) {
       console.error("Error in handleStand:", err);

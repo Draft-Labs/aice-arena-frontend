@@ -5,6 +5,29 @@ import { ethers } from 'ethers';
 export function useContractInteraction() {
   const { blackjackContract, treasuryContract, account, ownerAccount } = useWeb3();
 
+  const calculateHandScore = (hand) => {
+    let score = 0;
+    let aces = 0;
+
+    hand.forEach(card => {
+      let value = card % 13 || 13; // Convert to 1-13
+      if (value > 10) value = 10;
+      if (value === 1) {
+        aces += 1;
+        value = 11;
+      }
+      score += value;
+    });
+
+    // Adjust for aces
+    while (score > 21 && aces > 0) {
+      score -= 10;
+      aces -= 1;
+    }
+
+    return score;
+  };
+
   const placeBet = useCallback(async (amount) => {
     try {
       if (!blackjackContract || !treasuryContract || !account) {
@@ -212,6 +235,54 @@ export function useContractInteraction() {
     }
   }, [treasuryContract, account]);
 
+  const submitGameResult = useCallback(async (playerHand, dealerHand, multiplier) => {
+    try {
+      if (!blackjackContract || !account) {
+        throw new Error('Contract or account not initialized');
+      }
+
+      // Create a nonce (can be timestamp or random number)
+      const nonce = Date.now();
+
+      console.log('Sending game result to backend...', {
+        playerHand,
+        dealerHand,
+        multiplier,
+        nonce,
+        playerScore: calculateHandScore(playerHand),
+        dealerScore: calculateHandScore(dealerHand)
+      });
+
+      // Send directly to backend without contract interaction
+      const response = await fetch('http://localhost:3001/submit-game', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          player: account,
+          playerHand,
+          dealerHand,
+          multiplier,
+          nonce
+        })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to resolve game');
+      }
+
+      const result = await response.json();
+      console.log('Game resolved:', result);
+
+      return true;
+    } catch (error) {
+      console.error('Error submitting game result:', error);
+      throw error;
+    }
+  }, [blackjackContract, account]);
+
   return {
     placeBet,
     hit,
@@ -220,6 +291,7 @@ export function useContractInteraction() {
     withdrawFromTreasury,
     getAccountBalance,
     resolveGameAsOwner,
-    checkTreasuryAccount
+    checkTreasuryAccount,
+    submitGameResult
   };
 }

@@ -37,16 +37,18 @@ function Account() {
       }
     };
     fetchBalance();
-  }, [account, hasActiveAccount, getAccountBalance]);
+  }, [account, hasActiveAccount, getAccountBalance, transactionError]);
 
   const handleDeposit = async () => {
     try {
       setTransactionError(null);
       await depositToTreasury(depositAmount);
       setHasActiveAccount(true);
+      // Update balance immediately after deposit
+      const newBalance = await getAccountBalance();
+      setCurrentBalance(newBalance);
       // Force a balance update in the navbar
-      const balance = await getAccountBalance();
-      window.dispatchEvent(new CustomEvent('balanceUpdate', { detail: balance }));
+      window.dispatchEvent(new CustomEvent('balanceUpdate', { detail: newBalance }));
     } catch (err) {
       console.error('Error depositing:', err);
       setTransactionError(err.message);
@@ -57,9 +59,11 @@ function Account() {
     try {
       setTransactionError(null);
       await withdrawFromTreasury(withdrawAmount);
+      // Update balance immediately after withdrawal
+      const newBalance = await getAccountBalance();
+      setCurrentBalance(newBalance);
       // Force a balance update in the navbar
-      const balance = await getAccountBalance();
-      window.dispatchEvent(new CustomEvent('balanceUpdate', { detail: balance }));
+      window.dispatchEvent(new CustomEvent('balanceUpdate', { detail: newBalance }));
     } catch (err) {
       console.error('Error withdrawing:', err);
       setTransactionError(err.message);
@@ -79,6 +83,28 @@ function Account() {
       setTransactionError(err.message);
     }
   };
+
+  // Add polling to update balance periodically
+  useEffect(() => {
+    let intervalId;
+    
+    if (account && hasActiveAccount) {
+      intervalId = setInterval(async () => {
+        try {
+          const balance = await getAccountBalance();
+          setCurrentBalance(balance);
+        } catch (err) {
+          console.error('Error updating balance:', err);
+        }
+      }, 5000); // Update every 5 seconds
+    }
+
+    return () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+    };
+  }, [account, hasActiveAccount, getAccountBalance]);
 
   if (isLoading) return <div>Loading Web3...</div>;
   if (web3Error) return (
@@ -115,6 +141,11 @@ function Account() {
         </div>
       ) : (
         <div className="account-controls">
+          <div className="balance-display">
+            <h2>Current Balance</h2>
+            <p>{currentBalance} ETH</p>
+          </div>
+
           <div className="transaction-section">
             <div className="transaction-row">
               <h2>Deposit to Account</h2>
