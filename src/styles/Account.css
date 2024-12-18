@@ -34,7 +34,7 @@
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.1);
   color: #ffffff;
-  width: 150px;
+  width: 92%;
   font-size: 1rem;
 }
 
@@ -63,59 +63,83 @@
 
 .transaction-section {
   display: flex;
-  flex-direction: column;
   gap: 2rem;
-  margin-bottom: 2rem;
+  margin-top: 2rem;
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .transaction-row {
-  background: rgba(255, 255, 255, 0.1);
-  padding: 2rem;
-  border-radius: 15px;
+  flex: 1;
+  background: rgba(0, 0, 0, 0.8);
+  padding: 1.5rem;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .transaction-row h2 {
-  margin-bottom: 1.5rem;
   color: #ffd700;
+  margin-bottom: 1.5rem;
+  font-size: 1.2rem;
+  text-align: center;
+  width: 100%;
 }
 
 .transaction-controls {
   display: flex;
   gap: 1rem;
-  justify-content: center;
+  flex-direction: column;
+  width: 100%;
+  max-width: 300px;
+  flex-direction: row-reverse;
+}
+
+.transaction-controls input,
+.transaction-controls button {
+  width: 100%;
+  padding: 0.8rem;
+  border-radius: 4px;
+  font-size: 1rem;
 }
 
 .transaction-controls input {
-  padding: 0.8rem;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.1);
-  color: #ffffff;
-  width: 150px;
-  font-size: 1rem;
+  border: 1px solid #666;
+  background: #333;
+  color: #fff;
+  width: 90%;
 }
 
 .transaction-controls input:focus {
   outline: none;
   border-color: #ffd700;
-  box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
 }
 
 .transaction-controls button {
   background: linear-gradient(45deg, #ffd700, #ffb700);
-  color: #000000;
   border: none;
-  padding: 0.8rem 1.5rem;
-  border-radius: 8px;
-  cursor: pointer;
+  color: black;
   font-weight: bold;
+  cursor: pointer;
   transition: all 0.3s ease;
-  min-width: 120px;
 }
 
 .transaction-controls button:hover {
   transform: translateY(-2px);
   box-shadow: 0 5px 15px rgba(255, 215, 0, 0.4);
+}
+
+/* Make it responsive */
+@media (max-width: 768px) {
+  .transaction-section {
+    flex-direction: column;
+  }
+  
+  .transaction-controls {
+    max-width: 100%;
+  }
 }
 
 .close-account-section {
@@ -186,4 +210,107 @@
   font-size: 2rem;
   color: #ffffff;
   font-weight: bold;
+}
+
+.profile-section {
+  background: rgba(0, 0, 0, 0.8);
+  padding: 2rem;
+  border-radius: 10px;
+  margin-bottom: 2rem;
+}
+
+.profile-form {
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.profile-form h2,
+.profile-display h2 {
+  color: #ffd700;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.profile-form .form-group {
+  margin-bottom: 1.5rem;
+}
+
+.profile-form label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #fff;
+}
+
+.profile-form input {
+  width: 100%;
+  padding: 0.8rem;
+  border: 1px solid #666;
+  border-radius: 4px;
+  background: #333;
+  color: #fff;
+}
+
+.profile-form input:focus {
+  outline: none;
+  border-color: #ffd700;
+}
+
+.profile-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.profile-actions button {
+  flex: 1;
+  padding: 0.8rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.3s ease;
+}
+
+.profile-actions button[type="submit"] {
+  background: linear-gradient(45deg, #ffd700, #ffb700);
+  color: black;
+}
+
+.profile-actions button[type="button"] {
+  background: #666;
+  color: white;
+}
+
+.profile-display {
+  text-align: center;
+}
+
+.profile-info {
+  margin: 1.5rem 0;
+}
+
+.profile-info p {
+  margin: 0.5rem 0;
+  color: #fff;
+}
+
+.profile-info strong {
+  color: #ffd700;
+}
+
+.profile-display button {
+  background: linear-gradient(45deg, #ffd700, #ffb700);
+  border: none;
+  padding: 0.8rem 2rem;
+  border-radius: 4px;
+  color: black;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.profile-display button:hover,
+.profile-actions button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(255, 215, 0, 0.4);
 } 
