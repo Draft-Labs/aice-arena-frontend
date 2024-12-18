@@ -1,0 +1,154 @@
+.poker-container {
+  max-width: 1200px;
+  margin: 80px auto 0;
+  padding: 2rem;
+  color: white;
+}
+
+.poker-container h1 {
+  text-align: center;
+  color: #ffd700;
+  margin-bottom: 2rem;
+}
+
+.create-table {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.create-table button {
+  padding: 1rem 2rem;
+  background: linear-gradient(45deg, #00cc88, #00ff88);
+  border: none;
+  border-radius: 8px;
+  color: black;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.create-table button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0, 204, 136, 0.4);
+}
+
+.tables-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 2rem;
+  padding: 1rem;
+}
+
+.table-card {
+  background: rgba(0, 0, 0, 0.7);
+  border-radius: 15px;
+  padding: 1.5rem;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+}
+
+.table-card h3 {
+  color: #ffd700;
+  margin-bottom: 1rem;
+}
+
+.table-info {
+  margin-bottom: 1.5rem;
+}
+
+.table-info p {
+  margin: 0.5rem 0;
+  color: #ffffff;
+}
+
+.table-card button {
+  width: 100%;
+  padding: 0.8rem;
+  background: linear-gradient(45deg, #ffd700, #ffb700);
+  border: none;
+  border-radius: 8px;
+  color: black;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.table-card button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(255, 215, 0, 0.4);
+}
+
+.error-message {
+  color: #ff4444;
+  text-align: center;
+  margin-top: 1rem;
+}
+
+.create-table-form {
+  background: rgba(0, 0, 0, 0.8);
+  padding: 2rem;
+  border-radius: 10px;
+  margin: 2rem auto;
+  max-width: 500px;
+}
+
+.create-table-form h2 {
+  color: #ffd700;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #ffffff;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #666;
+  border-radius: 4px;
+  background: #333;
+  color: #fff;
+  font-size: 1rem;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #ffd700;
+}
+
+.form-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.form-actions button {
+  flex: 1;
+  padding: 0.8rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.3s ease;
+}
+
+.form-actions button[type="submit"] {
+  background: linear-gradient(45deg, #ffd700, #ffb700);
+  color: black;
+}
+
+.form-actions button[type="button"] {
+  background: #666;
+  color: white;
+}
+
+.form-actions button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}

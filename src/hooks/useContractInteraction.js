@@ -3,7 +3,7 @@ import { useWeb3 } from '../context/Web3Context';
 import { ethers } from 'ethers';
 
 export function useContractInteraction() {
-  const { blackjackContract, treasuryContract, account, ownerAccount } = useWeb3();
+  const { blackjackContract, rouletteContract, treasuryContract, account } = useWeb3();
 
   const calculateHandScore = (hand) => {
     let score = 0;
@@ -283,6 +283,126 @@ export function useContractInteraction() {
     }
   }, [blackjackContract, account]);
 
+  const placeRouletteBet = useCallback(async (amount, betType, numbers) => {
+    try {
+      if (!rouletteContract || !account) {
+        throw new Error('Contract or account not initialized');
+      }
+
+      // Map string bet types to enum values
+      const BetTypeEnum = {
+        'Straight': 0,
+        'Split': 1,
+        'Street': 2,
+        'Corner': 3,
+        'Line': 4,
+        'Column': 5,
+        'Dozen': 6,
+        'Red': 7,
+        'Black': 8,
+        'Even': 9,
+        'Odd': 10,
+        'Low': 11,
+        'High': 12
+      };
+
+      const betTypeValue = BetTypeEnum[betType];
+      if (betTypeValue === undefined) {
+        throw new Error(`Invalid bet type: ${betType}`);
+      }
+
+      const betAmountWei = ethers.parseEther(amount.toString());
+      
+      console.log('Placing roulette bet...', {
+        account,
+        amount,
+        betType,
+        betTypeValue,
+        numbers,
+        betAmountWei: betAmountWei.toString()
+      });
+
+      // Place bet with ETH from wallet
+      const tx = await rouletteContract.placeBet(
+        betTypeValue,
+        numbers,
+        { 
+          value: betAmountWei,
+          gasLimit: 500000
+        }
+      );
+      
+      console.log('Transaction sent:', tx.hash);
+      const receipt = await tx.wait();
+      console.log('Transaction confirmed:', receipt);
+
+      // Listen for game result event
+      const resultEvent = receipt.logs.find(log => {
+        try {
+          const parsed = rouletteContract.interface.parseLog(log);
+          return parsed.name === 'GameResult';
+        } catch (e) {
+          return false;
+        }
+      });
+
+      if (resultEvent) {
+        const parsedResult = rouletteContract.interface.parseLog(resultEvent);
+        const result = {
+          number: parsedResult.args.result,
+          payout: ethers.formatEther(parsedResult.args.payout),
+          won: parsedResult.args.won
+        };
+        console.log('Game result:', result);
+        return result;
+      }
+
+      throw new Error('No game result found in transaction receipt');
+    } catch (error) {
+      console.error('Error placing roulette bet:', error);
+      throw error;
+    }
+  }, [rouletteContract, account]);
+
+  const resolveRouletteBet = useCallback(async (spinResult) => {
+    try {
+      if (!rouletteContract || !account) {
+        throw new Error('Contract or account not initialized');
+      }
+
+      console.log('Resolving roulette bet...', {
+        spinResult,
+        account
+      });
+
+      // Send resolution request to backend
+      const response = await fetch('http://localhost:3001/resolve-roulette-bet', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          player: account,
+          spinResult,
+          nonce: Date.now()
+        })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to resolve bet');
+      }
+
+      const result = await response.json();
+      console.log('Bet resolved:', result);
+
+      return result;
+    } catch (error) {
+      console.error('Error resolving roulette bet:', error);
+      throw error;
+    }
+  }, [rouletteContract, account]);
+
   return {
     placeBet,
     hit,
@@ -292,6 +412,8 @@ export function useContractInteraction() {
     getAccountBalance,
     resolveGameAsOwner,
     checkTreasuryAccount,
-    submitGameResult
+    submitGameResult,
+    placeRouletteBet,
+    resolveRouletteBet
   };
 }

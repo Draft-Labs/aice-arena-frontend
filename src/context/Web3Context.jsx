@@ -2,6 +2,8 @@ import { createContext, useContext, useState, useEffect } from 'react';
 import { ethers } from 'ethers';
 import BlackjackJSON from '../contracts/Blackjack.json';
 import TreasuryJSON from '../contracts/HouseTreasury.json';
+import RouletteJSON from '../contracts/Roulette.json';
+import PokerJSON from '../contracts/Poker.json';
 
 const Web3Context = createContext();
 
@@ -10,6 +12,8 @@ export function Web3Provider({ children }) {
   const [signer, setSigner] = useState(null);
   const [blackjackContract, setBlackjackContract] = useState(null);
   const [treasuryContract, setTreasuryContract] = useState(null);
+  const [rouletteContract, setRouletteContract] = useState(null);
+  const [pokerContract, setPokerContract] = useState(null);
   const [account, setAccount] = useState(null);
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -41,15 +45,11 @@ export function Web3Provider({ children }) {
         const network = await provider.getNetwork();
         console.log('Connected to network:', network);
 
-        // Contract addresses - make sure these match your deployment
+        // Contract addresses
         const blackjackAddress = "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512";
         const treasuryAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
-
-        console.log('Creating contract instances with addresses:', {
-          blackjackAddress,
-          treasuryAddress,
-          signer: await signer.getAddress()
-        });
+        const rouletteAddress = "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0";
+        const pokerAddress = "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9";
 
         // Create contract instances
         const blackjack = new ethers.Contract(
@@ -64,37 +64,24 @@ export function Web3Provider({ children }) {
           signer
         );
 
-        // Verify contracts are deployed and accessible
-        try {
-          const blackjackOwner = await blackjack.owner();
-          const treasuryOwner = await treasury.owner();
-          
-          console.log('Contract owners:', {
-            blackjackOwner,
-            treasuryOwner,
-            currentSigner: await signer.getAddress()
-          });
+        const roulette = new ethers.Contract(
+          rouletteAddress,
+          RouletteJSON.abi,
+          signer
+        );
 
-          // Check if contracts can interact
-          const isAuthorized = await treasury.authorizedGames(blackjackAddress);
-          console.log('Authorization status:', {
-            blackjackAddress,
-            isAuthorized
-          });
-
-          if (!isAuthorized) {
-            console.warn('Blackjack contract is not authorized in Treasury');
-          }
-
-        } catch (verifyError) {
-          console.error('Contract verification failed:', verifyError);
-          throw new Error('Failed to verify contracts. Please check deployment and network.');
-        }
+        const poker = new ethers.Contract(
+          pokerAddress,
+          PokerJSON.abi,
+          signer
+        );
 
         setProvider(provider);
         setSigner(signer);
         setBlackjackContract(blackjack);
         setTreasuryContract(treasury);
+        setRouletteContract(roulette);
+        setPokerContract(poker);
         setError(null);
 
       } catch (requestError) {
@@ -113,6 +100,16 @@ export function Web3Provider({ children }) {
     }
   };
 
+  const disconnectWallet = () => {
+    setAccount(null);
+    setSigner(null);
+    setBlackjackContract(null);
+    setTreasuryContract(null);
+    setRouletteContract(null);
+    setPokerContract(null);
+    setError(null);
+  };
+
   useEffect(() => {
     // Initial connection attempt
     connectWallet();
@@ -126,6 +123,8 @@ export function Web3Provider({ children }) {
           setAccount(null);
           setBlackjackContract(null);
           setTreasuryContract(null);
+          setRouletteContract(null);
+          setPokerContract(null);
         }
       });
 
@@ -146,10 +145,13 @@ export function Web3Provider({ children }) {
     signer,
     blackjackContract,
     treasuryContract,
+    rouletteContract,
+    pokerContract,
     account,
     error,
     isLoading,
-    connectWallet // Expose the connect function
+    connectWallet,
+    disconnectWallet
   };
 
   return (

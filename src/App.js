@@ -4,6 +4,8 @@ import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import Account from './pages/Account';
 import Blackjack from './pages/Blackjack';
+import Roulette from './pages/Roulette';
+import Poker from './pages/Poker';
 import './App.css';
 
 function App() {
@@ -15,6 +17,8 @@ function App() {
           <Routes>
             <Route path="/account" element={<Account />} />
             <Route path="/blackjack" element={<Blackjack />} />
+            <Route path="/roulette" element={<Roulette />} />
+            <Route path="/poker" element={<Poker />} />
             <Route path="/" element={<Home />} />
           </Routes>
         </div>

@@ -61,6 +61,9 @@ function Home() {
           <Link to="/blackjack" className="game-button">
             Play Blackjack
           </Link>
+          <Link to="/roulette" className="game-button">
+            Play Roulette
+          </Link>
         </div>
       ) : (
         <div className="connect-prompt">

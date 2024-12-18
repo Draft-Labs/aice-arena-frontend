@@ -45,4 +45,21 @@
 .game-button:hover {
   transform: translateY(-2px);
   box-shadow: 0 5px 15px rgba(255, 215, 0, 0.4);
+}
+
+.game-button {
+  display: inline-block;
+  padding: 1rem 2rem;
+  margin: 1rem;
+  background: linear-gradient(45deg, #ffd700, #ffb700);
+  color: #000;
+  text-decoration: none;
+  border-radius: 8px;
+  font-weight: bold;
+  transition: all 0.3s ease;
+}
+
+.game-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(255, 215, 0, 0.4);
 } 
