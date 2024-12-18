@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useWeb3 } from '../context/Web3Context';
 import { ethers } from 'ethers';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import '../styles/Poker.css';
+import { useNavigate } from 'react-router-dom';
 
 function Poker() {
   const { account, pokerContract, isLoading, error: web3Error, connectWallet } = useWeb3();
@@ -16,6 +19,7 @@ function Poker() {
     minBet: '0.002',
     maxBet: '1'
   });
+  const navigate = useNavigate();
 
   // Handle form input changes
   const handleInputChange = (e) => {
@@ -26,12 +30,58 @@ function Poker() {
     }));
   };
 
+  const validateFormData = (values) => {
+    if (values.minBuyIn >= values.maxBuyIn) {
+      toast.error('Minimum buy-in must be less than maximum buy-in', {
+        position: "bottom-right",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+      return false;
+    }
+    if (values.smallBlind >= values.bigBlind) {
+      toast.error('Small blind must be less than big blind', {
+        position: "bottom-right",
+        autoClose: 5000,
+      });
+      return false;
+    }
+    if (values.minBet >= values.maxBet) {
+      toast.error('Minimum bet must be less than maximum bet', {
+        position: "bottom-right",
+        autoClose: 5000,
+      });
+      return false;
+    }
+    if (values.minBet < values.bigBlind) {
+      toast.error('Minimum bet must be at least equal to the big blind', {
+        position: "bottom-right",
+        autoClose: 5000,
+      });
+      return false;
+    }
+    if (values.maxBet > values.maxBuyIn) {
+      toast.error('Maximum bet cannot exceed maximum buy-in', {
+        position: "bottom-right",
+        autoClose: 5000,
+      });
+      return false;
+    }
+    return true;
+  };
+
   // Create a new table with form data
   const handleCreateTable = async (e) => {
     e.preventDefault();
     try {
       if (!pokerContract) {
-        console.error('Poker contract not initialized');
+        toast.error('Poker contract not initialized', {
+          position: "bottom-right",
+          autoClose: 5000,
+        });
         return;
       }
 
@@ -48,20 +98,8 @@ function Poker() {
       };
 
       // Validate all rules
-      if (values.minBuyIn >= values.maxBuyIn) {
-        throw new Error('Minimum buy-in must be less than maximum buy-in');
-      }
-      if (values.smallBlind >= values.bigBlind) {
-        throw new Error('Small blind must be less than big blind');
-      }
-      if (values.minBet >= values.maxBet) {
-        throw new Error('Minimum bet must be less than maximum bet');
-      }
-      if (values.minBet < values.bigBlind) {
-        throw new Error('Minimum bet must be at least equal to the big blind');
-      }
-      if (values.maxBet > values.maxBuyIn) {
-        throw new Error('Maximum bet cannot exceed maximum buy-in');
+      if (!validateFormData(values)) {
+        return;
       }
 
       console.log('Creating table transaction...');
@@ -75,15 +113,28 @@ function Poker() {
         { gasLimit: 500000 }
       );
 
+      toast.info('Creating table...', {
+        position: "bottom-right",
+        autoClose: 5000,
+      });
+
       console.log('Transaction sent:', tx.hash);
       const receipt = await tx.wait();
       console.log('Transaction confirmed:', receipt);
+
+      toast.success('Table created successfully!', {
+        position: "bottom-right",
+        autoClose: 5000,
+      });
 
       setShowCreateForm(false);
       await fetchTables();
     } catch (err) {
       console.error('Detailed error creating table:', err);
-      setError(err.message);
+      toast.error(`Error creating table: ${err.message}`, {
+        position: "bottom-right",
+        autoClose: 5000,
+      });
     }
   };
 
@@ -253,7 +304,7 @@ function Poker() {
                   <p>Blinds: {table.smallBlind}/{table.bigBlind} ETH</p>
                   <p>Players: {table.playerCount}/{table.maxPlayers}</p>
                 </div>
-                <button onClick={() => console.log('Join table', table.id)}>
+                <button onClick={() => navigate(`/poker/table/${table.id}`)}>
                   Join Table
                 </button>
               </div>
@@ -263,6 +314,19 @@ function Poker() {
           {error && <div className="error-message">Error: {error}</div>}
         </>
       )}
+
+      <ToastContainer 
+        position="bottom-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="dark"
+      />
     </div>
   );
 }

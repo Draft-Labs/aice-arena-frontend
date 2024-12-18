@@ -1,0 +1,109 @@
+.poker-game-container {
+  max-width: 1200px;
+  margin: 80px auto 0;
+  padding: 2rem;
+  color: white;
+}
+
+.poker-game-container h1 {
+  text-align: center;
+  color: #ffd700;
+  margin-bottom: 2rem;
+}
+
+.table-details {
+  background: rgba(0, 0, 0, 0.8);
+  padding: 2rem;
+  border-radius: 10px;
+  margin-bottom: 2rem;
+}
+
+.table-details h2 {
+  color: #ffd700;
+  margin-bottom: 1.5rem;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.info-item label {
+  color: #888;
+  font-size: 0.9rem;
+}
+
+.info-item span {
+  font-size: 1.2rem;
+  color: #fff;
+}
+
+.join-form {
+  background: rgba(0, 0, 0, 0.8);
+  padding: 2rem;
+  border-radius: 10px;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.join-form h2 {
+  color: #ffd700;
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.join-form .form-group {
+  margin-bottom: 1.5rem;
+}
+
+.join-form label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #fff;
+}
+
+.join-form input {
+  width: 100%;
+  padding: 0.8rem;
+  border: 1px solid #666;
+  border-radius: 4px;
+  background: #333;
+  color: #fff;
+  font-size: 1rem;
+}
+
+.join-form input:focus {
+  outline: none;
+  border-color: #ffd700;
+}
+
+.join-button {
+  width: 100%;
+  padding: 1rem;
+  background: linear-gradient(45deg, #ffd700, #ffb700);
+  border: none;
+  border-radius: 4px;
+  color: black;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.join-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(255, 215, 0, 0.4);
+}
+
+.joining-message {
+  text-align: center;
+  color: #ffd700;
+  font-size: 1.2rem;
+  margin-top: 2rem;
+}
