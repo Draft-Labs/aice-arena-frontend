@@ -1,16 +1,21 @@
 import { useState, useEffect } from 'react';
 import { useWeb3 } from '../context/Web3Context';
+import { useContractInteraction } from '../hooks/useContractInteraction';
+import { useNavigate } from 'react-router-dom';
 import { ethers } from 'ethers';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import '../styles/Poker.css';
-import { useNavigate } from 'react-router-dom';
 
 function Poker() {
   const { account, pokerContract, isLoading, error: web3Error, connectWallet } = useWeb3();
+  const { checkTreasuryAccount } = useContractInteraction();
   const [tables, setTables] = useState([]);
   const [error, setError] = useState(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [hasAccount, setHasAccount] = useState(false);
+  const [isCheckingAccount, setIsCheckingAccount] = useState(true);
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     minBuyIn: '0.1',
     maxBuyIn: '1',
@@ -19,7 +24,24 @@ function Poker() {
     minBet: '0.002',
     maxBet: '1'
   });
-  const navigate = useNavigate();
+
+  // Check if user has an account
+  useEffect(() => {
+    const checkAccount = async () => {
+      if (account) {
+        try {
+          const accountExists = await checkTreasuryAccount();
+          setHasAccount(accountExists);
+        } catch (err) {
+          console.error('Error checking account:', err);
+          setError(err.message);
+        }
+      }
+      setIsCheckingAccount(false);
+    };
+
+    checkAccount();
+  }, [account, checkTreasuryAccount]);
 
   // Handle form input changes
   const handleInputChange = (e) => {
@@ -190,131 +212,149 @@ function Poker() {
     return () => clearInterval(interval);
   }, [pokerContract]);
 
-  if (isLoading) return <div>Loading...</div>;
-  if (web3Error) return <div>Error: {web3Error}</div>;
+  if (isLoading || isCheckingAccount) {
+    return <div className="poker-container">Loading...</div>;
+  }
+
+  if (!account) {
+    return (
+      <div className="poker-container">
+        <h1>Poker Tables</h1>
+        <div className="connect-wallet">
+          <p>Please connect your wallet to play poker</p>
+          <button onClick={connectWallet}>Connect Wallet</button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!hasAccount) {
+    return (
+      <div className="poker-container">
+        <h1>Poker Tables</h1>
+        <div className="create-account">
+          <h2>Create an Account</h2>
+          <p>You need to create an account before you can play poker.</p>
+          <button onClick={() => navigate('/account')}>Create Account</button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="poker-container">
       <h1>Poker Tables</h1>
 
-      {!account ? (
-        <div className="connect-wallet">
-          <button onClick={connectWallet}>Connect Wallet</button>
-        </div>
-      ) : (
-        <>
-          <div className="create-table">
-            {!showCreateForm ? (
-              <button onClick={() => setShowCreateForm(true)}>Create New Table</button>
-            ) : (
-              <form onSubmit={handleCreateTable} className="create-table-form">
-                <h2>Create New Table</h2>
-                <div className="form-group">
-                  <label>
-                    Minimum Buy-in (ETH):
-                    <input
-                      type="number"
-                      step="0.001"
-                      name="minBuyIn"
-                      value={formData.minBuyIn}
-                      onChange={handleInputChange}
-                      required
-                    />
-                  </label>
-                </div>
-                <div className="form-group">
-                  <label>
-                    Maximum Buy-in (ETH):
-                    <input
-                      type="number"
-                      step="0.001"
-                      name="maxBuyIn"
-                      value={formData.maxBuyIn}
-                      onChange={handleInputChange}
-                      required
-                    />
-                  </label>
-                </div>
-                <div className="form-group">
-                  <label>
-                    Small Blind (ETH):
-                    <input
-                      type="number"
-                      step="0.001"
-                      name="smallBlind"
-                      value={formData.smallBlind}
-                      onChange={handleBlindChange}
-                      required
-                    />
-                  </label>
-                </div>
-                <div className="form-group">
-                  <label>
-                    Big Blind (ETH):
-                    <input
-                      type="number"
-                      step="0.001"
-                      name="bigBlind"
-                      value={formData.bigBlind}
-                      onChange={handleBlindChange}
-                      required
-                    />
-                  </label>
-                </div>
-                <div className="form-group">
-                  <label>
-                    Minimum Bet (ETH):
-                    <input
-                      type="number"
-                      step="0.0001"
-                      name="minBet"
-                      value={formData.minBet}
-                      onChange={handleInputChange}
-                      required
-                    />
-                  </label>
-                </div>
-                <div className="form-group">
-                  <label>
-                    Maximum Bet (ETH):
-                    <input
-                      type="number"
-                      step="0.001"
-                      name="maxBet"
-                      value={formData.maxBet}
-                      onChange={handleInputChange}
-                      required
-                    />
-                  </label>
-                </div>
-                <div className="form-actions">
-                  <button type="submit">Create Table</button>
-                  <button type="button" onClick={() => setShowCreateForm(false)}>Cancel</button>
-                </div>
-              </form>
-            )}
+      <div className="create-table">
+        {!showCreateForm ? (
+          <button onClick={() => setShowCreateForm(true)}>Create New Table</button>
+        ) : (
+          <form onSubmit={handleCreateTable} className="create-table-form">
+            <h2>Create New Table</h2>
+            <div className="form-group">
+              <label>
+                Minimum Buy-in (ETH):
+                <input
+                  type="number"
+                  step="0.001"
+                  name="minBuyIn"
+                  value={formData.minBuyIn}
+                  onChange={handleInputChange}
+                  required
+                />
+              </label>
+            </div>
+            <div className="form-group">
+              <label>
+                Maximum Buy-in (ETH):
+                <input
+                  type="number"
+                  step="0.001"
+                  name="maxBuyIn"
+                  value={formData.maxBuyIn}
+                  onChange={handleInputChange}
+                  required
+                />
+              </label>
+            </div>
+            <div className="form-group">
+              <label>
+                Small Blind (ETH):
+                <input
+                  type="number"
+                  step="0.001"
+                  name="smallBlind"
+                  value={formData.smallBlind}
+                  onChange={handleBlindChange}
+                  required
+                />
+              </label>
+            </div>
+            <div className="form-group">
+              <label>
+                Big Blind (ETH):
+                <input
+                  type="number"
+                  step="0.001"
+                  name="bigBlind"
+                  value={formData.bigBlind}
+                  onChange={handleBlindChange}
+                  required
+                />
+              </label>
+            </div>
+            <div className="form-group">
+              <label>
+                Minimum Bet (ETH):
+                <input
+                  type="number"
+                  step="0.0001"
+                  name="minBet"
+                  value={formData.minBet}
+                  onChange={handleInputChange}
+                  required
+                />
+              </label>
+            </div>
+            <div className="form-group">
+              <label>
+                Maximum Bet (ETH):
+                <input
+                  type="number"
+                  step="0.001"
+                  name="maxBet"
+                  value={formData.maxBet}
+                  onChange={handleInputChange}
+                  required
+                />
+              </label>
+            </div>
+            <div className="form-actions">
+              <button type="submit">Create Table</button>
+              <button type="button" onClick={() => setShowCreateForm(false)}>Cancel</button>
+            </div>
+          </form>
+        )}
+      </div>
+
+      <div className="tables-list">
+        {tables.map(table => (
+          <div key={table.id} className="table-card">
+            <h3>Table #{table.id}</h3>
+            <div className="table-info">
+              <p>Buy-in: {table.minBuyIn} - {table.maxBuyIn} ETH</p>
+              <p>Blinds: {table.smallBlind}/{table.bigBlind} ETH</p>
+              <p>Players: {table.playerCount}/{table.maxPlayers}</p>
+            </div>
+            <button onClick={() => navigate(`/poker/table/${table.id}`)}>
+              Join Table
+            </button>
           </div>
+        ))}
+      </div>
 
-          <div className="tables-list">
-            {tables.map(table => (
-              <div key={table.id} className="table-card">
-                <h3>Table #{table.id}</h3>
-                <div className="table-info">
-                  <p>Buy-in: {table.minBuyIn} - {table.maxBuyIn} ETH</p>
-                  <p>Blinds: {table.smallBlind}/{table.bigBlind} ETH</p>
-                  <p>Players: {table.playerCount}/{table.maxPlayers}</p>
-                </div>
-                <button onClick={() => navigate(`/poker/table/${table.id}`)}>
-                  Join Table
-                </button>
-              </div>
-            ))}
-          </div>
-
-          {error && <div className="error-message">Error: {error}</div>}
-        </>
-      )}
-
+      {error && <div className="error-message">Error: {error}</div>}
+      
       <ToastContainer 
         position="bottom-right"
         autoClose={5000}

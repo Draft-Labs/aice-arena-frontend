@@ -6,6 +6,7 @@ import Account from './pages/Account';
 import Blackjack from './pages/Blackjack';
 import Roulette from './pages/Roulette';
 import Poker from './pages/Poker';
+import PokerGame from './pages/PokerGame';
 import './App.css';
 
 function App() {
@@ -19,6 +20,7 @@ function App() {
             <Route path="/blackjack" element={<Blackjack />} />
             <Route path="/roulette" element={<Roulette />} />
             <Route path="/poker" element={<Poker />} />
+            <Route path="/poker/table/:tableId" element={<PokerGame />} />
             <Route path="/" element={<Home />} />
           </Routes>
         </div>
