@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useWeb3 } from '../context/Web3Context';
 import { useContractInteraction } from '../hooks/useContractInteraction';
-import { db } from '../config/firebase';
+import { db, auth } from '../config/firebase';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { signInAnonymously } from 'firebase/auth';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import '../styles/Account.css';
 import { ensureAuthenticated } from '../config/firebase';
 import { useFirebaseAuth } from '../hooks/useFirebaseAuth';
+import TwitterAuth from '../components/TwitterAuth';
 
 function Account() {
   const { account, isLoading, error: web3Error, connectWallet } = useWeb3();
@@ -44,32 +46,73 @@ function Account() {
     fetchProfile();
   }, [account]);
 
-  // Save profile data
+  const refreshAuthState = async () => {
+    try {
+      if (!auth.currentUser) {
+        console.log('No current user, signing in anonymously...');
+        const result = await signInAnonymously(auth);
+        console.log('Anonymous sign in successful:', result.user.uid);
+      } else {
+        console.log('Current user exists:', auth.currentUser.uid);
+        await auth.currentUser.getIdToken(true);
+      }
+      return auth.currentUser;
+    } catch (error) {
+      console.error('Error refreshing auth state:', error);
+      throw new Error('Failed to refresh authentication');
+    }
+  };
+
   const handleSaveProfile = async (e) => {
     e.preventDefault();
     
     try {
-      if (!account) return;
+      if (!account) {
+        toast.error('No wallet connected');
+        return;
+      }
 
-      // Ensure user is authenticated before saving
-      await ensureAuthenticated();
+      // Ensure user is authenticated and log the state
+      const user = await refreshAuthState();
+      console.log('Current auth state:', {
+        isAuthenticated: !!user,
+        userId: user?.uid,
+        account: account.toLowerCase()
+      });
 
       const profileData = {
-        displayName,
-        twitterHandle,
         address: account.toLowerCase(),
-        lastUpdated: new Date().toISOString()
+        displayName,
+        updatedAt: new Date().toISOString()
       };
 
-      await setDoc(doc(db, 'userProfiles', account.toLowerCase()), profileData);
+      // If this is a new profile, add createdAt
+      const userProfileRef = doc(db, 'userProfiles', account.toLowerCase());
+      const docSnap = await getDoc(userProfileRef);
+      
+      if (!docSnap.exists()) {
+        profileData.createdAt = profileData.updatedAt;
+      }
 
-      // Update local state immediately
-      setProfileData(profileData);
+      // Use setDoc with merge option
+      await setDoc(userProfileRef, profileData, { merge: true });
+
       setIsEditingProfile(false);
+      setProfileData(prev => ({
+        ...prev,
+        displayName
+      }));
       toast.success('Profile updated successfully!');
       
     } catch (error) {
       console.error('Error saving profile:', error);
+      // Log more details about the error
+      console.log('Error details:', {
+        code: error.code,
+        message: error.message,
+        auth: !!auth.currentUser,
+        authId: auth.currentUser?.uid
+      });
       toast.error('Failed to update profile: ' + error.message);
     }
   };
@@ -167,6 +210,16 @@ function Account() {
     };
   }, [account, hasActiveAccount, getAccountBalance]);
 
+  // Add handler for Twitter link
+  const handleTwitterLink = (twitterHandle) => {
+    setTwitterHandle(twitterHandle);
+    setProfileData(prev => ({
+      ...prev,
+      twitterHandle,
+      twitterVerified: true
+    }));
+  };
+
   if (isLoading || authLoading) return <div>Loading...</div>;
   if (web3Error) return (
     <div>
@@ -217,14 +270,18 @@ function Account() {
                   />
                 </div>
                 <div className="form-group">
-                  <label>Twitter Handle:</label>
-                  <input
-                    type="text"
-                    value={twitterHandle}
-                    onChange={(e) => setTwitterHandle(e.target.value.replace('@', ''))}
-                    placeholder="Enter your Twitter handle"
-                    maxLength={15}
-                  />
+                  <label>Twitter Account:</label>
+                  {profileData?.twitterVerified ? (
+                    <div className="twitter-verified">
+                      <span>@{profileData.twitterHandle}</span>
+                      <span className="verified-badge">✓ Verified</span>
+                    </div>
+                  ) : (
+                    <TwitterAuth 
+                      account={account} 
+                      onTwitterLink={handleTwitterLink}
+                    />
+                  )}
                 </div>
                 <div className="profile-actions">
                   <button type="submit">Save Profile</button>

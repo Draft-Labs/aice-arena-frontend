@@ -1,0 +1,38 @@
+.twitter-auth {
+  margin: 1rem 0;
+}
+
+.twitter-auth-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: #1DA1F2;
+  color: white;
+  border: none;
+  padding: 0.8rem 1.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.3s ease;
+  width: 100%;
+}
+
+.twitter-auth-button:hover {
+  background: #1a8cd8;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(29, 161, 242, 0.4);
+}
+
+.twitter-auth-button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.twitter-icon {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
+} 

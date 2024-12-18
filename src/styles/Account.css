@@ -313,4 +313,19 @@
 .profile-actions button:hover {
   transform: translateY(-2px);
   box-shadow: 0 5px 15px rgba(255, 215, 0, 0.4);
+}
+
+.twitter-verified {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.8rem;
+  background: rgba(29, 161, 242, 0.1);
+  border-radius: 4px;
+  color: #1DA1F2;
+}
+
+.verified-badge {
+  color: #00ff88;
+  font-weight: bold;
 } 
