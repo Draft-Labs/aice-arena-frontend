@@ -92,17 +92,42 @@ const TwitterAuth = ({ account, onTwitterLink }) => {
 
   const handleSuccessfulAuth = async (twitterUser) => {
     try {
-      const twitterProvider = twitterUser.providerData.find(
-        (p) => p.providerId === 'twitter.com'
-      );
+      console.log('Twitter user data:', {
+        user: twitterUser,
+        providerData: twitterUser.providerData,
+        reloadUserInfo: twitterUser.reloadUserInfo,
+        additionalUserInfo: twitterUser.additionalUserInfo
+      });
 
-      if (!twitterProvider) {
-        throw new Error('Twitter provider data not found');
+      // Try to get Twitter data from the credential result
+      let twitterHandle = null;
+
+      // Method 1: Try to get from reloadUserInfo
+      if (twitterUser.reloadUserInfo?.providerUserInfo?.[0]?.screenName) {
+        twitterHandle = twitterUser.reloadUserInfo.providerUserInfo[0].screenName;
+      }
+      // Method 2: Try to get from additionalUserInfo
+      else if (twitterUser.additionalUserInfo?.username) {
+        twitterHandle = twitterUser.additionalUserInfo.username;
+      }
+      // Method 3: Try to get from provider data
+      else {
+        const twitterProvider = twitterUser.providerData.find(
+          (p) => p.providerId === 'twitter.com'
+        );
+        if (twitterProvider?.screenName) {
+          twitterHandle = twitterProvider.screenName;
+        }
       }
 
-      const twitterHandle = twitterProvider.screenName || twitterProvider.displayName;
+      console.log('Found Twitter handle:', twitterHandle);
 
       if (!twitterHandle) {
+        console.error('Twitter data structure:', {
+          provider: twitterUser.providerData[0],
+          reloadInfo: twitterUser.reloadUserInfo,
+          additionalInfo: twitterUser.additionalUserInfo
+        });
         throw new Error('Could not retrieve Twitter handle');
       }
 
@@ -113,10 +138,9 @@ const TwitterAuth = ({ account, onTwitterLink }) => {
       if (!docSnap.exists()) {
         await setDoc(userProfileRef, {
           address: account.toLowerCase(),
-          displayName: '',
           twitterHandle,
           twitterVerified: true,
-          twitterUid: twitterProvider.uid,
+          twitterUid: twitterUser.providerData[0]?.uid || twitterUser.uid,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
         });
@@ -125,15 +149,21 @@ const TwitterAuth = ({ account, onTwitterLink }) => {
           ...docSnap.data(),
           twitterHandle,
           twitterVerified: true,
-          twitterUid: twitterProvider.uid,
+          twitterUid: twitterUser.providerData[0]?.uid || twitterUser.uid,
           updatedAt: new Date().toISOString()
         }, { merge: true });
       }
 
       onTwitterLink(twitterHandle);
       toast.success('Twitter account linked successfully!');
+      
     } catch (error) {
       console.error('Error updating profile:', error);
+      console.error('Full error details:', {
+        error,
+        user: twitterUser,
+        provider: twitterUser?.providerData
+      });
       throw error;
     }
   };

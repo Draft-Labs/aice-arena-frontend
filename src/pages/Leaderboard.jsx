@@ -1,34 +1,57 @@
 import { useState, useEffect } from 'react';
+import { useWeb3 } from '../context/Web3Context';
+import { useContractInteraction } from '../hooks/useContractInteraction';
+import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../config/firebase';
-import { collection, query, orderBy, getDocs } from 'firebase/firestore';
+import { formatEther } from 'ethers';
 import '../styles/Leaderboard.css';
 
 function Leaderboard() {
   const [players, setPlayers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { account } = useWeb3();
+  const { getPlayerNetWinnings } = useContractInteraction();
 
   useEffect(() => {
     const fetchLeaderboard = async () => {
       try {
-        // Get all user profiles
+        // Get all profiles from Firebase to get display names and images
         const querySnapshot = await getDocs(collection(db, 'userProfiles'));
-        
-        // Map and filter profiles with valid data
-        const leaderboardData = querySnapshot.docs
-          .map(doc => ({
-            id: doc.id,
-            ...doc.data(),
-            totalWinnings: doc.data().totalWinnings || 0 // Default to 0 if not set
-          }))
-          .filter(player => player.address) // Only include profiles with an address
-          .sort((a, b) => b.totalWinnings - a.totalWinnings) // Sort by winnings
+        const profiles = querySnapshot.docs.reduce((acc, doc) => {
+          acc[doc.id] = doc.data();
+          return acc;
+        }, {});
+
+        // Get net winnings for each player from the contract
+        const playersWithWinnings = await Promise.all(
+          Object.keys(profiles).map(async (address) => {
+            try {
+              const netWinnings = await getPlayerNetWinnings(address);
+              const winningsInEth = parseFloat(formatEther(netWinnings));
+              
+              return {
+                id: address,
+                address: address,
+                ...profiles[address],
+                totalWinnings: winningsInEth
+              };
+            } catch (error) {
+              console.error(`Error getting winnings for ${address}:`, error);
+              return null;
+            }
+          })
+        );
+
+        // Sort and filter players - include non-zero winnings (positive or negative)
+        const leaderboardData = playersWithWinnings
+          .filter(player => player && player.totalWinnings !== 0) // Remove null entries but keep negative values
+          .sort((a, b) => b.totalWinnings - a.totalWinnings) // Sort highest to lowest
           .map((player, index) => ({
             ...player,
             rank: index + 1
           }));
-        
+
         setPlayers(leaderboardData);
-        console.log('Leaderboard data:', leaderboardData); // Debug log
       } catch (error) {
         console.error('Error fetching leaderboard:', error);
       } finally {
@@ -37,11 +60,18 @@ function Leaderboard() {
     };
 
     fetchLeaderboard();
-  }, []);
+  }, [getPlayerNetWinnings]);
 
   const formatAddress = (address) => {
     if (!address) return '';
     return `${address.slice(0, 6)}...${address.slice(-4)}`;
+  };
+
+  // Add color styling based on winnings
+  const getWinningsColor = (amount) => {
+    if (amount > 0) return 'positive-winnings';
+    if (amount < 0) return 'negative-winnings';
+    return '';
   };
 
   return (
@@ -78,7 +108,7 @@ function Leaderboard() {
                   )}
                 </div>
               </div>
-              <div className="winnings">
+              <div className={`winnings ${getWinningsColor(player.totalWinnings)}`}>
                 {player.totalWinnings.toFixed(4)} ETH
               </div>
             </div>

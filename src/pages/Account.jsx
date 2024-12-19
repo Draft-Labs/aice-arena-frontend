@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useWeb3 } from '../context/Web3Context';
 import { useContractInteraction } from '../hooks/useContractInteraction';
 import { db, auth } from '../config/firebase';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
 import { signInAnonymously } from 'firebase/auth';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -11,6 +11,7 @@ import { ensureAuthenticated } from '../config/firebase';
 import { useFirebaseAuth } from '../hooks/useFirebaseAuth';
 import TwitterAuth from '../components/TwitterAuth';
 import ProfileImageUpload from '../components/ProfileImageUpload';
+import { TwitterAuthProvider, signInWithPopup } from 'firebase/auth';
 
 
 function Account() {
@@ -30,6 +31,11 @@ function Account() {
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [profileData, setProfileData] = useState(null);
   const [profileImage, setProfileImage] = useState('');
+
+  // Add formData state
+  const [formData, setFormData] = useState({
+    displayName: ''
+  });
 
   // Fetch profile data
   useEffect(() => {
@@ -86,8 +92,7 @@ function Account() {
 
       const profileData = {
         address: account.toLowerCase(),
-        displayName,
-        totalWinnings: 0,
+        displayName: formData.displayName || '', // Now formData is defined
         updatedAt: new Date().toISOString()
       };
 
@@ -97,21 +102,28 @@ function Account() {
       
       if (!docSnap.exists()) {
         profileData.createdAt = profileData.updatedAt;
+      } else {
+        // Preserve existing Twitter data if it exists
+        const existingData = docSnap.data();
+        if (existingData.twitterHandle) {
+          profileData.twitterHandle = existingData.twitterHandle;
+          profileData.twitterVerified = existingData.twitterVerified;
+          profileData.twitterUid = existingData.twitterUid;
+        }
       }
 
-      // Use setDoc with merge option
+      // Use setDoc with merge option to preserve other fields
       await setDoc(userProfileRef, profileData, { merge: true });
 
       setIsEditingProfile(false);
       setProfileData(prev => ({
         ...prev,
-        displayName
+        ...profileData
       }));
       toast.success('Profile updated successfully!');
       
     } catch (error) {
       console.error('Error saving profile:', error);
-      // Log more details about the error
       console.log('Error details:', {
         code: error.code,
         message: error.message,
@@ -244,6 +256,71 @@ function Account() {
     }
   };
 
+  const handleTwitterConnect = async () => {
+    try {
+      const provider = new TwitterAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+      
+      // Get Twitter username from the credential
+      const credential = TwitterAuthProvider.credentialFromResult(result);
+      const twitterHandle = result.user.providerData[0].screenName || 
+                           result.user.reloadUserInfo.screenName;
+      
+      console.log('Twitter auth result:', {
+        credential,
+        user: result.user,
+        twitterHandle,
+        providerData: result.user.providerData
+      });
+
+      if (!twitterHandle) {
+        throw new Error('Could not get Twitter handle from authentication');
+      }
+
+      // Update profile with Twitter handle
+      const userProfileRef = doc(db, 'userProfiles', account.toLowerCase());
+      await updateDoc(userProfileRef, {
+        twitterHandle: twitterHandle,
+        twitterVerified: true,
+        updatedAt: new Date().toISOString()
+      });
+
+      // Update local state
+      setProfileData(prev => ({
+        ...prev,
+        twitterHandle: twitterHandle,
+        twitterVerified: true
+      }));
+
+      toast.success('Twitter account connected successfully!');
+    } catch (error) {
+      console.error('Error connecting Twitter:', error);
+      console.log('Error details:', error);
+      toast.error('Failed to connect Twitter account: ' + error.message);
+    }
+  };
+
+  const handleDisconnectTwitter = async () => {
+    try {
+      const userProfileRef = doc(db, 'userProfiles', account.toLowerCase());
+      await updateDoc(userProfileRef, {
+        twitterHandle: null,
+        updatedAt: new Date().toISOString()
+      });
+
+      // Update local state
+      setProfileData(prev => ({
+        ...prev,
+        twitterHandle: null
+      }));
+
+      toast.success('Twitter account disconnected');
+    } catch (error) {
+      console.error('Error disconnecting Twitter:', error);
+      toast.error('Failed to disconnect Twitter account');
+    }
+  };
+
   if (isLoading || authLoading) return <div>Loading...</div>;
   if (web3Error) return (
     <div>
@@ -292,8 +369,11 @@ function Account() {
                   <label>Display Name:</label>
                   <input
                     type="text"
-                    value={displayName}
-                    onChange={(e) => setDisplayName(e.target.value)}
+                    value={formData.displayName}
+                    onChange={(e) => setFormData(prev => ({
+                      ...prev,
+                      displayName: e.target.value
+                    }))}
                     placeholder="Enter your display name"
                     maxLength={50}
                   />
@@ -336,8 +416,13 @@ function Account() {
                   </svg>
                 )}
                 <div className="profile-info">
-                  <p><strong>Display Name:</strong> {profileData?.displayName || 'Not set'}</p>
-                  <p><strong>Twitter:</strong> {profileData?.twitterHandle ? `@${profileData.twitterHandle}` : 'Not connected'}</p>
+                  {profileData?.displayName && (
+                    <p><strong>Name:</strong> {profileData.displayName}</p>
+                  )}
+                  {profileData?.twitterHandle && (
+                    <p><strong>Twitter:</strong> @{profileData.twitterHandle}</p>
+                  )}
+                  <p><strong>Wallet:</strong> {account ? `${account.slice(0, 6)}...${account.slice(-4)}` : 'Not connected'}</p>
                 </div>
                 <button onClick={() => setIsEditingProfile(true)}>Edit Profile</button>
               </div>
@@ -400,6 +485,19 @@ function Account() {
           Error: {transactionError}
         </div>
       )}
+
+      <div className="social-connections">
+        {profileData?.twitterHandle ? (
+          <div className="connected-account">
+            <span>Connected to Twitter: @{profileData.twitterHandle}</span>
+            <button onClick={handleDisconnectTwitter}>Disconnect Twitter</button>
+          </div>
+        ) : (
+          <button onClick={handleTwitterConnect}>
+            Connect Twitter Account
+          </button>
+        )}
+      </div>
 
       <ToastContainer position="bottom-right" />
     </div>

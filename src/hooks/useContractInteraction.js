@@ -403,6 +403,17 @@ export function useContractInteraction() {
     }
   }, [rouletteContract, account]);
 
+  const getPlayerNetWinnings = async (playerAddress) => {
+    try {
+      if (!treasuryContract) return 0;
+      const netWinnings = await treasuryContract.getPlayerNetWinnings(playerAddress);
+      return netWinnings;
+    } catch (error) {
+      console.error('Error getting net winnings:', error);
+      return 0;
+    }
+  };
+
   return {
     placeBet,
     hit,
@@ -414,6 +425,7 @@ export function useContractInteraction() {
     checkTreasuryAccount,
     submitGameResult,
     placeRouletteBet,
-    resolveRouletteBet
+    resolveRouletteBet,
+    getPlayerNetWinnings,
   };
 }
