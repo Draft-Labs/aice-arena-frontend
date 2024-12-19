@@ -1,0 +1,104 @@
+.leaderboard-container {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.leaderboard-container h1 {
+  text-align: center;
+  color: #ffd700;
+  margin-bottom: 2rem;
+}
+
+.leaderboard-table {
+  background: rgba(0, 0, 0, 0.8);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.leaderboard-header {
+  display: grid;
+  grid-template-columns: 80px 1fr 150px;
+  padding: 1rem;
+  background: rgba(255, 215, 0, 0.1);
+  font-weight: bold;
+  color: #ffd700;
+}
+
+.leaderboard-row {
+  display: grid;
+  grid-template-columns: 80px 1fr 150px;
+  padding: 1rem;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  transition: background-color 0.3s;
+}
+
+.leaderboard-row:hover {
+  background: rgba(255, 215, 0, 0.05);
+}
+
+.rank {
+  text-align: center;
+  font-weight: bold;
+}
+
+.player {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.player-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid #ffd700;
+}
+
+.player-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.player-name {
+  font-weight: bold;
+}
+
+.player-twitter {
+  font-size: 0.8rem;
+  color: #1DA1F2;
+}
+
+.winnings {
+  text-align: right;
+  color: #ffd700;
+  font-weight: bold;
+}
+
+.loading {
+  text-align: center;
+  padding: 2rem;
+  color: #fff;
+}
+
+.no-data {
+  text-align: center;
+  padding: 2rem;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.8);
+  border-radius: 10px;
+}
+
+@media (max-width: 600px) {
+  .leaderboard-header,
+  .leaderboard-row {
+    grid-template-columns: 60px 1fr 100px;
+    font-size: 0.9rem;
+  }
+
+  .player-avatar {
+    width: 24px;
+    height: 24px;
+  }
+} 

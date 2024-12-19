@@ -3,6 +3,8 @@ import { useWeb3 } from '../context/Web3Context';
 import { useContractInteraction } from '../hooks/useContractInteraction';
 import { useEffect, useState, useRef } from 'react';
 import '../styles/Navbar.css';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../config/firebase';
 
 function Navbar() {
   const { account, connectWallet, disconnectWallet } = useWeb3();
@@ -10,6 +12,7 @@ function Navbar() {
   const [balance, setBalance] = useState('0');
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef(null);
+  const [profileImage, setProfileImage] = useState(null);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -69,6 +72,24 @@ function Navbar() {
     setShowDropdown(false);
   };
 
+  // Add effect to fetch profile image
+  useEffect(() => {
+    const fetchProfileData = async () => {
+      if (account) {
+        try {
+          const docRef = doc(db, 'userProfiles', account.toLowerCase());
+          const docSnap = await getDoc(docRef);
+          if (docSnap.exists() && docSnap.data().profileImage) {
+            setProfileImage(docSnap.data().profileImage);
+          }
+        } catch (error) {
+          console.error('Error fetching profile:', error);
+        }
+      }
+    };
+    fetchProfileData();
+  }, [account]);
+
   return (
     <nav className="navbar">
       <div className="navbar-left">
@@ -87,13 +108,27 @@ function Navbar() {
           <Link to="/poker" className="nav-link">
             Poker
           </Link>
+          <Link to="/leaderboard" className="nav-link">
+            Leaderboard
+          </Link>
           <Link to="/account" className="nav-link">
             My Account
           </Link>
         </div>
       </div>
       <div className="navbar-right">
-        {account && <div className="navbar-balance">Account Balance: {balance} ETH</div>}
+        {account && (
+          <>
+            {profileImage && (
+              <img 
+                src={profileImage} 
+                alt="Profile" 
+                className="navbar-profile-image"
+              />
+            )}
+            <div className="navbar-balance">Account Balance: {balance} ETH</div>
+          </>
+        )}
         {!account ? (
           <button className="connect-button" onClick={connectWallet}>
             Connect Wallet

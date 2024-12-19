@@ -10,6 +10,8 @@ import '../styles/Account.css';
 import { ensureAuthenticated } from '../config/firebase';
 import { useFirebaseAuth } from '../hooks/useFirebaseAuth';
 import TwitterAuth from '../components/TwitterAuth';
+import ProfileImageUpload from '../components/ProfileImageUpload';
+
 
 function Account() {
   const { account, isLoading, error: web3Error, connectWallet } = useWeb3();
@@ -27,6 +29,7 @@ function Account() {
   const [twitterHandle, setTwitterHandle] = useState('');
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [profileData, setProfileData] = useState(null);
+  const [profileImage, setProfileImage] = useState('');
 
   // Fetch profile data
   useEffect(() => {
@@ -40,6 +43,7 @@ function Account() {
           setProfileData(data);
           setDisplayName(data.displayName || '');
           setTwitterHandle(data.twitterHandle || '');
+          setProfileImage(data.profileImage || '');
         }
       }
     };
@@ -83,6 +87,7 @@ function Account() {
       const profileData = {
         address: account.toLowerCase(),
         displayName,
+        totalWinnings: 0,
         updatedAt: new Date().toISOString()
       };
 
@@ -220,6 +225,25 @@ function Account() {
     }));
   };
 
+  const handleImageUpdate = async (imageUrl) => {
+    try {
+      const userProfileRef = doc(db, 'userProfiles', account.toLowerCase());
+      await setDoc(userProfileRef, {
+        profileImage: imageUrl,
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
+      
+      setProfileImage(imageUrl);
+      // Dispatch event to update navbar
+      window.dispatchEvent(new CustomEvent('profileUpdate', { 
+        detail: { profileImage: imageUrl } 
+      }));
+    } catch (error) {
+      console.error('Error updating profile image:', error);
+      toast.error('Failed to update profile image');
+    }
+  };
+
   if (isLoading || authLoading) return <div>Loading...</div>;
   if (web3Error) return (
     <div>
@@ -259,6 +283,11 @@ function Account() {
             {isEditingProfile ? (
               <form onSubmit={handleSaveProfile} className="profile-form">
                 <h2>Edit Profile</h2>
+                <ProfileImageUpload
+                  account={account}
+                  currentImageUrl={profileImage}
+                  onImageUpdate={handleImageUpdate}
+                />
                 <div className="form-group">
                   <label>Display Name:</label>
                   <input
@@ -291,6 +320,21 @@ function Account() {
             ) : (
               <div className="profile-display">
                 <h2>Profile</h2>
+                {profileImage ? (
+                  <img 
+                    src={profileImage} 
+                    alt="Profile" 
+                    className="account-profile-image"
+                  />
+                ) : (
+                  <svg 
+                    className="account-profile-image default-avatar"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                  >
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/>
+                  </svg>
+                )}
                 <div className="profile-info">
                   <p><strong>Display Name:</strong> {profileData?.displayName || 'Not set'}</p>
                   <p><strong>Twitter:</strong> {profileData?.twitterHandle ? `@${profileData.twitterHandle}` : 'Not connected'}</p>
