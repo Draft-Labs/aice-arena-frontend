@@ -296,44 +296,6 @@ function Blackjack() {
     }
   };
 
-  const handleWithdraw = async () => {
-    try {
-      setTransactionError(null);
-      
-      // Convert withdrawal amount to a number and validate
-      const amount = parseFloat(withdrawAmount);
-      if (isNaN(amount) || amount <= 0) {
-        throw new Error('Invalid withdrawal amount');
-      }
-      
-      // Check if amount is greater than balance
-      const currentBalance = parseFloat(casinoBalance);
-      if (amount > currentBalance) {
-        throw new Error('Insufficient balance for withdrawal');
-      }
-
-      console.log('Initiating withdrawal...', {
-        amount,
-        currentBalance,
-        withdrawAmount,
-        hasActiveAccount
-      });
-
-      await withdrawFromTreasury(withdrawAmount);
-      
-      // Refresh balance after withdrawal
-      const newBalance = await getAccountBalance();
-      setCasinoBalance(newBalance);
-      
-      // Check account status after withdrawal
-      const isActive = await checkTreasuryAccount();
-      setHasActiveAccount(isActive);
-    } catch (err) {
-      console.error('Error withdrawing:', err);
-      setTransactionError(err.message);
-    }
-  };
-
   useEffect(() => {
     const checkAccount = async () => {
       if (account) {
@@ -403,22 +365,6 @@ function Blackjack() {
               Place Bet
             </button>
           </div>
-
-          {casinoBalance > 0 && (
-            <div className="withdraw-controls">
-              <input
-                type="number"
-                min="0.01"
-                step="0.01"
-                value={withdrawAmount}
-                onChange={(e) => setWithdrawAmount(e.target.value)}
-                placeholder="Amount to withdraw"
-              />
-              <button onClick={handleWithdraw}>
-                Withdraw Funds
-              </button>
-            </div>
-          )}
           
           {transactionError && (
             <div className="error-message">

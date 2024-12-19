@@ -384,12 +384,22 @@ function Account() {
                     <div className="twitter-verified">
                       <span>@{profileData.twitterHandle}</span>
                       <span className="verified-badge">✓ Verified</span>
+                      <button 
+                        type="button" 
+                        onClick={handleDisconnectTwitter}
+                        className="disconnect-twitter"
+                      >
+                        Disconnect Twitter
+                      </button>
                     </div>
                   ) : (
-                    <TwitterAuth 
-                      account={account} 
-                      onTwitterLink={handleTwitterLink}
-                    />
+                    <button 
+                      type="button"
+                      onClick={handleTwitterConnect}
+                      className="connect-twitter"
+                    >
+                      Connect Twitter Account
+                    </button>
                   )}
                 </div>
                 <div className="profile-actions">
@@ -485,19 +495,6 @@ function Account() {
           Error: {transactionError}
         </div>
       )}
-
-      <div className="social-connections">
-        {profileData?.twitterHandle ? (
-          <div className="connected-account">
-            <span>Connected to Twitter: @{profileData.twitterHandle}</span>
-            <button onClick={handleDisconnectTwitter}>Disconnect Twitter</button>
-          </div>
-        ) : (
-          <button onClick={handleTwitterConnect}>
-            Connect Twitter Account
-          </button>
-        )}
-      </div>
 
       <ToastContainer position="bottom-right" />
     </div>
