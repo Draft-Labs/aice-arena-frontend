@@ -13,6 +13,8 @@ function PokerGame() {
   const [table, setTable] = useState(null);
   const [buyInAmount, setBuyInAmount] = useState('');
   const [isJoining, setIsJoining] = useState(false);
+  const [hasJoined, setHasJoined] = useState(false);
+  const [gameState, setGameState] = useState(null);
 
   useEffect(() => {
     if (!account) {
@@ -21,7 +23,31 @@ function PokerGame() {
       return;
     }
     fetchTableDetails();
+    checkPlayerStatus();
   }, [account, pokerContract, tableId]);
+
+  const checkPlayerStatus = async () => {
+    try {
+      if (!pokerContract || !account) return;
+      const playerInfo = await pokerContract.getPlayerInfo(tableId, account);
+      setHasJoined(playerInfo.isActive);
+      if (playerInfo.isActive) {
+        await fetchGameState();
+      }
+    } catch (error) {
+      console.error('Error checking player status:', error);
+    }
+  };
+
+  const fetchGameState = async () => {
+    try {
+      if (!pokerContract || !account) return;
+      const state = await pokerContract.getGameState(tableId);
+      setGameState(state);
+    } catch (error) {
+      console.error('Error fetching game state:', error);
+    }
+  };
 
   const fetchTableDetails = async () => {
     try {
@@ -68,72 +94,99 @@ function PokerGame() {
   };
 
   const handleJoinTable = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     
     try {
-      if (!pokerContract || !account) {
-        toast.error('Please connect your wallet first');
-        return;
-      }
-
       if (!validateBuyIn(buyInAmount)) {
         return;
       }
 
       setIsJoining(true);
-      console.log('Joining table with amount:', buyInAmount);
-
-      const buyInWei = ethers.parseEther(buyInAmount);
-      console.log('Buy-in in Wei:', buyInWei.toString());
       
-      const txOptions = {
-        from: account,
-        value: buyInWei,
-        gasLimit: ethers.toBigInt(500000)
-      };
+      // Log initial values
+      console.log('Join table attempt:', {
+        tableId,
+        buyInAmount,
+        account,
+        contractAddress: pokerContract?.target
+      });
 
-      console.log('Transaction options:', txOptions);
+      // Verify contract is initialized
+      if (!pokerContract) {
+        throw new Error('Poker contract not initialized');
+      }
+
+      // Convert ETH to Wei as BigInt
+      const buyInWei = ethers.parseEther(buyInAmount.toString());
+      console.log('Value conversion:', {
+        original: buyInAmount,
+        wei: buyInWei,
+        type: typeof buyInWei,
+        isBigInt: typeof buyInWei === 'bigint'
+      });
+
+      // Log contract state before transaction
+      console.log('Contract state:', {
+        address: pokerContract.target,
+        hasInterface: !!pokerContract.interface,
+        hasJoinTable: !!pokerContract.joinTable,
+        signer: await pokerContract.runner?.getAddress()
+      });
+
+      // Join the table - pass tableId and value directly
+      console.log('Sending transaction...');
+      const tx = await pokerContract.joinTable(tableId, buyInWei);
       
-      const tx = await pokerContract.joinTable(
-        Number(tableId),
-        txOptions
-      );
+      console.log('Transaction sent:', {
+        hash: tx.hash,
+        from: tx.from,
+        to: tx.to,
+        value: tx.value?.toString()
+      });
 
-      toast.info('Transaction submitted. Waiting for confirmation...', {
+      toast.info('Joining table...', {
         position: "bottom-right",
         autoClose: 5000,
       });
 
-      console.log('Transaction sent:', tx.hash);
       const receipt = await tx.wait();
-      console.log('Transaction confirmed:', receipt);
-      
+      console.log('Transaction confirmed:', {
+        status: receipt.status,
+        blockNumber: receipt.blockNumber,
+        gasUsed: receipt.gasUsed?.toString()
+      });
+
       toast.success('Successfully joined table!', {
         position: "bottom-right",
         autoClose: 5000,
       });
 
-      // Refresh table details
       await fetchTableDetails();
     } catch (error) {
       console.error('Error joining table:', error);
-      console.log('Error details:', {
-        name: error.name,
-        message: error.message,
+      console.error('Error context:', {
+        errorType: error.constructor.name,
         code: error.code,
-        data: error.data
+        message: error.message,
+        stack: error.stack
       });
       
-      let errorMessage = 'Failed to join table';
-      
-      // Extract error message from contract revert
-      if (error.data?.message) {
-        errorMessage = error.data.message;
-      } else if (error.message) {
-        errorMessage = error.message;
+      // Log contract state during error
+      if (pokerContract) {
+        try {
+          const contractState = {
+            address: pokerContract.target,
+            hasInterface: !!pokerContract.interface,
+            hasJoinTable: !!pokerContract.joinTable,
+            signer: await pokerContract.runner?.getAddress()
+          };
+          console.log('Contract state during error:', contractState);
+        } catch (stateError) {
+          console.error('Failed to get contract state:', stateError);
+        }
       }
 
-      toast.error(errorMessage, {
+      toast.error(`Failed to join table: ${error.message}`, {
         position: "bottom-right",
         autoClose: 5000,
       });
@@ -150,47 +203,93 @@ function PokerGame() {
     <div className="poker-game-container">
       <h1>Poker Table #{tableId}</h1>
       
-      <div className="table-details">
-        <h2>Table Information</h2>
-        <div className="info-grid">
-          <div className="info-item">
-            <label>Buy-in Range:</label>
-            <span>{table.minBuyIn} - {table.maxBuyIn} ETH</span>
+      {hasJoined ? (
+        // Game interface when player has joined
+        <div className="poker-game-interface">
+          <div className="game-info">
+            <h2>Game Status</h2>
+            <div className="info-grid">
+              <div className="info-item">
+                <label>Your Stack:</label>
+                <span>{gameState?.playerStack || 0} ETH</span>
+              </div>
+              <div className="info-item">
+                <label>Current Pot:</label>
+                <span>{gameState?.pot || 0} ETH</span>
+              </div>
+              <div className="info-item">
+                <label>Players:</label>
+                <span>{table.playerCount}/6</span>
+              </div>
+            </div>
           </div>
-          <div className="info-item">
-            <label>Blinds:</label>
-            <span>{table.smallBlind}/{table.bigBlind} ETH</span>
-          </div>
-          <div className="info-item">
-            <label>Players:</label>
-            <span>{table.playerCount}/6</span>
-          </div>
-        </div>
-      </div>
 
-      {!isJoining ? (
-        <form onSubmit={handleJoinTable} className="join-form">
-          <h2>Join Table</h2>
-          <div className="form-group">
-            <label>Buy-in Amount (ETH):</label>
-            <input
-              type="number"
-              step="0.01"
-              min={table.minBuyIn}
-              max={table.maxBuyIn}
-              value={buyInAmount}
-              onChange={(e) => setBuyInAmount(e.target.value)}
-              required
-            />
+          <div className="game-actions">
+            <h2>Actions</h2>
+            {gameState?.isYourTurn && (
+              <div className="action-buttons">
+                <button className="action-button fold">Fold</button>
+                <button className="action-button check">Check</button>
+                <button className="action-button call">Call</button>
+                <button className="action-button raise">Raise</button>
+              </div>
+            )}
           </div>
-          <button type="submit" className="join-button">
-            Join Table
-          </button>
-        </form>
-      ) : (
-        <div className="joining-message">
-          Joining table...
+
+          <div className="game-table">
+            {/* Add poker table visualization here */}
+          </div>
         </div>
+      ) : (
+        // Join interface when player hasn't joined
+        <>
+          <div className="table-details">
+            <h2>Table Information</h2>
+            <div className="info-grid">
+              <div className="info-item">
+                <label>Buy-in Range:</label>
+                <span>{table.minBuyIn} - {table.maxBuyIn} ETH</span>
+              </div>
+              <div className="info-item">
+                <label>Blinds:</label>
+                <span>{table.smallBlind}/{table.bigBlind} ETH</span>
+              </div>
+              <div className="info-item">
+                <label>Players:</label>
+                <span>{table.playerCount}/6</span>
+              </div>
+            </div>
+          </div>
+
+          {!isJoining ? (
+            <div className="join-form">
+              <h2>Join Table</h2>
+              <div className="form-group">
+                <label>Buy-in Amount (ETH):</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min={table.minBuyIn}
+                  max={table.maxBuyIn}
+                  value={buyInAmount}
+                  onChange={(e) => setBuyInAmount(e.target.value)}
+                  required
+                />
+              </div>
+              <button 
+                type="button"
+                onClick={handleJoinTable}
+                className="join-button"
+              >
+                Join Table
+              </button>
+            </div>
+          ) : (
+            <div className="joining-message">
+              Joining table...
+            </div>
+          )}
+        </>
       )}
 
       <ToastContainer 
