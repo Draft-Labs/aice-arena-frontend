@@ -1,3 +1,7 @@
+# Betting DApp Frontend
+
+A React-based frontend application for the decentralized betting platform. This application provides user interfaces for various betting games and casino features.
+
 # Getting Started with Create React App
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
