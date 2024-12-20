@@ -345,7 +345,6 @@
 
 .account-profile-image {
   width: 80px !important;
-  height: 80px !important;
   border-radius: 50%;
   object-fit: cover;
   margin-bottom: 1rem;

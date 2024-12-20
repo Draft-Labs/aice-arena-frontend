@@ -346,9 +346,6 @@ function Blackjack() {
         </div>
       ) : (
         <div className="game-info">
-          <p>Connected Account: {account}</p>
-          <p>Available Balance: {casinoBalance} ETH</p>
-
           <div className="bet-controls">
             <input
               type="number"

@@ -1,4 +1,5 @@
 .blackjack-container {
+  width: 100%;
   max-width: 800px;
   margin: 80px auto 0;
   padding: 2rem;
@@ -59,16 +60,17 @@
 
 /* Game Table */
 .game-table {
-  background: #000000;
+  background: #1b4332;
   padding: 3rem 2rem;
-  border-radius: 100px;
   margin: 2rem 0;
+  border-radius: 0% !important;
   position: relative;
   overflow: hidden;
   border: 2px solid #ffd700;
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.5);
 }
 
-/* Add subtle table gradient */
+/* Felt texture and table design */
 .game-table::before {
   content: '';
   position: absolute;
@@ -76,24 +78,61 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background: linear-gradient(
-    to bottom,
-    rgba(0, 0, 0, 0.9) 0%,
-    rgba(40, 40, 40, 0.5) 50%,
-    rgba(0, 0, 0, 0.9) 100%
-  );
-  z-index: 0;
+  background-image: 
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E"),
+    radial-gradient(
+      circle at center,
+      rgba(40, 85, 65, 0.7) 0%,
+      rgba(27, 67, 50, 0.8) 40%,
+      rgba(20, 50, 37, 0.9) 80%
+    );
+  opacity: 0.15;
+  z-index: 1;
 }
 
+/* Decorative border */
+.game-table::after {
+  content: '';
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  right: 10px;
+  bottom: 10px;
+  border: 2px solid rgba(255, 215, 0, 0.4);
+  border-radius: 10px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Playing areas */
 .dealer-hand,
 .player-hand {
   position: relative;
-  z-index: 1;
-  padding: 1.5rem;
+  z-index: 2;
+  padding: 2rem;
   margin: 1rem 0;
   text-align: center;
-  border-top: 1px solid #ffd700;
-  border-bottom: 1px solid #ffd700;
+  border: none;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 50px;
+}
+
+.dealer-hand::before,
+.player-hand::before,
+.dealer-hand::after,
+.player-hand::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80%;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 215, 0, 0.5),
+    transparent
+  );
 }
 
 .dealer-hand h2,
@@ -122,7 +161,15 @@
   min-width: 40px;
   font-weight: bold;
   font-size: 1.2rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  box-shadow: 
+    0 2px 4px rgba(0, 0, 0, 0.2),
+    0 0 0 1px rgba(255, 255, 255, 0.1);
+  transform-style: preserve-3d;
+  transition: transform 0.2s ease;
+}
+
+.card:hover {
+  transform: translateY(-5px) rotateX(10deg);
 }
 
 /* Score display */
