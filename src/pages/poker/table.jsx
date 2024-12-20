@@ -275,6 +275,37 @@ function PokerTable() {
     }
   };
 
+  // Add this near your other state variables
+  const [isDealer, setIsDealer] = useState(false);
+
+  // Add this after your other useEffect hooks
+  useEffect(() => {
+    const checkDealerStatus = async () => {
+      if (!pokerContract || !account) return;
+      try {
+        const owner = await pokerContract.owner();
+        setIsDealer(owner.toLowerCase() === account.toLowerCase());
+      } catch (err) {
+        console.error('Error checking dealer status:', err);
+      }
+    };
+
+    checkDealerStatus();
+  }, [pokerContract, account]);
+
+  // Add this function to handle starting the flop
+  const handleStartFlop = async () => {
+    try {
+      const tx = await pokerContract.startFlop(tableId);
+      await tx.wait();
+      toast.success('Flop started successfully');
+      await updateGameState();
+    } catch (err) {
+      console.error('Error starting flop:', err);
+      toast.error('Failed to start flop');
+    }
+  };
+
   if (!account) {
     return <div className="poker-container">Please connect your wallet</div>;
   }
@@ -288,13 +319,12 @@ function PokerTable() {
     return (
       <div className="poker-game">
         <h2>Poker Table #{tableId}</h2>
-        <div className="poker-table">
-          <div className="table-info">
+        <div className="table-info">
             <p>Game Phase: {gameState.gamePhase}</p>
             <p className="pot-amount">Pot: {gameState.pot} ETH</p>
             <p>Players: {gameState.playerCount}/6</p>
-          </div>
-
+        </div>
+        <div className="poker-table">
           <div className="player-positions">
             {[...Array(6)].map((_, index) => {
               const player = players.find(p => p.position === index);
@@ -322,6 +352,19 @@ function PokerTable() {
               );
             })}
           </div>
+
+          {/* Add the dealer controls */}
+          {isDealer && gamePhase === 'Waiting' && (
+            <div className="dealer-controls">
+              <button 
+                className="start-flop-button"
+                onClick={handleStartFlop}
+                disabled={players.length < 2}
+              >
+                Start Flop
+              </button>
+            </div>
+          )}
 
           <div className="game-controls">
             <div className="action-buttons">
