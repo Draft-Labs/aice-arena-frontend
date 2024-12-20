@@ -331,3 +331,20 @@
   cursor: not-allowed;
   transform: none;
 }
+
+.form-group input[type="text"] {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #444;
+  border-radius: 5px;
+  background: #1a1a1a;
+  color: white;
+  font-size: 1em;
+}
+
+.player-name {
+  font-weight: bold;
+  color: #ffd700;
+  margin-bottom: 5px;
+  font-size: 1.1em;
+}

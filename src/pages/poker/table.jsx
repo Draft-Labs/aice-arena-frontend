@@ -32,6 +32,12 @@ function PokerTable() {
   const [currentTurn, setCurrentTurn] = useState(null);
   const [gamePhase, setGamePhase] = useState('Waiting');
 
+  // Add this to your state variables at the top
+  const [username, setUsername] = useState('');
+
+  // Add username to player state
+  const [usernames, setUsernames] = useState(new Map());
+
   // Add action handler
   const handleAction = async (action, amount = '0') => {
     try {
@@ -69,23 +75,26 @@ function PokerTable() {
     if (!pokerContract || !account || !tableId) return;
 
     try {
-      const [tableState, playerState] = await Promise.all([
-        pokerContract.getTableState(tableId),
-        pokerContract.getPlayerState(tableId, account)
+      // Get table info and player info using the correct contract functions
+      const [tableInfo, playerInfo] = await Promise.all([
+        pokerContract.getTableInfo(tableId),
+        pokerContract.getPlayerInfo(tableId, account)
       ]);
 
       setGameState({
-        pot: ethers.formatEther(tableState.pot),
-        currentBet: ethers.formatEther(tableState.currentBet),
-        isPlayerTurn: playerState.isCurrentPlayer,
-        canCheck: tableState.currentBet === 0,
-        minRaise: ethers.formatEther(tableState.minRaise),
-        maxRaise: ethers.formatEther(tableState.maxRaise)
+        pot: ethers.formatEther(tableInfo.pot),
+        currentBet: ethers.formatEther(tableInfo.minBet), // Using minBet as current bet
+        isPlayerTurn: playerInfo.isActive && !playerInfo.isSittingOut,
+        canCheck: tableInfo.minBet === 0n,
+        minRaise: ethers.formatEther(tableInfo.minBet),
+        maxRaise: ethers.formatEther(tableInfo.maxBet),
+        gamePhase: getGamePhaseString(tableInfo.gameState),
+        playerCount: tableInfo.playerCount.toString()
       });
 
       // Update raise amount to min raise if it's not set
       if (raiseAmount === '0') {
-        setRaiseAmount(ethers.formatEther(tableState.minRaise));
+        setRaiseAmount(ethers.formatEther(tableInfo.minBet));
       }
     } catch (err) {
       console.error('Error updating game state:', err);
@@ -148,18 +157,12 @@ function PokerTable() {
     try {
       // Get table info
       const tableInfo = await pokerContract.getTableInfo(tableId);
-      setGameState({
-        pot: ethers.formatEther(tableInfo.pot),
-        gamePhase: getGamePhaseString(tableInfo.gameState),
-        playerCount: tableInfo.playerCount.toString(),
-        minBet: ethers.formatEther(tableInfo.minBet),
-        maxBet: ethers.formatEther(tableInfo.maxBet)
-      });
-
+      
       // Get all players at the table
       const activePlayers = [];
       for (let i = 0; i < tableInfo.playerCount; i++) {
-        const playerAddr = await pokerContract.getPlayerAtPosition(tableId, i);
+        // Instead of getPlayerAtPosition, we'll iterate through playerAddresses
+        const playerAddr = await pokerContract.tables(tableId).playerAddresses[i];
         if (playerAddr !== ethers.ZeroAddress) {
           const playerInfo = await pokerContract.getPlayerInfo(tableId, playerAddr);
           activePlayers.push({
@@ -168,11 +171,19 @@ function PokerTable() {
             stack: ethers.formatEther(playerInfo.tableStake),
             currentBet: ethers.formatEther(playerInfo.currentBet),
             isActive: playerInfo.isActive,
-            isCurrent: playerInfo.position === tableInfo.currentPosition
+            isCurrent: i === tableInfo.currentPosition,
+            username: playerAddr === account ? username : `Player ${playerAddr.slice(0, 6)}...`
           });
         }
       }
       setPlayers(activePlayers);
+
+      // Add this debug log in your updateGameInfo function
+      console.log('Current game state:', {
+        isDealer,
+        gamePhase: gameState.gamePhase,
+        playerCount: gameState.playerCount
+      });
     } catch (err) {
       console.error('Error updating game info:', err);
     }
@@ -306,6 +317,43 @@ function PokerTable() {
     }
   };
 
+  // Add these handler functions
+  const handleStartTurn = async () => {
+    try {
+      const tx = await pokerContract.startTurn(tableId);
+      await tx.wait();
+      toast.success('Turn dealt successfully');
+      await updateGameState();
+    } catch (err) {
+      console.error('Error dealing turn:', err);
+      toast.error('Failed to deal turn');
+    }
+  };
+
+  const handleStartRiver = async () => {
+    try {
+      const tx = await pokerContract.startRiver(tableId);
+      await tx.wait();
+      toast.success('River dealt successfully');
+      await updateGameState();
+    } catch (err) {
+      console.error('Error dealing river:', err);
+      toast.error('Failed to deal river');
+    }
+  };
+
+  const handleShowdown = async () => {
+    try {
+      const tx = await pokerContract.startShowdown(tableId);
+      await tx.wait();
+      toast.success('Showdown started');
+      await updateGameState();
+    } catch (err) {
+      console.error('Error starting showdown:', err);
+      toast.error('Failed to start showdown');
+    }
+  };
+
   if (!account) {
     return <div className="poker-container">Please connect your wallet</div>;
   }
@@ -337,7 +385,7 @@ function PokerTable() {
                 >
                   <div className="player-info">
                     <p className="player-name">
-                      {player ? `Player ${player.address.slice(0, 6)}...` : `Seat ${index + 1}`}
+                      {player ? player.username : `Seat ${index + 1}`}
                     </p>
                     {player && (
                       <>
@@ -354,15 +402,49 @@ function PokerTable() {
           </div>
 
           {/* Add the dealer controls */}
-          {isDealer && gamePhase === 'Waiting' && (
+          {isDealer && (
             <div className="dealer-controls">
-              <button 
-                className="start-flop-button"
-                onClick={handleStartFlop}
-                disabled={players.length < 2}
-              >
-                Start Flop
-              </button>
+              {gameState.gamePhase === 'Waiting' && (
+                <button 
+                  className="start-flop-button"
+                  onClick={handleStartFlop}
+                  disabled={Number(gameState.playerCount) < 2}
+                >
+                  Start Game ({gameState.playerCount}/2 players)
+                </button>
+              )}
+              {gameState.gamePhase === 'PreFlop' && (
+                <button 
+                  className="start-flop-button"
+                  onClick={handleStartFlop}
+                >
+                  Deal Flop
+                </button>
+              )}
+              {gameState.gamePhase === 'Flop' && (
+                <button 
+                  className="start-flop-button"
+                  onClick={handleStartTurn}
+                >
+                  Deal Turn
+                </button>
+              )}
+              {gameState.gamePhase === 'Turn' && (
+                <button 
+                  className="start-flop-button"
+                  onClick={handleStartRiver}
+                >
+                  Deal River
+                </button>
+              )}
+              {gameState.gamePhase === 'River' && (
+                <button 
+                  className="start-flop-button"
+                  onClick={handleShowdown}
+                >
+                  Start Showdown
+                </button>
+              )}
             </div>
           )}
 
@@ -410,7 +492,18 @@ function PokerTable() {
             </div>
           </div>
         </div>
-        <ToastContainer />
+        <ToastContainer 
+          position="bottom-right"
+          autoClose={5000}
+          hideProgressBar={false}
+          newestOnTop={false}
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme="dark"
+        />
       </div>
     );
   }
@@ -426,6 +519,19 @@ function PokerTable() {
       </div>
       
       <form onSubmit={handleJoinTable} className="join-form">
+        <div className="form-group">
+          <label>Username</label>
+          <input
+            type="text"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            placeholder="Enter your username"
+            required
+            disabled={isJoining}
+            maxLength={20}
+          />
+        </div>
+
         <div className="form-group">
           <label>Buy-in Amount (ETH)</label>
           <input
