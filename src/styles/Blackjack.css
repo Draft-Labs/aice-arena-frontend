@@ -1,7 +1,7 @@
 .blackjack-container {
   width: 100%;
-  max-width: 800px;
-  margin: 80px auto 0;
+  max-width: 1200px;
+  margin: 0 auto;
   padding: 2rem;
   background: rgba(0, 0, 0, 0.7);
   border-radius: 20px;
@@ -60,17 +60,16 @@
 
 /* Game Table */
 .game-table {
-  background: #1b4332;
+  background: #1a472a;
   padding: 3rem 2rem;
+  border-radius: 0 !important;
   margin: 2rem 0;
-  border-radius: 0% !important;
   position: relative;
   overflow: hidden;
   border: 2px solid #ffd700;
-  box-shadow: 0 0 40px rgba(0, 0, 0, 0.5);
 }
 
-/* Felt texture and table design */
+/* Add more visible felt texture with casino and crypto elements */
 .game-table::before {
   content: '';
   position: absolute;
@@ -78,16 +77,10 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background-image: 
-    url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E"),
-    radial-gradient(
-      circle at center,
-      rgba(40, 85, 65, 0.7) 0%,
-      rgba(27, 67, 50, 0.8) 40%,
-      rgba(20, 50, 37, 0.9) 80%
-    );
-  opacity: 0.15;
-  z-index: 1;
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffd700' fill-opacity='0.15'%3E%3Cpath d='M30 15a3 3 0 110 6 3 3 0 010-6zm0 24a3 3 0 110 6 3 3 0 010-6zM15 30a3 3 0 110 6 3 3 0 010-6zm30 0a3 3 0 110 6 3 3 0 010-6zM19.5 19.5l3 3-3 3-3-3zM37.5 19.5l3 3-3 3-3-3zM19.5 37.5l3-3-3-3-3 3zM37.5 37.5l3-3-3-3-3 3zM30 30l-4 4 4 4 4-4z'/%3E%3C/g%3E%3C/svg%3E");
+  background-size: 30px 30px;
+  opacity: 1;
+  z-index: 0;
 }
 
 /* Decorative border */

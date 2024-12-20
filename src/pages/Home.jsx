@@ -58,11 +58,11 @@ function Home() {
       ) : account && hasAccount ? (
         <div className="game-selection">
           <h2>Choose Your Game</h2>
+          <Link to="/poker" className="game-button">
+            Play Poker
+          </Link>
           <Link to="/blackjack" className="game-button">
             Play Blackjack
-          </Link>
-          <Link to="/roulette" className="game-button">
-            Play Roulette
           </Link>
         </div>
       ) : (
@@ -75,4 +75,4 @@ function Home() {
   );
 }
 
-export default Home; 
+export default Home;
