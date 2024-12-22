@@ -1,5 +1,10 @@
 import { initializeApp } from 'firebase/app';
-import { getFirestore } from 'firebase/firestore';
+import { 
+  getFirestore, 
+  doc, 
+  setDoc, 
+  getDoc 
+} from 'firebase/firestore';
 import { getAuth, signInAnonymously } from 'firebase/auth';
 import { toast } from 'react-toastify';
 import { getStorage } from 'firebase/storage';
@@ -38,3 +43,31 @@ export const ensureAuthenticated = async () => {
     throw error;
   }
 }; 
+
+// Add this new function
+export const saveTableName = async (tableId, tableName) => {
+  try {
+    await ensureAuthenticated();
+    const tableRef = doc(db, 'pokerTables', tableId.toString());
+    await setDoc(tableRef, {
+      name: tableName,
+      createdAt: new Date().toISOString()
+    });
+    console.log('Table name saved successfully:', { tableId, tableName });
+  } catch (error) {
+    console.error('Error saving table name:', error);
+    throw error;
+  }
+};
+
+// Add this function to fetch table name
+export const getTableName = async (tableId) => {
+  try {
+    const tableRef = doc(db, 'pokerTables', tableId.toString());
+    const docSnap = await getDoc(tableRef);
+    return docSnap.exists() ? docSnap.data().name : `Table ${tableId}`;
+  } catch (error) {
+    console.error('Error fetching table name:', error);
+    return `Table ${tableId}`;
+  }
+};

@@ -3,12 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { useWeb3 } from '../../context/Web3Context';
 import { ethers } from 'ethers';
 import { toast } from 'react-toastify';
+import { saveTableName } from '../../config/firebase';
 import '../../styles/Poker.css';
 
 function CreatePokerTable() {
   const navigate = useNavigate();
   const { pokerContract } = useWeb3();
   const [formData, setFormData] = useState({
+    tableName: '',
     minBuyIn: '0.1',
     maxBuyIn: '1',
     smallBlind: '0.001',
@@ -36,7 +38,15 @@ function CreatePokerTable() {
         ethers.parseEther(formData.minBet),
         ethers.parseEther(formData.maxBet)
       );
-      await tx.wait();
+      const receipt = await tx.wait();
+
+      const event = receipt.logs.find(
+        log => log.eventName === 'TableCreated'
+      );
+      const tableId = event.args.tableId;
+
+      await saveTableName(tableId, formData.tableName);
+      
       toast.success('Table created successfully!');
       navigate('/poker');
     } catch (error) {
@@ -50,6 +60,19 @@ function CreatePokerTable() {
       <h1>Create New Poker Table</h1>
       
       <form onSubmit={handleCreateTable} className="create-table-form">
+        <div className="form-group">
+          <label>Table Name</label>
+          <input
+            type="text"
+            name="tableName"
+            value={formData.tableName}
+            onChange={handleInputChange}
+            placeholder="Enter a name for your table"
+            required
+            maxLength={30}
+          />
+        </div>
+
         <div className="form-group">
           <label>Minimum Buy-in (ETH)</label>
           <input

@@ -6,6 +6,7 @@ import { ethers } from 'ethers';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import '../../styles/Poker.css';
+import { getTableName } from '../../config/firebase';
 
 function PokerLobby() {
   const { account, pokerContract, isLoading, error: web3Error } = useWeb3();
@@ -15,6 +16,8 @@ function PokerLobby() {
   const [hasAccount, setHasAccount] = useState(false);
   const [isCheckingAccount, setIsCheckingAccount] = useState(true);
   const navigate = useNavigate();
+  const [tableNames, setTableNames] = useState({});
+  const [players, setPlayers] = useState([]);
 
   // Check if user has an account
   useEffect(() => {
@@ -90,6 +93,25 @@ function PokerLobby() {
     return () => clearInterval(interval);
   }, [pokerContract]);
 
+  // Add new useEffect for fetching table names
+  useEffect(() => {
+    const loadTableNames = async () => {
+      try {
+        const names = {};
+        for (const table of tables) {
+          names[table.id] = await getTableName(table.id);
+        }
+        setTableNames(names);
+      } catch (err) {
+        console.error('Error loading table names:', err);
+      }
+    };
+    
+    if (tables.length > 0) {
+      loadTableNames();
+    }
+  }, [tables]);
+
   // Add console log for render
   console.log('Current tables state:', tables);
 
@@ -115,7 +137,7 @@ function PokerLobby() {
       <div className="tables-list">
         {tables.map(table => (
           <div key={table.id} className="table-card">
-            <h3>Table #{table.id}</h3>
+            <h3>{tableNames[table.id] || `Table #${table.id}`}</h3>
             <div className="table-info">
               <p>Buy-in Range: {table.minBuyIn} - {table.maxBuyIn} ETH</p>
               <p>Blinds: {table.smallBlind}/{table.bigBlind} ETH</p>
@@ -129,19 +151,7 @@ function PokerLobby() {
       </div>
 
       {error && <div className="error-message">Error: {error}</div>}
-      
-      <ToastContainer 
-        position="bottom-right"
-        autoClose={5000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="dark"
-      />
+      <ToastContainer />
     </div>
   );
 }

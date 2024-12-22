@@ -1,12 +1,15 @@
 /* Common styles */
-.poker-container {
-  width: auto;
-  height: auto;
+.poker-game {
+  width: 100%;
+  height: 100%;
   margin: 0 auto;
   padding: 20px;
   color: white;
   min-width: 50vw;
-  background: #1a1a1a;
+  display: grid;
+  grid-template-columns: 250px 1fr;
+  gap: 20px;
+  align-items: start;
 }
 
 .poker-container h1 {
@@ -78,6 +81,7 @@
   border-radius: 8px;
   flex-grow: 1;
   width: auto;
+  background: #1a1a1a;
 }
 
 .table-card .table-info p {
@@ -151,71 +155,128 @@
 }
 
 /* Poker table styles */
-.poker-game {
-  width: 100%;
-}
-
-.poker-table {
-  background: #1b5e20;
-  border: 15px solid #8b4513;
-  border-radius: 200px;
-  padding: 40px;
+.tables-list .poker-table {
   position: relative;
-  min-height: 600px;
+  width: 100%;
+  height: 300px;
   margin: 20px auto;
-  max-width: 1000px;
-  box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
+  background: linear-gradient(145deg, #1a1a1a, #2a2a2a);
+  border-radius: 100px;
+  overflow: visible;
 }
 
-.table-info {
-  background: rgba(0, 0, 0, 0.7);
-  padding: 15px;
-  border-radius: 10px;
-  position: relative;
-  left: 50%;
-  transform: translate(-50%);
-  text-align: center;
-  width: 40vw;
-}
-
-.pot-amount {
-  color: #ffd700;
-  font-size: 1.5em;
-  font-weight: bold;
-}
-
-.player-positions {
+/* SVG container */
+.tables-list .table-border {
   position: absolute;
-  height: 100%;
+  top: 0;
+  left: 0;
   width: 100%;
-  align-items: center;
+  height: 100%;
+  pointer-events: none;
 }
 
-.player-position {
+/* Neon glow effects */
+.tables-list .table-glow {
+  filter: drop-shadow(0 0 10px rgba(0, 195, 255, 0.5));
+}
+
+/* Neon path animation */
+.tables-list .neon-path {
+  stroke: #00c3ff;
+  stroke-width: 2;
+  fill: none;
+  stroke-dasharray: 50;
+  animation: neonFlow 3s linear infinite;
+}
+
+@keyframes neonFlow {
+  0% {
+    stroke-dashoffset: 1000;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Inner table gradient */
+.tables-list .table-inner {
   position: absolute;
-  width: 150px;
-  background: rgba(0, 0, 0, 0.8);
-  border-radius: 10px;
-  padding: 15px;
-  text-align: center;
-}
-
-.player-position.active {
-  box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
-}
-
-.player-position.current-turn {
-  box-shadow: 0 0 20px rgba(255, 0, 0, 0.5);
-  animation: pulse 1.5s infinite;
+  top: 10px;
+  left: 10px;
+  right: 10px;
+  bottom: 10px;
+  background: linear-gradient(145deg, #1e3c5c, #0c1824);
+  border-radius: 90px;
+  border: 1px solid rgba(0, 195, 255, 0.2);
 }
 
 /* Player positions */
-.position-0 { bottom: 0; left: 45%; transform: translateX(-50%); }
-.position-1 { bottom: 25%; right: 8%; }
-.position-2 { top: 25%; right: 8%; }
-.position-3 { top: 0; left: 45%; transform: translateX(-50%); }
-.position-4 { top: 25%; left: 0; }
-.position-5 { bottom: 25%; left: 0; }
+.tables-list .player-positions {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+.tables-list .player-position {
+  position: absolute;
+  width: 120px;
+  background: rgba(0, 0, 0, 0.8);
+  border-radius: 10px;
+  padding: 10px;
+  text-align: center;
+  backdrop-filter: blur(5px);
+  border: 1px solid rgba(0, 195, 255, 0.3);
+  box-shadow: 0 0 20px rgba(0, 195, 255, 0.1);
+  transition: all 0.3s ease;
+}
+
+.tables-list .player-position:hover {
+  border-color: rgba(0, 195, 255, 0.6);
+  box-shadow: 0 0 30px rgba(0, 195, 255, 0.2);
+}
+
+/* Player position placements */
+.tables-list .position-0 { bottom: -20px; left: 50%; transform: translateX(-50%); }
+.tables-list .position-1 { bottom: 15%; right: -60px; }
+.tables-list .position-2 { top: 15%; right: -60px; }
+.tables-list .position-3 { top: -20px; left: 50%; transform: translateX(-50%); }
+.tables-list .position-4 { top: 15%; left: -60px; }
+.tables-list .position-5 { bottom: 15%; left: -60px; }
+
+/* Player info styles */
+.tables-list .player-info {
+  color: white;
+}
+
+.tables-list .player-name {
+  font-weight: bold;
+  color: #ffd700;
+  margin-bottom: 5px;
+  font-size: 0.9em;
+}
+
+.tables-list .player-stack,
+.tables-list .player-bet {
+  font-size: 0.8em;
+  margin: 2px 0;
+}
+
+/* Active and current player highlights */
+.tables-list .player-position.active {
+  border-color: rgba(0, 255, 0, 0.5);
+}
+
+.tables-list .player-position.current-turn {
+  border-color: rgba(255, 215, 0, 0.8);
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 20px rgba(255, 215, 0, 0.3); }
+  50% { box-shadow: 0 0 30px rgba(255, 215, 0, 0.6); }
+  100% { box-shadow: 0 0 20px rgba(255, 215, 0, 0.3); }
+}
 
 .game-controls {
   position: fixed;
@@ -226,6 +287,9 @@
   padding: 20px;
   border-radius: 10px;
   z-index: 100;
+  width: auto;
+  max-width: calc(100% - 300px);
+  margin-left: 125px;
 }
 
 .action-buttons {
@@ -264,12 +328,6 @@
 
 .raise-controls input[type="range"] {
   width: 150px;
-}
-
-@keyframes pulse {
-  0% { box-shadow: 0 0 20px rgba(255, 0, 0, 0.5); }
-  50% { box-shadow: 0 0 30px rgba(255, 0, 0, 0.8); }
-  100% { box-shadow: 0 0 20px rgba(255, 0, 0, 0.5); }
 }
 
 /* Error message */
@@ -347,4 +405,123 @@
   color: #ffd700;
   margin-bottom: 5px;
   font-size: 1.1em;
+}
+
+.poker-table {
+  justify-self: center;
+  position: relative;
+  width: 50%;
+  max-width: 1200px;
+  margin: 0;
+  aspect-ratio: 3/2;
+}
+
+.table-background {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+.player-positions {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+}
+
+.player-position {
+  position: absolute;
+  width: 150px;
+  padding: 15px;
+  background: rgba(0, 0, 0, 0.7);
+  border-radius: 8px;
+  color: white;
+  text-align: center;
+}
+
+/* Position players in a circle */
+.position-0 { /* Bottom center */
+  bottom: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.position-1 { /* Bottom right */
+  bottom: 15%;
+  right: -60px;
+}
+
+.position-2 { /* Top right */
+  top: 15%;
+  right: -60px;
+}
+
+.position-3 { /* Top center */
+  top: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.position-4 { /* Top left */
+  top: 15%;
+  left: -60px;
+}
+
+.position-5 { /* Bottom left */
+  bottom: 15%;
+  left: -60px;
+}
+
+.player-info {
+  font-size: 1.1em;
+}
+
+.player-name {
+  font-weight: bold;
+  margin: 0;
+}
+
+.player-stack, .player-bet {
+  margin: 2px 0;
+}
+
+.active {
+  border: 2px solid #4CAF50;
+}
+
+.current-turn {
+  border: 2px solid #FFC107;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(255, 193, 7, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0); }
+}
+
+.table-info {
+  background: #2d2d2d;
+  padding: 20px;
+  border-radius: 10px;
+  position: sticky;
+  top: 20px;
+}
+
+.table-info p {
+  margin: 10px 0;
+  font-size: 1.1em;
+}
+
+.pot-amount {
+  color: #ffd700;
+  font-weight: bold;
+  font-size: 1.2em !important;
+}
+
+h2 {
+  grid-column: 1 / -1;
+  text-align: center;
+  color: #ffd700;
+  margin-bottom: 20px;
 }

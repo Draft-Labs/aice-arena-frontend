@@ -5,6 +5,7 @@ import { ethers } from 'ethers';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import '../../styles/Poker.css';
+import { getTableName } from '../../config/firebase';
 
 function PokerTable() {
   const navigate = useNavigate();
@@ -37,6 +38,25 @@ function PokerTable() {
 
   // Add username to player state
   const [usernames, setUsernames] = useState(new Map());
+
+  // Add new state for table name
+  const [tableName, setTableName] = useState('');
+
+  // Add new useEffect to fetch table name
+  useEffect(() => {
+    const fetchTableName = async () => {
+      if (tableId) {
+        try {
+          const name = await getTableName(tableId);
+          setTableName(name);
+        } catch (err) {
+          console.error('Error fetching table name:', err);
+        }
+      }
+    };
+
+    fetchTableName();
+  }, [tableId]);
 
   // Add action handler
   const handleAction = async (action, amount = '0') => {
@@ -366,13 +386,35 @@ function PokerTable() {
   if (hasJoined) {
     return (
       <div className="poker-game">
-        <h2>Poker Table #{tableId}</h2>
         <div className="table-info">
-            <p>Game Phase: {gameState.gamePhase}</p>
-            <p className="pot-amount">Pot: {gameState.pot} ETH</p>
-            <p>Players: {gameState.playerCount}/6</p>
+          <h2>{tableName || `Poker Table #${tableId}`}</h2>
+          <p>Game Phase: {gameState.gamePhase}</p>
+          <p className="pot-amount">Pot: {gameState.pot} ETH</p>
+          <p>Players: {gameState.playerCount}/6</p>
         </div>
         <div className="poker-table">
+          {/* Add SVG table */}
+          <svg className="table-background" viewBox="0 0 300 200">
+            {/* Outer table edge */}
+            <ellipse 
+              cx="150" 
+              cy="100" 
+              rx="140" 
+              ry="90" 
+              fill="#1B4D3E" 
+              stroke="#8B4513" 
+              strokeWidth="8"
+            />
+            {/* Inner felt area */}
+            <ellipse 
+              cx="150" 
+              cy="100" 
+              rx="130" 
+              ry="80" 
+              fill="#35654d"
+            />
+          </svg>
+
           <div className="player-positions">
             {[...Array(6)].map((_, index) => {
               const player = players.find(p => p.position === index);
@@ -511,7 +553,7 @@ function PokerTable() {
   // Show buy-in form if not joined
   return (
     <div className="poker-container">
-      <h2>Join Poker Table #{tableId}</h2>
+      <h2>Join {tableName || `Poker Table #${tableId}`}</h2>
       <div className="table-info">
         <p>Buy-in Range: {table.minBuyIn} - {table.maxBuyIn} ETH</p>
         <p>Blinds: {table.smallBlind}/{table.bigBlind} ETH</p>
