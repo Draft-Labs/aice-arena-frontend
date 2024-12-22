@@ -42,6 +42,29 @@ function PokerTable() {
   // Add new state for table name
   const [tableName, setTableName] = useState('');
 
+  // Add new state for player usernames
+  const [playerUsernames, setPlayerUsernames] = useState({});
+
+  // Add this state for game info
+  const [gameInfo, setGameInfo] = useState({
+    pot: '0',
+    currentBet: '0',
+    isPlayerTurn: false,
+    canCheck: false,
+    minRaise: '0',
+    maxRaise: '0',
+    gameState: 'Waiting'
+  });
+
+  // Add maxPlayersPerTable constant at the top of your component
+  const maxPlayersPerTable = 6;
+
+  // Simplify the username display function
+  const formatAddress = (address) => {
+    if (!address || address === ethers.ZeroAddress) return 'Empty Seat';
+    return `${address.slice(0, 6)}...${address.slice(-4)}`;
+  };
+
   // Add new useEffect to fetch table name
   useEffect(() => {
     const fetchTableName = async () => {
@@ -170,44 +193,157 @@ function PokerTable() {
     checkJoinStatus();
   }, [pokerContract, account, tableId]);
 
-  // Function to update all game information
+  // Update the game info function
   const updateGameInfo = async () => {
-    if (!pokerContract || !tableId) return;
-
     try {
+      if (!tableId || !pokerContract || !account) return;
+
       // Get table info
       const tableInfo = await pokerContract.getTableInfo(tableId);
       
-      // Get all players at the table
-      const activePlayers = [];
-      for (let i = 0; i < tableInfo.playerCount; i++) {
-        // Instead of getPlayerAtPosition, we'll iterate through playerAddresses
-        const playerAddr = await pokerContract.tables(tableId).playerAddresses[i];
-        if (playerAddr !== ethers.ZeroAddress) {
-          const playerInfo = await pokerContract.getPlayerInfo(tableId, playerAddr);
-          activePlayers.push({
-            address: playerAddr,
-            position: playerInfo.position,
-            stack: ethers.formatEther(playerInfo.tableStake),
-            currentBet: ethers.formatEther(playerInfo.currentBet),
-            isActive: playerInfo.isActive,
-            isCurrent: i === tableInfo.currentPosition,
-            username: playerAddr === account ? username : `Player ${playerAddr.slice(0, 6)}...`
-          });
-        }
+      // Get current player's info if they're at the table
+      let playerInfo = null;
+      try {
+        playerInfo = await pokerContract.getPlayerInfo(tableId, account);
+      } catch (err) {
+        console.log('Current player not at table');
       }
-      setPlayers(activePlayers);
 
-      // Add this debug log in your updateGameInfo function
-      console.log('Current game state:', {
-        isDealer,
-        gamePhase: gameState.gamePhase,
-        playerCount: gameState.playerCount
+      setGameInfo({
+        pot: ethers.formatEther(tableInfo.pot || '0'),
+        currentBet: playerInfo ? ethers.formatEther(playerInfo.currentBet) : '0',
+        isPlayerTurn: playerInfo ? playerInfo.isActive && tableInfo.currentPosition === playerInfo.position : false,
+        canCheck: playerInfo ? playerInfo.currentBet >= tableInfo.currentBet : false,
+        minRaise: ethers.formatEther(tableInfo.minBet || '0'),
+        maxRaise: ethers.formatEther(tableInfo.maxBet || '0'),
+        gameState: getGameStateString(tableInfo.gameState)
       });
+
     } catch (err) {
       console.error('Error updating game info:', err);
     }
   };
+
+  // Helper function to convert game state number to string
+  const getGameStateString = (stateNumber) => {
+    const states = [
+      'Waiting',
+      'Dealing',
+      'PreFlop',
+      'Flop',
+      'Turn',
+      'River',
+      'Showdown',
+      'Complete'
+    ];
+    const index = parseInt(stateNumber.toString());
+    return states[index] || 'Waiting';
+  };
+
+  // Update the useEffect for fetching table data
+  useEffect(() => {
+    const fetchTableData = async () => {
+      if (tableId && pokerContract) {
+        try {
+          // Get table info first
+          const [
+            minBuyIn,
+            maxBuyIn,
+            smallBlind,
+            bigBlind,
+            minBet,
+            maxBet,
+            pot,
+            playerCount,
+            gameState,
+            isActive
+          ] = await pokerContract.getTableInfo(tableId);
+
+          console.log('Table Info:', {
+            playerCount: playerCount.toString(),
+            pot: ethers.formatEther(pot),
+            gameState: gameState.toString()
+          });
+
+          // Get table struct directly
+          const table = await pokerContract.tables(tableId);
+          console.log('Raw Table Data:', table);
+
+          // Get all players at the table
+          const activePlayers = [];
+          
+          // Get player addresses array from the table
+          const playerAddresses = await pokerContract.getTablePlayers(tableId);
+          console.log('Player Addresses:', playerAddresses);
+
+          // Get info for each player address
+          for (const playerAddress of playerAddresses) {
+            try {
+              const [tableStake, currentBet, isActive, isSittingOut, position] = 
+                await pokerContract.getPlayerInfo(tableId, playerAddress);
+
+              if (isActive) {
+                activePlayers.push({
+                  address: playerAddress,
+                  position: parseInt(position.toString()),
+                  tableStake: ethers.formatEther(tableStake),
+                  currentBet: ethers.formatEther(currentBet),
+                  isActive,
+                  isSittingOut,
+                  displayName: formatAddress(playerAddress)
+                });
+              }
+            } catch (err) {
+              console.error(`Error getting player info for ${playerAddress}:`, err);
+            }
+          }
+
+          // Sort players by position
+          activePlayers.sort((a, b) => a.position - b.position);
+          
+          console.log('Active Players:', activePlayers);
+
+          setPlayers(activePlayers);
+          setPlayerUsernames(
+            Object.fromEntries(
+              activePlayers.map(p => [p.position, p.displayName])
+            )
+          );
+
+          setTable({
+            minBuyIn: ethers.formatEther(minBuyIn),
+            maxBuyIn: ethers.formatEther(maxBuyIn),
+            smallBlind: ethers.formatEther(smallBlind),
+            bigBlind: ethers.formatEther(bigBlind),
+            minBet: ethers.formatEther(minBet),
+            maxBet: ethers.formatEther(maxBet),
+            pot: ethers.formatEther(pot),
+            playerCount: playerCount.toString(),
+            gameState: gameState.toString(),
+            isActive
+          });
+
+          setGameInfo({
+            pot: ethers.formatEther(pot),
+            currentBet: activePlayers.find(p => p.address === account)?.currentBet || '0',
+            isPlayerTurn: false,
+            canCheck: false,
+            minRaise: ethers.formatEther(minBet),
+            maxRaise: ethers.formatEther(maxBet),
+            gameState: getGameStateString(gameState)
+          });
+
+        } catch (err) {
+          console.error('Error fetching table data:', err);
+          setError(err.message);
+        }
+      }
+    };
+
+    fetchTableData();
+    const interval = setInterval(fetchTableData, 5000);
+    return () => clearInterval(interval);
+  }, [tableId, pokerContract, account]);
 
   // Helper function to convert GameState enum to string
   const getGamePhaseString = (gameState) => {
@@ -416,25 +552,16 @@ function PokerTable() {
           </svg>
 
           <div className="player-positions">
-            {[...Array(6)].map((_, index) => {
-              const player = players.find(p => p.position === index);
+            {Array.from({ length: maxPlayersPerTable }).map((_, i) => {
+              const player = players.find(p => p.position === i);
               return (
-                <div 
-                  key={index} 
-                  className={`player-position position-${index} ${
-                    player?.isActive ? 'active' : ''
-                  } ${player?.isCurrent ? 'current-turn' : ''}`}
-                >
+                <div key={i} className={`player-position position-${i}`}>
                   <div className="player-info">
-                    <p className="player-name">
-                      {player ? player.username : `Seat ${index + 1}`}
-                    </p>
+                    <h3>{player ? player.displayName : `Seat ${i + 1}`}</h3>
                     {player && (
                       <>
-                        <p className="player-stack">Stack: {player.stack} ETH</p>
-                        {player.currentBet > 0 && (
-                          <p className="player-bet">Bet: {player.currentBet} ETH</p>
-                        )}
+                        <p className="player-stack">Stack: {player.tableStake} ETH</p>
+                        <p className="player-bet">Bet: {player.currentBet} ETH</p>
                       </>
                     )}
                   </div>
