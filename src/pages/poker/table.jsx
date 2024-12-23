@@ -518,6 +518,19 @@ function PokerTable() {
     }
   };
 
+  // Add this function to handle posting blinds
+  const handlePostBlinds = async () => {
+    try {
+      const tx = await pokerContract.postBlinds(tableId);
+      await tx.wait();
+      toast.success('Blinds posted successfully');
+      await updateGameState();
+    } catch (err) {
+      console.error('Error posting blinds:', err);
+      toast.error('Failed to post blinds');
+    }
+  };
+
   // Add these new state variables at the top of your component
   const [playerCards, setPlayerCards] = useState([]);
   const [communityCards, setCommunityCards] = useState([]);
@@ -808,6 +821,8 @@ function PokerTable() {
                       
                       // Then start the game
                       await handleAction('startGame');
+                      // Post blinds after starting game
+                      await handlePostBlinds();
                       updateGameState();
                     } catch (err) {
                       console.error('Error starting game:', err);

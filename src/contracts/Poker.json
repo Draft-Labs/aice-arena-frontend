@@ -128,6 +128,43 @@
           "type": "uint256"
         },
         {
+          "indexed": false,
+          "internalType": "address",
+          "name": "smallBlind",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "bigBlind",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "smallBlindAmount",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "bigBlindAmount",
+          "type": "uint256"
+        }
+      ],
+      "name": "BlindsPosted",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "tableId",
+          "type": "uint256"
+        },
+        {
           "indexed": true,
           "internalType": "address",
           "name": "player",
@@ -750,6 +787,19 @@
       "type": "function"
     },
     {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "tableId",
+          "type": "uint256"
+        }
+      ],
+      "name": "postBlinds",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
       "inputs": [],
       "name": "renounceOwnership",
       "outputs": [],
@@ -856,6 +906,11 @@
         {
           "internalType": "uint256",
           "name": "pot",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "currentBet",
           "type": "uint256"
         },
         {
