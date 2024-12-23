@@ -6,6 +6,7 @@ import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import '../../styles/Poker.css';
 import { getTableName } from '../../config/firebase';
+import { API_BASE_URL } from '../../config/constants';
 
 function PokerTable() {
   const navigate = useNavigate();
@@ -124,9 +125,20 @@ function PokerTable() {
         pokerContract.getPlayerInfo(tableId, account)
       ]);
 
+      // Fetch cards based on game state
+      if (tableInfo.gameState > 0) { // If game has started
+        // Fetch player's cards
+        const playerCards = await pokerContract.getPlayerCards(tableId, account);
+        setPlayerCards(playerCards.map(card => Number(card)));
+
+        // Fetch community cards
+        const communityCards = await pokerContract.getCommunityCards(tableId);
+        setCommunityCards(communityCards.map(card => Number(card)));
+      }
+
       setGameState({
         pot: ethers.formatEther(tableInfo.pot),
-        currentBet: ethers.formatEther(tableInfo.minBet), // Using minBet as current bet
+        currentBet: ethers.formatEther(tableInfo.minBet),
         isPlayerTurn: playerInfo.isActive && !playerInfo.isSittingOut,
         canCheck: tableInfo.minBet === 0n,
         minRaise: ethers.formatEther(tableInfo.minBet),
@@ -135,10 +147,6 @@ function PokerTable() {
         playerCount: tableInfo.playerCount.toString()
       });
 
-      // Update raise amount to min raise if it's not set
-      if (raiseAmount === '0') {
-        setRaiseAmount(ethers.formatEther(tableInfo.minBet));
-      }
     } catch (err) {
       console.error('Error updating game state:', err);
     }
@@ -510,6 +518,63 @@ function PokerTable() {
     }
   };
 
+  // Add these new state variables at the top of your component
+  const [playerCards, setPlayerCards] = useState([]);
+  const [communityCards, setCommunityCards] = useState([]);
+
+  // Add this helper function
+  const cardValueToString = (cardNumber) => {
+    const suits = ['♠', '♣', '♥', '♦'];
+    const values = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+    
+    const suit = suits[Math.floor((cardNumber - 1) / 13)];
+    const value = values[(cardNumber - 1) % 13];
+    const color = suit === '♥' || suit === '♦' ? 'red' : 'black';
+    
+    return { value, suit, color };
+  };
+
+  // Update the useEffect for fetching cards with console logs
+  useEffect(() => {
+    const fetchCards = async () => {
+      if (!account || !tableId || !hasJoined) {
+        console.log('Skipping card fetch:', { account, tableId, hasJoined });
+        return;
+      }
+
+      try {
+        console.log('Fetching cards for:', { tableId, account });
+        
+        const [playerRes, communityRes] = await Promise.all([
+          fetch(`${API_BASE_URL}/poker/player-cards/${tableId}/${account}`),
+          fetch(`${API_BASE_URL}/poker/community-cards/${tableId}`)
+        ]);
+
+        const [playerData, communityData] = await Promise.all([
+          playerRes.json(),
+          communityRes.json()
+        ]);
+
+        console.log('Received card data:', { playerData, communityData });
+
+        if (playerData.success) {
+          console.log('Setting player cards:', playerData.cards);
+          setPlayerCards(playerData.cards);
+        }
+        if (communityData.success) {
+          console.log('Setting community cards:', communityData.cards);
+          setCommunityCards(communityData.cards);
+        }
+      } catch (err) {
+        console.error('Error fetching cards:', err);
+      }
+    };
+
+    fetchCards();
+    const interval = setInterval(fetchCards, 5000);
+    return () => clearInterval(interval);
+  }, [account, tableId, hasJoined]);
+
   if (!account) {
     return <div className="poker-container">Please connect your wallet</div>;
   }
@@ -570,13 +635,65 @@ function PokerTable() {
             })}
           </div>
 
+          <div className="card-display">
+            <div className="community-cards">
+              <h3>Community Cards:</h3>
+              {communityCards.length === 0 ? (
+                <p>No community cards yet</p>
+              ) : (
+                communityCards.map((card, index) => {
+                  const { value, suit, color } = cardValueToString(card);
+                  return (
+                    <div key={index} className="card" style={{ color }}>
+                      {value}{suit}
+                    </div>
+                  );
+                })
+              )}
+            </div>
+            
+            <div className="player-cards">
+              <h3>Your Cards:</h3>
+              {playerCards.length === 0 ? (
+                <p>No player cards yet</p>
+              ) : (
+                playerCards.map((card, index) => {
+                  const { value, suit, color } = cardValueToString(card);
+                  return (
+                    <div key={index} className="card" style={{ color }}>
+                      {value}{suit}
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+
           {/* Add the dealer controls */}
           {isDealer && (
             <div className="dealer-controls">
               {gameState.gamePhase === 'Waiting' && (
                 <button 
-                  className="start-flop-button"
-                  onClick={handleStartFlop}
+                  className="start-game-button"
+                  onClick={async () => {
+                    try {
+                      // First deal initial cards
+                      await fetch(`${API_BASE_URL}/poker/deal-initial-cards`, {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ tableId })
+                      });
+                      
+                      // Then start the game
+                      await handleAction('startGame');
+                      updateGameState();
+                    } catch (err) {
+                      console.error('Error starting game:', err);
+                      toast.error('Failed to start game');
+                    }
+                  }}
                   disabled={Number(gameState.playerCount) < 2}
                 >
                   Start Game ({gameState.playerCount}/2 players)
