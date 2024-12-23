@@ -594,26 +594,147 @@ function PokerTable() {
           <p>Players: {gameState.playerCount}/6</p>
         </div>
         <div className="poker-table">
-          {/* Add SVG table */}
+          {/* Replace the existing SVG with this one */}
           <svg className="table-background" viewBox="0 0 300 200">
-            {/* Outer table edge */}
+            <defs>
+              <filter id="glow">
+                <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+                <feMerge>
+                  <feMergeNode in="coloredBlur"/>
+                  <feMergeNode in="SourceGraphic"/>
+                </feMerge>
+              </filter>
+              
+              <linearGradient id="holoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style={{stopColor: '#0ff', stopOpacity: 0.1}}/>
+                <stop offset="50%" style={{stopColor: '#08f', stopOpacity: 0.2}}/>
+                <stop offset="100%" style={{stopColor: '#0ff', stopOpacity: 0.1}}/>
+              </linearGradient>
+
+              <linearGradient id="flowGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                <animate 
+                  attributeName="x1" 
+                  values="-100%;0%;100%" 
+                  dur="3s" 
+                  repeatCount="indefinite" 
+                />
+                <animate 
+                  attributeName="x2" 
+                  values="0%;100%;200%" 
+                  dur="3s" 
+                  repeatCount="indefinite" 
+                />
+                <stop offset="0%" stopColor="rgba(0,255,255,0)" />
+                <stop offset="25%" stopColor="rgba(0,255,255,0.5)" />
+                <stop offset="50%" stopColor="rgba(0,255,255,0)" />
+                <stop offset="75%" stopColor="rgba(0,255,255,0)" />
+                <stop offset="100%" stopColor="rgba(0,255,255,0)" />
+              </linearGradient>
+
+              <clipPath id="tableClip">
+                <ellipse 
+                  cx="150" 
+                  cy="100" 
+                  rx="135" 
+                  ry="85"
+                />
+              </clipPath>
+            </defs>
+
+            {/* Base table shape */}
             <ellipse 
               cx="150" 
               cy="100" 
               rx="140" 
               ry="90" 
-              fill="#1B4D3E" 
-              stroke="#8B4513" 
-              strokeWidth="8"
+              fill="url(#holoGradient)" 
+              stroke="#0ff" 
+              strokeWidth="2"
+              filter="url(#glow)"
             />
-            {/* Inner felt area */}
-            <ellipse 
-              cx="150" 
-              cy="100" 
-              rx="130" 
-              ry="80" 
-              fill="#35654d"
-            />
+
+            {/* Apply clip-path to the line design group */}
+            <g stroke="url(#flowGradient)" strokeWidth="1.5" fill="none" clipPath="url(#tableClip)">
+              {/* Curved horizontal lines spanning full width */}
+              <path d="M 30,60 Q 150,30 270,60" />
+              <path d="M 30,140 Q 150,170 270,140" />
+              <path d="M 30,100 Q 150,70 270,100" />
+              
+              {/* Vertical curved lines at wider positions */}
+              <path d="M 60,40 Q 60,100 60,160" />
+              <path d="M 240,40 Q 240,100 240,160" />
+              <path d="M 150,30 Q 150,100 150,170" />
+              
+              {/* Larger diamond pattern in center */}
+              <path d="M 150,50 L 200,100 L 150,150 L 100,100 Z" />
+              
+              {/* Extended diagonal lines */}
+              <path d="M 70,60 L 120,140" />
+              <path d="M 230,60 L 180,140" />
+              <path d="M 70,140 L 120,60" />
+              <path d="M 230,140 L 180,60" />
+              
+              {/* Additional horizontal lines */}
+              <path d="M 80,85 L 220,85" />
+              <path d="M 80,115 L 220,115" />
+              
+              {/* Extended corner connectors */}
+              <path d="M 50,70 Q 80,70 100,90" />
+              <path d="M 250,70 Q 220,70 200,90" />
+              <path d="M 50,130 Q 80,130 100,110" />
+              <path d="M 250,130 Q 220,130 200,110" />
+              
+              {/* Center circle */}
+              <circle cx="150" cy="100" r="20" />
+              
+              {/* Wider decorative arcs */}
+              <path d="M 70,50 A 80,80 0 0,1 230,50" />
+              <path d="M 70,150 A 80,80 0 0,0 230,150" />
+              
+              {/* Additional connecting lines */}
+              <path d="M 40,100 L 260,100" />
+              <path d="M 100,40 L 200,160" />
+              <path d="M 100,160 L 200,40" />
+            </g>
+
+            {/* Keep existing corner accents */}
+            <g filter="url(#glow)">
+              <circle cx="30" cy="50" r="3" fill="#0ff">
+                <animate 
+                  attributeName="opacity"
+                  values="0.3;1;0.3"
+                  dur="2s"
+                  repeatCount="indefinite"
+                />
+              </circle>
+              <circle cx="270" cy="50" r="3" fill="#0ff">
+                <animate 
+                  attributeName="opacity"
+                  values="0.3;1;0.3"
+                  dur="2s"
+                  repeatCount="indefinite"
+                  begin="0.5s"
+                />
+              </circle>
+              <circle cx="30" cy="150" r="3" fill="#0ff">
+                <animate 
+                  attributeName="opacity"
+                  values="0.3;1;0.3"
+                  dur="2s"
+                  repeatCount="indefinite"
+                  begin="1s"
+                />
+              </circle>
+              <circle cx="270" cy="150" r="3" fill="#0ff">
+                <animate 
+                  attributeName="opacity"
+                  values="0.3;1;0.3"
+                  dur="2s"
+                  repeatCount="indefinite"
+                  begin="1.5s"
+                />
+              </circle>
+            </g>
           </svg>
 
           <div className="player-positions">
