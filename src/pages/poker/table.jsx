@@ -757,21 +757,52 @@ function PokerTable() {
               Call
             </button>
             <div className="raise-controls">
-              <input 
-                type="range" 
+              <input
+                type="number"
+                value={raiseAmount}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  // Allow empty input, decimals, and partial numbers
+                  if (value === '' || value === '.' || value === '0.' || value.match(/^\d*\.?\d*$/)) {
+                    setRaiseAmount(value);
+                    return;
+                  }
+                  
+                  const numValue = parseFloat(value);
+                  if (isNaN(numValue)) {
+                    toast.error('Please enter a valid number');
+                    return;
+                  }
+                  
+                  // Check for more than 3 decimal places
+                  if (value.includes('.') && value.split('.')[1].length > 3) {
+                    toast.error('Maximum of 3 decimal places allowed');
+                    return;
+                  }
+                  
+                  const minRaise = parseFloat(gameState.minRaise);
+                  const maxRaise = parseFloat(gameState.maxRaise);
+                  
+                  // Only show range error if user has finished typing
+                  if (value.length > 0 && !value.endsWith('.') && (numValue < minRaise || numValue > maxRaise)) {
+                    toast.error(`Raise amount must be between ${minRaise} and ${maxRaise} ETH`);
+                    return;
+                  }
+                  
+                  setRaiseAmount(value);
+                }}
                 min={gameState.minRaise}
                 max={gameState.maxRaise}
                 step="0.001"
-                value={raiseAmount}
-                onChange={(e) => setRaiseAmount(e.target.value)}
-                disabled={!gameState.isPlayerTurn}
               />
               <button 
-                className="raise-button" 
-                onClick={() => handleAction('raise', raiseAmount)}
-                disabled={!gameState.isPlayerTurn}
+                className="raise-button"
+                onClick={() => handleAction('raise', parseFloat(raiseAmount))}
+                disabled={!gameState.isPlayerTurn || raiseAmount === '' || raiseAmount === '.' || 
+                         parseFloat(raiseAmount) < parseFloat(gameState.minRaise) || 
+                         parseFloat(raiseAmount) > parseFloat(gameState.maxRaise)}
               >
-                Raise to {raiseAmount} ETH
+                Raise to {raiseAmount || '0'} ETH
               </button>
             </div>
           </div>
