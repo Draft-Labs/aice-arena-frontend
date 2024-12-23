@@ -650,3 +650,31 @@ h2 {
 .card:hover {
   transform: translateY(-5px);
 }
+
+.dealer-button {
+  padding: 8px 16px;
+  margin: 4px;
+  border-radius: 4px;
+  background-color: #2196f3;
+  color: white;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.dealer-button:hover:not(.disabled) {
+  background-color: #1976d2;
+}
+
+.dealer-button.disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.dealer-controls {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 16px;
+}

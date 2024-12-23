@@ -588,6 +588,161 @@ function PokerTable() {
     return () => clearInterval(interval);
   }, [account, tableId, hasJoined]);
 
+  // Add these state variables
+  const [currentPosition, setCurrentPosition] = useState(null);
+  const [currentBet, setCurrentBet] = useState('0');
+  const [isPlayerTurn, setIsPlayerTurn] = useState(false);
+
+  // Add this effect to check if it's player's turn
+  useEffect(() => {
+    const checkTurn = async () => {
+      if (!pokerContract || !account || !tableId) return;
+      
+      try {
+        const [tableInfo, playerInfo] = await Promise.all([
+          pokerContract.getTableInfo(tableId),
+          pokerContract.getPlayerInfo(tableId, account)
+        ]);
+        
+        setCurrentPosition(tableInfo.currentPosition);
+        setCurrentBet(ethers.formatEther(tableInfo.currentBet));
+        setIsPlayerTurn(playerInfo.position === tableInfo.currentPosition);
+      } catch (err) {
+        console.error('Error checking turn:', err);
+      }
+    };
+
+    checkTurn();
+    const interval = setInterval(checkTurn, 3000);
+    return () => clearInterval(interval);
+  }, [pokerContract, account, tableId]);
+
+  // Update the betting controls render
+  const renderBettingControls = () => {
+    if (!isPlayerTurn) return null;
+
+    return (
+      <div className="betting-controls">
+        <button 
+          onClick={() => handleAction('fold')}
+          disabled={!isPlayerTurn}
+        >
+          Fold
+        </button>
+        
+        <button 
+          onClick={() => handleAction('call')}
+          disabled={!isPlayerTurn || currentBet === '0'}
+        >
+          Call {currentBet} ETH
+        </button>
+        
+        <div className="raise-controls">
+          <input
+            type="number"
+            value={raiseAmount}
+            onChange={(e) => setRaiseAmount(e.target.value)}
+            min={parseFloat(currentBet) * 2}
+            step="0.001"
+          />
+          <button 
+            onClick={() => handleAction('raise', raiseAmount)}
+            disabled={!isPlayerTurn || raiseAmount < parseFloat(currentBet) * 2}
+          >
+            Raise to {raiseAmount} ETH
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  // Add this state variable with the other state declarations
+  const [isBettingRoundComplete, setIsBettingRoundComplete] = useState(false);
+
+  // Add this effect to check if betting round is complete
+  useEffect(() => {
+    const checkBettingRound = async () => {
+      if (!pokerContract || !tableId || !hasJoined) return;
+
+      try {
+        const [tableInfo, playerInfo] = await Promise.all([
+          pokerContract.getTableInfo(tableId),
+          pokerContract.getPlayerInfo(tableId, account)
+        ]);
+
+        // Check if all active players have acted and matched the current bet
+        let allPlayersActed = true;
+        let activeCount = 0;
+        const targetBet = ethers.formatEther(tableInfo.currentBet);
+
+        for (const playerAddr of tableInfo.playerAddresses) {
+          const player = await pokerContract.getPlayerInfo(tableId, playerAddr);
+          if (player.isActive) {
+            activeCount++;
+            if (!player.hasActed || ethers.formatEther(player.currentBet) !== targetBet) {
+              allPlayersActed = false;
+              break;
+            }
+          }
+        }
+
+        setIsBettingRoundComplete(allPlayersActed && activeCount >= 2);
+      } catch (err) {
+        console.error('Error checking betting round:', err);
+      }
+    };
+
+    checkBettingRound();
+    const interval = setInterval(checkBettingRound, 3000);
+    return () => clearInterval(interval);
+  }, [pokerContract, tableId, hasJoined, account]);
+
+  // Update the dealer controls render function
+  const renderDealerControls = () => {
+    if (!isDealer) return null;
+
+    return (
+      <div className="dealer-controls">
+        {gameState.gamePhase === 'PreFlop' && (
+          <button 
+            onClick={handleStartFlop}
+            disabled={!isBettingRoundComplete}
+            className={`dealer-button ${!isBettingRoundComplete ? 'disabled' : ''}`}
+          >
+            Deal Flop
+          </button>
+        )}
+        {gameState.gamePhase === 'Flop' && (
+          <button 
+            onClick={handleStartTurn}
+            disabled={!isBettingRoundComplete}
+            className={`dealer-button ${!isBettingRoundComplete ? 'disabled' : ''}`}
+          >
+            Deal Turn
+          </button>
+        )}
+        {gameState.gamePhase === 'Turn' && (
+          <button 
+            onClick={handleStartRiver}
+            disabled={!isBettingRoundComplete}
+            className={`dealer-button ${!isBettingRoundComplete ? 'disabled' : ''}`}
+          >
+            Deal River
+          </button>
+        )}
+        {gameState.gamePhase === 'River' && (
+          <button 
+            onClick={handleShowdown}
+            disabled={!isBettingRoundComplete}
+            className={`dealer-button ${!isBettingRoundComplete ? 'disabled' : ''}`}
+          >
+            Start Showdown
+          </button>
+        )}
+      </div>
+    );
+  };
+
   if (!account) {
     return <div className="poker-container">Please connect your wallet</div>;
   }
