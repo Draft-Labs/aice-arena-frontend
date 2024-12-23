@@ -52,6 +52,28 @@
       "type": "error"
     },
     {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "owner",
+          "type": "address"
+        }
+      ],
+      "name": "OwnableInvalidOwner",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        }
+      ],
+      "name": "OwnableUnauthorizedAccount",
+      "type": "error"
+    },
+    {
       "inputs": [],
       "name": "PlayerNotAtTable",
       "type": "error"
@@ -176,6 +198,25 @@
         }
       ],
       "name": "HandComplete",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "previousOwner",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "newOwner",
+          "type": "address"
+        }
+      ],
+      "name": "OwnershipTransferred",
       "type": "event"
     },
     {
@@ -402,24 +443,6 @@
           "type": "uint256"
         }
       ],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "tableId",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint8[]",
-          "name": "cards",
-          "type": "uint8[]"
-        }
-      ],
-      "name": "dealCommunityCards",
-      "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
     },
@@ -727,6 +750,13 @@
       "type": "function"
     },
     {
+      "inputs": [],
+      "name": "renounceOwnership",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
       "inputs": [
         {
           "internalType": "uint256",
@@ -855,6 +885,19 @@
         }
       ],
       "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "newOwner",
+          "type": "address"
+        }
+      ],
+      "name": "transferOwnership",
+      "outputs": [],
+      "stateMutability": "nonpayable",
       "type": "function"
     },
     {
