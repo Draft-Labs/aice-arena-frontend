@@ -637,9 +637,8 @@ function PokerTable() {
 
           <div className="card-display">
             <div className="community-cards">
-              <h3>Community Cards:</h3>
               {communityCards.length === 0 ? (
-                <p>No community cards yet</p>
+                <p>No table cards yet</p>
               ) : (
                 communityCards.map((card, index) => {
                   const { value, suit, color } = cardValueToString(card);
@@ -733,48 +732,47 @@ function PokerTable() {
               )}
             </div>
           )}
-
-          <div className="game-controls">
-            <div className="action-buttons">
+        </div>
+        <div className="game-controls">
+          <div className="action-buttons">
+            <button 
+              className="fold-button" 
+              onClick={() => handleAction('fold')}
+              disabled={!gameState.isPlayerTurn}
+            >
+              Fold
+            </button>
+            <button 
+              className="check-button" 
+              onClick={() => handleAction('check')}
+              disabled={!gameState.isPlayerTurn || !gameState.canCheck}
+            >
+              Check
+            </button>
+            <button 
+              className="call-button" 
+              onClick={() => handleAction('call')}
+              disabled={!gameState.isPlayerTurn}
+            >
+              Call
+            </button>
+            <div className="raise-controls">
+              <input 
+                type="range" 
+                min={gameState.minRaise}
+                max={gameState.maxRaise}
+                step="0.001"
+                value={raiseAmount}
+                onChange={(e) => setRaiseAmount(e.target.value)}
+                disabled={!gameState.isPlayerTurn}
+              />
               <button 
-                className="fold-button" 
-                onClick={() => handleAction('fold')}
+                className="raise-button" 
+                onClick={() => handleAction('raise', raiseAmount)}
                 disabled={!gameState.isPlayerTurn}
               >
-                Fold
+                Raise to {raiseAmount} ETH
               </button>
-              <button 
-                className="check-button" 
-                onClick={() => handleAction('check')}
-                disabled={!gameState.isPlayerTurn || !gameState.canCheck}
-              >
-                Check
-              </button>
-              <button 
-                className="call-button" 
-                onClick={() => handleAction('call')}
-                disabled={!gameState.isPlayerTurn}
-              >
-                Call
-              </button>
-              <div className="raise-controls">
-                <input 
-                  type="range" 
-                  min={gameState.minRaise}
-                  max={gameState.maxRaise}
-                  step="0.001"
-                  value={raiseAmount}
-                  onChange={(e) => setRaiseAmount(e.target.value)}
-                  disabled={!gameState.isPlayerTurn}
-                />
-                <button 
-                  className="raise-button" 
-                  onClick={() => handleAction('raise', raiseAmount)}
-                  disabled={!gameState.isPlayerTurn}
-                >
-                  Raise to {raiseAmount} ETH
-                </button>
-              </div>
             </div>
           </div>
         </div>
