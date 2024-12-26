@@ -601,7 +601,7 @@ function PokerTable() {
         // Update last winner state directly
         setLastWinner({
           address: winner,
-          handRank: handRanks[handRank], // Use the number directly to index the array
+          handRank: handRanks[handRank],
           potAmount: ethers.formatEther(potAmount)
         });
 
@@ -864,58 +864,6 @@ function PokerTable() {
     potAmount: '0',
     handType: null
   });
-
-  useEffect(() => {
-    if (!pokerContract) return;
-
-    const handleHandWinner = (eventTableId, winner, handRank, potAmount, event) => {
-      if (eventTableId.toString() === tableId) {
-        console.log('HandWinner event received:', {
-          eventTableId: eventTableId.toString(),
-          winner,
-          handRank: handRank.toString(),
-          potAmount: potAmount.toString()
-        });
-
-        const handRanks = [
-          'High Card',
-          'Pair',
-          'Two Pair', 
-          'Three of a Kind',
-          'Straight',
-          'Flush',
-          'Full House',
-          'Four of a Kind',
-          'Straight Flush',
-          'Royal Flush'
-        ];
-
-        // Update the last winner state with the new winner info
-        setLastWinner({
-          address: winner,
-          handRank: handRanks[Number(handRank)],
-          potAmount: ethers.formatEther(potAmount)
-        });
-        
-        // Show toast notification
-        toast.success(`${formatAddress(winner)} won with ${handRanks[Number(handRank)]}!`);
-        
-        // Update game state to Complete
-        setGameState(prevState => ({
-          ...prevState,
-          gamePhase: 'Complete'
-        }));
-      }
-    };
-
-    console.log('Setting up HandWinner event listener for table:', tableId);
-    pokerContract.on('HandWinner', handleHandWinner);
-
-    return () => {
-      console.log('Removing HandWinner event listener');
-      pokerContract.off('HandWinner', handleHandWinner);
-    };
-  }, [pokerContract, tableId, formatAddress]);
 
   // Update the handleStartNewHand function to reset the last winner
   const handleStartNewHand = async () => {
