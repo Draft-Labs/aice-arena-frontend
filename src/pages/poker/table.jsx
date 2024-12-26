@@ -468,11 +468,54 @@ function PokerTable() {
     checkDealerStatus();
   }, [pokerContract, account]);
 
-  // Add this function to handle starting the flop
+  const handleGameAction = async (action, tableId) => {
+    try {
+      if (!signer) {
+        throw new Error('No signer available');
+      }
+
+      const feeData = await signer.provider.getFeeData();
+      
+      // Increase the gas price by 50% using ethers
+      const maxFeePerGas = feeData.maxFeePerGas * 150n / 100n;
+      const maxPriorityFeePerGas = feeData.maxPriorityFeePerGas * 150n / 100n;
+
+      let tx;
+      const txOptions = {
+        maxFeePerGas,
+        maxPriorityFeePerGas,
+        gasLimit: 500000
+      };
+
+      switch (action) {
+        case 'flop':
+          tx = await pokerContract.startFlop(tableId, txOptions);
+          break;
+        case 'turn':
+          tx = await pokerContract.startTurn(tableId, txOptions);
+          break;
+        case 'river':
+          tx = await pokerContract.startRiver(tableId, txOptions);
+          break;
+        case 'showdown':
+          tx = await pokerContract.startShowdown(tableId, txOptions);
+          break;
+        default:
+          throw new Error('Invalid action');
+      }
+
+      await tx.wait();
+      return tx;
+    } catch (err) {
+      console.error(`Error executing ${action}:`, err);
+      throw err;
+    }
+  };
+
+  // Update the handlers to use the common function
   const handleStartFlop = async () => {
     try {
-      const tx = await pokerContract.startFlop(tableId);
-      await tx.wait();
+      const tx = await handleGameAction('flop', tableId);
       toast.success('Flop started successfully');
       await updateGameState();
     } catch (err) {
@@ -481,11 +524,9 @@ function PokerTable() {
     }
   };
 
-  // Add these handler functions
   const handleStartTurn = async () => {
     try {
-      const tx = await pokerContract.startTurn(tableId);
-      await tx.wait();
+      const tx = await handleGameAction('turn', tableId);
       toast.success('Turn dealt successfully');
       await updateGameState();
     } catch (err) {
@@ -496,8 +537,7 @@ function PokerTable() {
 
   const handleStartRiver = async () => {
     try {
-      const tx = await pokerContract.startRiver(tableId);
-      await tx.wait();
+      const tx = await handleGameAction('river', tableId);
       toast.success('River dealt successfully');
       await updateGameState();
     } catch (err) {
@@ -508,8 +548,33 @@ function PokerTable() {
 
   const handleShowdown = async () => {
     try {
-      const tx = await pokerContract.startShowdown(tableId);
-      await tx.wait();
+      console.log('Starting showdown for table:', tableId);
+      const tx = await handleGameAction('showdown', tableId);
+      
+      console.log('Showdown transaction sent:', tx.hash);
+      const receipt = await tx.wait();
+      console.log('Showdown transaction confirmed:', receipt);
+      
+      // Parse events...
+      const events = receipt.logs.map(log => {
+        try {
+          return pokerContract.interface.parseLog({
+            topics: log.topics,
+            data: log.data
+          });
+        } catch (e) {
+          return null;
+        }
+      }).filter(Boolean);
+
+      console.log('All parsed events:', events);
+      
+      // Find HandWinner event
+      const handWinnerEvent = events.find(event => event.name === 'HandWinner');
+      if (handWinnerEvent) {
+        console.log('Found HandWinner event:', handWinnerEvent);
+      }
+      
       toast.success('Showdown started');
       await updateGameState();
     } catch (err) {
@@ -604,8 +669,8 @@ function PokerTable() {
           pokerContract.getPlayerInfo(tableId, account)
         ]);
         
-        setCurrentPosition(tableInfo.currentPosition);
-        setCurrentBet(ethers.formatEther(tableInfo.currentBet));
+        setCurrentPosition(tableInfo.currentPosition || 0);
+        setCurrentBet(tableInfo.currentBet ? ethers.formatEther(tableInfo.currentBet) : '0');
         setIsPlayerTurn(playerInfo.position === tableInfo.currentPosition);
       } catch (err) {
         console.error('Error checking turn:', err);
@@ -673,13 +738,15 @@ function PokerTable() {
         // Check if all active players have acted and matched the current bet
         let allPlayersActed = true;
         let activeCount = 0;
-        const targetBet = ethers.formatEther(tableInfo.currentBet);
+        const targetBet = tableInfo.currentBet ? ethers.formatEther(tableInfo.currentBet) : '0';
 
-        for (const playerAddr of tableInfo.playerAddresses) {
+        const playerAddresses = await pokerContract.getTablePlayers(tableId);
+        for (const playerAddr of playerAddresses) {
           const player = await pokerContract.getPlayerInfo(tableId, playerAddr);
           if (player.isActive) {
             activeCount++;
-            if (!player.hasActed || ethers.formatEther(player.currentBet) !== targetBet) {
+            const playerBet = player.currentBet ? ethers.formatEther(player.currentBet) : '0';
+            if (!player.hasActed || playerBet !== targetBet) {
               allPlayersActed = false;
               break;
             }
@@ -742,6 +809,98 @@ function PokerTable() {
       </div>
     );
   };
+
+  // Add this state near other state declarations
+  const [lastWinner, setLastWinner] = useState(null);
+
+  // Update the HandWinner event listener
+  useEffect(() => {
+    console.log('Event listener effect running with:', {
+      hasContract: !!pokerContract,
+      contractAddress: pokerContract?.address,
+      tableId
+    });
+
+    if (!pokerContract) {
+      console.log('No poker contract available');
+      return;
+    }
+
+    console.log('Setting up HandWinner event listener');
+
+    // Create filter for this specific table
+    const filter = pokerContract.filters.HandWinner(tableId);
+    console.log('Created event filter:', filter);
+
+    const handleHandWinner = (event) => {
+      console.log('HandWinner event received:', event);
+
+      // Extract args from the event payload
+      const { args } = event;
+      const [eventTableId, winner, handRank, potAmount] = [
+        args[0],
+        args[1],
+        args[2],
+        args[3]
+      ];
+      
+      console.log('Parsed HandWinner event data:', {
+        eventTableId: eventTableId.toString(),
+        currentTableId: tableId,
+        winner,
+        handRank: handRank.toString(),
+        potAmount: potAmount.toString()
+      });
+
+      // Only handle events for current table
+      if (eventTableId.toString() !== tableId) {
+        console.log('Event was for different table, ignoring');
+        return;
+      }
+
+      const handRanks = [
+        'High Card',
+        'Pair',
+        'Two Pair', 
+        'Three of a Kind',
+        'Straight',
+        'Flush',
+        'Full House',
+        'Four of a Kind',
+        'Straight Flush',
+        'Royal Flush'
+      ];
+
+      const winnerInfo = {
+        address: winner,
+        handRank: handRanks[Number(handRank) || 0],
+        potAmount: ethers.formatEther(potAmount)
+      };
+
+      console.log('Processed winner info:', winnerInfo);
+      setLastWinner(winnerInfo);
+      
+      toast.success(
+        `${formatAddress(winner)} won ${ethers.formatEther(potAmount)} ETH with ${handRanks[Number(handRank) || 0]}!`,
+        {
+          position: "top-center",
+          autoClose: 5000
+        }
+      );
+    };
+
+    // Listen for both filtered and unfiltered events to debug
+    pokerContract.on(filter, handleHandWinner);
+    pokerContract.on('HandWinner', handleHandWinner);
+
+    console.log('HandWinner event listeners registered');
+
+    return () => {
+      console.log('Removing HandWinner event listener');
+      pokerContract.off(filter, handleHandWinner);
+      pokerContract.off('HandWinner', handleHandWinner);
+    };
+  }, [pokerContract, tableId]);
 
   if (!account) {
     return <div className="poker-container">Please connect your wallet</div>;
