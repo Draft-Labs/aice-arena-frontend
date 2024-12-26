@@ -815,48 +815,15 @@ function PokerTable() {
 
   // Update the HandWinner event listener
   useEffect(() => {
-    console.log('Event listener effect running with:', {
-      hasContract: !!pokerContract,
-      contractAddress: pokerContract?.address,
-      tableId
-    });
+    if (!pokerContract) return;
 
-    if (!pokerContract) {
-      console.log('No poker contract available');
-      return;
-    }
-
-    console.log('Setting up HandWinner event listener');
-
-    // Create filter for this specific table
-    const filter = pokerContract.filters.HandWinner(tableId);
-    console.log('Created event filter:', filter);
-
-    const handleHandWinner = (event) => {
-      console.log('HandWinner event received:', event);
-
-      // Extract args from the event payload
-      const { args } = event;
-      const [eventTableId, winner, handRank, potAmount] = [
-        args[0],
-        args[1],
-        args[2],
-        args[3]
-      ];
-      
-      console.log('Parsed HandWinner event data:', {
+    const handleHandWinner = (eventTableId, winner, handRank, potAmount, event) => {
+      console.log('HandWinner event received:', {
         eventTableId: eventTableId.toString(),
-        currentTableId: tableId,
         winner,
         handRank: handRank.toString(),
         potAmount: potAmount.toString()
       });
-
-      // Only handle events for current table
-      if (eventTableId.toString() !== tableId) {
-        console.log('Event was for different table, ignoring');
-        return;
-      }
 
       const handRanks = [
         'High Card',
@@ -873,31 +840,31 @@ function PokerTable() {
 
       const winnerInfo = {
         address: winner,
-        handRank: handRanks[Number(handRank) || 0],
+        handRank: handRanks[Number(handRank)],
         potAmount: ethers.formatEther(potAmount)
       };
 
-      console.log('Processed winner info:', winnerInfo);
+      console.log('Winner info:', winnerInfo);
       setLastWinner(winnerInfo);
       
       toast.success(
-        `${formatAddress(winner)} won ${ethers.formatEther(potAmount)} ETH with ${handRanks[Number(handRank) || 0]}!`,
+        `${formatAddress(winner)} won ${ethers.formatEther(potAmount)} ETH with ${handRanks[Number(handRank)]}!`,
         {
           position: "top-center",
-          autoClose: 5000
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true
         }
       );
     };
 
-    // Listen for both filtered and unfiltered events to debug
-    pokerContract.on(filter, handleHandWinner);
+    console.log('Setting up HandWinner event listener for table:', tableId);
     pokerContract.on('HandWinner', handleHandWinner);
-
-    console.log('HandWinner event listeners registered');
 
     return () => {
       console.log('Removing HandWinner event listener');
-      pokerContract.off(filter, handleHandWinner);
       pokerContract.off('HandWinner', handleHandWinner);
     };
   }, [pokerContract, tableId]);
