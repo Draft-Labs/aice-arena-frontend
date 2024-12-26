@@ -555,7 +555,7 @@ function PokerTable() {
       const receipt = await tx.wait();
       console.log('Showdown transaction confirmed:', receipt);
       
-      // Parse events...
+      // Parse events to find HandWinner event
       const events = receipt.logs.map(log => {
         try {
           return pokerContract.interface.parseLog({
@@ -569,13 +569,52 @@ function PokerTable() {
 
       console.log('All parsed events:', events);
       
-      // Find HandWinner event
+      // Find HandWinner event and update last winner state
       const handWinnerEvent = events.find(event => event.name === 'HandWinner');
       if (handWinnerEvent) {
         console.log('Found HandWinner event:', handWinnerEvent);
+        
+        // Extract args and convert BigNumber to number for handRank
+        const winner = handWinnerEvent.args[1]; // winner is the second argument
+        const handRank = Number(handWinnerEvent.args[2]); // handRank is the third argument
+        const potAmount = handWinnerEvent.args[3]; // potAmount is the fourth argument
+
+        console.log('Parsed event data:', {
+          winner,
+          handRank,
+          potAmount: potAmount.toString()
+        });
+
+        const handRanks = [
+          'High Card',
+          'Pair',
+          'Two Pair', 
+          'Three of a Kind',
+          'Straight',
+          'Flush',
+          'Full House',
+          'Four of a Kind',
+          'Straight Flush',
+          'Royal Flush'
+        ];
+
+        // Update last winner state directly
+        setLastWinner({
+          address: winner,
+          handRank: handRanks[handRank], // Use the number directly to index the array
+          potAmount: ethers.formatEther(potAmount)
+        });
+
+        // Show toast notification
+        toast.success(`${formatAddress(winner)} won with ${handRanks[handRank]}!`);
       }
       
-      toast.success('Showdown started');
+      // Update game state to Complete
+      setGameState(prevState => ({
+        ...prevState,
+        gamePhase: 'Complete'
+      }));
+
       await updateGameState();
     } catch (err) {
       console.error('Error starting showdown:', err);
@@ -819,7 +858,12 @@ function PokerTable() {
   };
 
   // Update the existing HandWinner event handler to include both toast and last hand state
-  const [lastWinner, setLastWinner] = useState(null);
+  const [lastWinner, setLastWinner] = useState({
+    address: null,
+    handRank: null,
+    potAmount: '0',
+    handType: null
+  });
 
   useEffect(() => {
     if (!pokerContract) return;
@@ -846,14 +890,15 @@ function PokerTable() {
           'Royal Flush'
         ];
 
-        const winnerInfo = {
+        // Update the last winner state with the new winner info
+        setLastWinner({
           address: winner,
           handRank: handRanks[Number(handRank)],
           potAmount: ethers.formatEther(potAmount)
-        };
-
-        console.log('Winner info:', winnerInfo);
-        setLastWinner(winnerInfo);
+        });
+        
+        // Show toast notification
+        toast.success(`${formatAddress(winner)} won with ${handRanks[Number(handRank)]}!`);
         
         // Update game state to Complete
         setGameState(prevState => ({
@@ -870,13 +915,17 @@ function PokerTable() {
       console.log('Removing HandWinner event listener');
       pokerContract.off('HandWinner', handleHandWinner);
     };
-  }, [pokerContract, tableId]);
+  }, [pokerContract, tableId, formatAddress]);
 
-  // Update the handleStartNewHand function
+  // Update the handleStartNewHand function to reset the last winner
   const handleStartNewHand = async () => {
     try {
-      // Reset last winner
-      setLastWinner(null);
+      // Reset last winner when starting a new hand
+      setLastWinner({
+        address: null,
+        handRank: null,
+        potAmount: '0'
+      });
       
       // First deal initial cards
       await fetch(`${API_BASE_URL}/poker/deal-initial-cards`, {
@@ -916,9 +965,15 @@ function PokerTable() {
           <h3>Last Hand</h3>
           {lastWinner ? (
             <div className="last-hand-info">
-              <p>Winner: {formatAddress(lastWinner.address)}</p>
-              <p>Hand: {lastWinner.handRank}</p>
-              <p>Pot: {lastWinner.potAmount} ETH</p>
+              <p className="winner-address">
+                Winner: {formatAddress(lastWinner.address)}
+              </p>
+              <p className="hand-rank">
+                Hand: <span className="rank">{lastWinner.handRank}</span>
+              </p>
+              <p className="pot-won">
+                Won: <span className="amount">{lastWinner.potAmount} ETH</span>
+              </p>
             </div>
           ) : (
             <p>None</p>

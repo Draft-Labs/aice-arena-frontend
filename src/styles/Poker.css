@@ -681,7 +681,7 @@ h2 {
 
 .last-hand-container {
   position: absolute;
-  top: 20px;
+  bottom: 20px;
   right: 20px;
   background: rgba(0, 0, 0, 0.8);
   border: 1px solid #0ff;
@@ -712,4 +712,58 @@ h2 {
 .last-hand-info p:last-child {
   color: #0ff;
   font-weight: bold;
+}
+
+.last-hand-container {
+  background: rgba(0, 0, 0, 0.7);
+  border: 1px solid #0ff;
+  border-radius: 8px;
+  padding: 15px;
+  margin: 10px;
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);
+}
+
+.last-hand-container h3 {
+  color: #0ff;
+  margin: 0 0 10px 0;
+  font-size: 1.2em;
+  text-align: center;
+}
+
+.last-hand-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.last-hand-info p {
+  margin: 0;
+  color: #fff;
+  font-size: 0.9em;
+}
+
+.last-hand-info .winner-address {
+  color: #0ff;
+  font-family: monospace;
+}
+
+.last-hand-info .rank {
+  color: #0ff;
+  font-weight: bold;
+}
+
+.last-hand-info .amount {
+  color: #0f0;
+  font-weight: bold;
+}
+
+/* Add subtle glow animation for the winner */
+@keyframes winnerGlow {
+  0% { box-shadow: 0 0 5px rgba(0, 255, 255, 0.2); }
+  50% { box-shadow: 0 0 15px rgba(0, 255, 255, 0.4); }
+  100% { box-shadow: 0 0 5px rgba(0, 255, 255, 0.2); }
+}
+
+.last-hand-container:has(.last-hand-info) {
+  animation: winnerGlow 2s infinite;
 }
