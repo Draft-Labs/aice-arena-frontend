@@ -7,6 +7,8 @@ import 'react-toastify/dist/ReactToastify.css';
 import '../../styles/Poker.css';
 import { getTableName } from '../../config/firebase';
 import { API_BASE_URL } from '../../config/constants';
+import { db } from '../../config/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 
 function PokerTable() {
   const navigate = useNavigate();
@@ -248,7 +250,26 @@ function PokerTable() {
     return states[index] || 'Waiting';
   };
 
-  // Update the useEffect for fetching table data
+  // Add new state for player names
+  const [playerNames, setPlayerNames] = useState({});
+
+  // Add this function to fetch player names
+  const fetchPlayerName = async (address) => {
+    try {
+      const docRef = doc(db, 'userProfiles', address.toLowerCase());
+      const docSnap = await getDoc(docRef);
+      
+      if (docSnap.exists() && docSnap.data().displayName) {
+        return docSnap.data().displayName;
+      }
+      return null;
+    } catch (err) {
+      console.error('Error fetching player name:', err);
+      return null;
+    }
+  };
+
+  // Update the useEffect that fetches table data to include player names
   useEffect(() => {
     const fetchTableData = async () => {
       if (tableId && pokerContract) {
@@ -284,6 +305,9 @@ function PokerTable() {
           const playerAddresses = await pokerContract.getTablePlayers(tableId);
           console.log('Player Addresses:', playerAddresses);
 
+          // Create an object to store player names
+          const names = {};
+
           // Get info for each player address
           for (const playerAddress of playerAddresses) {
             try {
@@ -291,6 +315,12 @@ function PokerTable() {
                 await pokerContract.getPlayerInfo(tableId, playerAddress);
 
               if (isActive) {
+                // Fetch player name from Firebase
+                const playerName = await fetchPlayerName(playerAddress);
+                if (playerName) {
+                  names[playerAddress] = playerName;
+                }
+
                 activePlayers.push({
                   address: playerAddress,
                   position: parseInt(position.toString()),
@@ -298,13 +328,16 @@ function PokerTable() {
                   currentBet: ethers.formatEther(currentBet),
                   isActive,
                   isSittingOut,
-                  displayName: formatAddress(playerAddress)
+                  displayName: playerName || formatAddress(playerAddress)
                 });
               }
             } catch (err) {
               console.error(`Error getting player info for ${playerAddress}:`, err);
             }
           }
+
+          // Update player names state
+          setPlayerNames(names);
 
           // Sort players by position
           activePlayers.sort((a, b) => a.position - b.position);
@@ -546,6 +579,23 @@ function PokerTable() {
     }
   };
 
+  // Add this helper function to get player display name
+  const getPlayerDisplayName = async (address) => {
+    try {
+      const docRef = doc(db, 'userProfiles', address.toLowerCase());
+      const docSnap = await getDoc(docRef);
+      
+      if (docSnap.exists() && docSnap.data().displayName) {
+        return docSnap.data().displayName;
+      }
+      return formatAddress(address);
+    } catch (err) {
+      console.error('Error fetching player name:', err);
+      return formatAddress(address);
+    }
+  };
+
+  // Update the handleShowdown function to include player name
   const handleShowdown = async () => {
     try {
       console.log('Starting showdown for table:', tableId);
@@ -574,16 +624,12 @@ function PokerTable() {
       if (handWinnerEvent) {
         console.log('Found HandWinner event:', handWinnerEvent);
         
-        // Extract args and convert BigNumber to number for handRank
-        const winner = handWinnerEvent.args[1]; // winner is the second argument
-        const handRank = Number(handWinnerEvent.args[2]); // handRank is the third argument
-        const potAmount = handWinnerEvent.args[3]; // potAmount is the fourth argument
+        const winner = handWinnerEvent.args[1];
+        const handRank = Number(handWinnerEvent.args[2]);
+        const potAmount = handWinnerEvent.args[3];
 
-        console.log('Parsed event data:', {
-          winner,
-          handRank,
-          potAmount: potAmount.toString()
-        });
+        // Get winner's display name
+        const winnerName = await getPlayerDisplayName(winner);
 
         const handRanks = [
           'High Card',
@@ -598,15 +644,16 @@ function PokerTable() {
           'Royal Flush'
         ];
 
-        // Update last winner state directly
+        // Update last winner state with both address and display name
         setLastWinner({
           address: winner,
+          displayName: winnerName,
           handRank: handRanks[handRank],
           potAmount: ethers.formatEther(potAmount)
         });
 
-        // Show toast notification
-        toast.success(`${formatAddress(winner)} won with ${handRanks[handRank]}!`);
+        // Show toast notification with display name
+        toast.success(`${winnerName} won with ${handRanks[handRank]}!`);
       }
       
       // Update game state to Complete
@@ -860,6 +907,7 @@ function PokerTable() {
   // Update the existing HandWinner event handler to include both toast and last hand state
   const [lastWinner, setLastWinner] = useState({
     address: null,
+    displayName: null,
     handRank: null,
     potAmount: '0',
     handType: null
@@ -871,6 +919,7 @@ function PokerTable() {
       // Reset last winner when starting a new hand
       setLastWinner({
         address: null,
+        displayName: null,
         handRank: null,
         potAmount: '0'
       });
@@ -914,7 +963,7 @@ function PokerTable() {
           {lastWinner ? (
             <div className="last-hand-info">
               <p className="winner-address">
-                Winner: {formatAddress(lastWinner.address)}
+                Winner: {lastWinner.displayName || formatAddress(lastWinner.address)}
               </p>
               <p className="hand-rank">
                 Hand: <span className="rank">{lastWinner.handRank}</span>
