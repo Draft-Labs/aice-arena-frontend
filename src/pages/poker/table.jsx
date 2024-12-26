@@ -259,13 +259,22 @@ function PokerTable() {
       const docRef = doc(db, 'userProfiles', address.toLowerCase());
       const docSnap = await getDoc(docRef);
       
-      if (docSnap.exists() && docSnap.data().displayName) {
-        return docSnap.data().displayName;
+      if (docSnap.exists()) {
+        const userData = docSnap.data();
+        // First check for verified Twitter handle
+        if (userData.twitterVerified && userData.twitterHandle) {
+          return `@${userData.twitterHandle}`;
+        }
+        // Then check for display name
+        if (userData.displayName) {
+          return userData.displayName;
+        }
       }
-      return null;
+      // Fall back to formatted address
+      return formatAddress(address);
     } catch (err) {
       console.error('Error fetching player name:', err);
-      return null;
+      return formatAddress(address);
     }
   };
 
@@ -315,7 +324,7 @@ function PokerTable() {
                 await pokerContract.getPlayerInfo(tableId, playerAddress);
 
               if (isActive) {
-                // Fetch player name from Firebase
+                // Fetch player name with priority order
                 const playerName = await fetchPlayerName(playerAddress);
                 if (playerName) {
                   names[playerAddress] = playerName;
@@ -328,7 +337,7 @@ function PokerTable() {
                   currentBet: ethers.formatEther(currentBet),
                   isActive,
                   isSittingOut,
-                  displayName: playerName || formatAddress(playerAddress)
+                  displayName: playerName
                 });
               }
             } catch (err) {
@@ -585,8 +594,16 @@ function PokerTable() {
       const docRef = doc(db, 'userProfiles', address.toLowerCase());
       const docSnap = await getDoc(docRef);
       
-      if (docSnap.exists() && docSnap.data().displayName) {
-        return docSnap.data().displayName;
+      if (docSnap.exists()) {
+        const userData = docSnap.data();
+        // First check for verified Twitter handle
+        if (userData.twitterVerified && userData.twitterHandle) {
+          return `@${userData.twitterHandle}`;
+        }
+        // Then check for display name
+        if (userData.displayName) {
+          return userData.displayName;
+        }
       }
       return formatAddress(address);
     } catch (err) {
