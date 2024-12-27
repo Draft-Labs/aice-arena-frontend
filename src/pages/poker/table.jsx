@@ -1569,19 +1569,6 @@ function PokerTable() {
       
       <form onSubmit={handleJoinTable} className="join-form">
         <div className="form-group">
-          <label>Username</label>
-          <input
-            type="text"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            placeholder="Enter your username"
-            required
-            disabled={isJoining}
-            maxLength={20}
-          />
-        </div>
-
-        <div className="form-group">
           <label>Buy-in Amount (ETH)</label>
           <input
             type="number"
