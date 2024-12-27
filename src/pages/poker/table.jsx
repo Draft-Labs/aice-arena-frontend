@@ -84,15 +84,6 @@ function PokerTable() {
     fetchTableName();
   }, [tableId]);
 
-  // Add these new state variables at the top with other state declarations
-  const [debugInfo, setDebugInfo] = useState({
-    currentPosition: null,
-    hasActed: {},
-    roundComplete: false,
-    gamePhase: '',
-    lastAction: null
-  });
-
   // Add this new effect to listen for turn events
   useEffect(() => {
     if (!pokerContract || !account) return;
@@ -104,28 +95,14 @@ function PokerTable() {
     const handleTurnStarted = (tableId, player) => {
       console.log('Turn started:', { tableId, player });
       setCurrentTurn(player);
-      setDebugInfo(prev => ({
-        ...prev,
-        currentPosition: player,
-        lastAction: 'Turn Started'
-      }));
     };
 
     const handleTurnEnded = (tableId, player, action) => {
       console.log('Turn ended:', { tableId, player, action });
-      setDebugInfo(prev => ({
-        ...prev,
-        lastAction: `${action} by ${player.slice(0, 6)}...`
-      }));
     };
 
     const handleRoundComplete = (tableId) => {
       console.log('Round complete:', tableId);
-      setDebugInfo(prev => ({
-        ...prev,
-        roundComplete: true,
-        lastAction: 'Round Complete'
-      }));
     };
 
     pokerContract.on(turnStartedFilter, handleTurnStarted);
@@ -247,9 +224,16 @@ function PokerTable() {
       
     } catch (err) {
       console.error('Detailed error:', err);
-      let errorMessage = err.message;
       
-      // Handle panic errors
+      // Check for "Not your turn" error
+      if (err.data?.data?.message?.includes('Not your turn') || 
+          err.message?.includes('Not your turn')) {
+        toast.error('Not your turn!');
+        return;
+      }
+
+      // Handle other errors as before
+      let errorMessage = err.message;
       if (err.data?.data?.includes('0x4e487b71')) {
         const panicCode = err.data.data.slice(-2);
         switch (panicCode) {
@@ -869,7 +853,7 @@ function PokerTable() {
     
     const suit = suits[Math.floor((cardNumber - 1) / 13)];
     const value = values[(cardNumber - 1) % 13];
-    const color = suit === '♥' || suit === '♦' ? 'red' : 'black';
+    const color = suit === '���' || suit === '♦' ? 'red' : 'black';
     
     return { value, suit, color };
   };
@@ -942,11 +926,15 @@ function PokerTable() {
           isMyTurn: currentPlayerAddress?.toLowerCase() === account?.toLowerCase()
         });
 
-        setCurrentPosition(table.currentPosition);
-        setCurrentBet(table.currentBet ? ethers.formatEther(table.currentBet) : '0');
-        setIsPlayerTurn(currentPlayerAddress?.toLowerCase() === account?.toLowerCase());
+        // Only set currentTurn if we have a valid address
+        if (currentPlayerAddress && currentPlayerAddress !== ethers.ZeroAddress) {
+          setCurrentTurn(currentPlayerAddress);
+        } else {
+          setCurrentTurn(null);
+        }
       } catch (err) {
         console.error('Error checking turn:', err);
+        setCurrentTurn(null);
       }
     };
 
@@ -971,8 +959,9 @@ function PokerTable() {
         
         <button 
           onClick={() => handleAction('check')}
-          disabled={!isMyTurn || parseFloat(currentBet) > 0}
-          className={`action-button ${(!isMyTurn || parseFloat(currentBet) > 0) ? 'disabled' : ''}`}
+          //disabled={!isMyTurn || parseFloat(currentBet) > 0}
+          className="action-button"
+          //className={`action-button ${(!isMyTurn || parseFloat(currentBet) > 0) ? 'disabled' : ''}`}
         >
           Check
         </button>
@@ -1145,27 +1134,6 @@ function PokerTable() {
     }
   };
 
-  // Add this debug panel component
-  const DebugPanel = ({ info }) => (
-    <div className="debug-panel" style={{ 
-      position: 'fixed', 
-      bottom: '10px', 
-      right: '10px', 
-      background: 'rgba(0,0,0,0.8)', 
-      padding: '10px',
-      borderRadius: '5px',
-      color: '#0ff',
-      fontSize: '12px',
-      maxWidth: '300px',
-      zIndex: 1000
-    }}>
-      <h4 style={{ margin: '0 0 5px 0', color: '#0ff' }}>Debug Info</h4>
-      <div>Current Turn: {info.currentPosition?.slice(0, 6)}...</div>
-      <div>Game Phase: {info.gamePhase}</div>
-      <div>Round Complete: {info.roundComplete ? 'Yes' : 'No'}</div>
-      <div>Last Action: {info.lastAction}</div>
-    </div>
-  );
 
   if (!account) {
     return <div className="poker-container">Please connect your wallet</div>;
@@ -1350,8 +1318,15 @@ function PokerTable() {
           <div className="player-positions">
             {Array.from({ length: maxPlayersPerTable }).map((_, i) => {
               const player = players.find(p => p.position === i);
+              const isCurrentTurn = player && currentTurn && 
+                player.address?.toLowerCase() === currentTurn.toLowerCase();
+              
               return (
-                <div key={i} className={`player-position position-${i}`}>
+                <div 
+                  key={i} 
+                  className={`player-position position-${i} ${isCurrentTurn ? 'current-turn' : ''}`}
+                >
+                  {isCurrentTurn && <div className="turn-indicator">Current Turn</div>}
                   <div className="player-info">
                     <h3>{player ? player.displayName : `Seat ${i + 1}`}</h3>
                     {player && (
@@ -1478,7 +1453,7 @@ function PokerTable() {
             <button 
               className="check-button" 
               onClick={() => handleAction('check')}
-              disabled={!gameState.isPlayerTurn || !gameState.canCheck}
+              //disabled={!gameState.isPlayerTurn || !gameState.canCheck}
             >
               Check
             </button>
@@ -1552,7 +1527,6 @@ function PokerTable() {
           pauseOnHover
           theme="dark"
         />
-        {hasJoined && <DebugPanel info={debugInfo} />}
       </div>
     );
   }

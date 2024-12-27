@@ -767,3 +767,52 @@ h2 {
 .last-hand-container:has(.last-hand-info) {
   animation: winnerGlow 2s infinite;
 }
+
+/* Active turn indicator styles */
+.player-position.current-turn {
+  animation: turnGlow 2s infinite;
+  border: 2px solid #ffd700;
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
+  z-index: 10;
+}
+
+@keyframes turnGlow {
+  0% {
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
+    border-color: rgba(255, 215, 0, 0.8);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(255, 215, 0, 0.6);
+    border-color: rgba(255, 215, 0, 1);
+  }
+  100% {
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
+    border-color: rgba(255, 215, 0, 0.8);
+  }
+}
+
+/* Add a turn indicator text */
+.turn-indicator {
+  position: absolute;
+  top: -25px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(255, 215, 0, 0.9);
+  color: black;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.8em;
+  font-weight: bold;
+  white-space: nowrap;
+  opacity: 0;
+  animation: fadeInOut 2s infinite;
+}
+
+.player-position.current-turn .turn-indicator {
+  opacity: 1;
+}
+
+@keyframes fadeInOut {
+  0%, 100% { opacity: 0.8; }
+  50% { opacity: 1; }
+}
