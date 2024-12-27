@@ -389,6 +389,19 @@
           "internalType": "uint256",
           "name": "tableId",
           "type": "uint256"
+        }
+      ],
+      "name": "RoundComplete",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "tableId",
+          "type": "uint256"
         },
         {
           "indexed": false,
@@ -429,6 +442,50 @@
         }
       ],
       "name": "TableCreated",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "tableId",
+          "type": "uint256"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "player",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "string",
+          "name": "action",
+          "type": "string"
+        }
+      ],
+      "name": "TurnEnded",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "tableId",
+          "type": "uint256"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "player",
+          "type": "address"
+        }
+      ],
+      "name": "TurnStarted",
       "type": "event"
     },
     {
@@ -606,9 +663,9 @@
           "type": "bool"
         },
         {
-          "internalType": "uint8",
+          "internalType": "uint256",
           "name": "position",
-          "type": "uint8"
+          "type": "uint256"
         }
       ],
       "stateMutability": "view",
@@ -660,9 +717,9 @@
           "type": "uint256"
         },
         {
-          "internalType": "uint8",
+          "internalType": "uint256",
           "name": "playerCount",
-          "type": "uint8"
+          "type": "uint256"
         },
         {
           "internalType": "enum Poker.GameState",
@@ -963,19 +1020,19 @@
           "type": "uint256"
         },
         {
-          "internalType": "uint8",
+          "internalType": "uint256",
           "name": "dealerPosition",
-          "type": "uint8"
+          "type": "uint256"
         },
         {
-          "internalType": "uint8",
+          "internalType": "uint256",
           "name": "currentPosition",
-          "type": "uint8"
+          "type": "uint256"
         },
         {
-          "internalType": "uint8",
+          "internalType": "uint256",
           "name": "playerCount",
-          "type": "uint8"
+          "type": "uint256"
         },
         {
           "internalType": "enum Poker.GameState",

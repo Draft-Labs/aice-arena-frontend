@@ -13,7 +13,7 @@ import { doc, getDoc } from 'firebase/firestore';
 function PokerTable() {
   const navigate = useNavigate();
   const { tableId } = useParams();
-  const { account, pokerContract, treasuryContract, signer } = useWeb3();
+  const { account, pokerContract, treasuryContract, signer, provider } = useWeb3();
   const [table, setTable] = useState(null);
   const [buyInAmount, setBuyInAmount] = useState('');
   const [isJoining, setIsJoining] = useState(false);
@@ -84,35 +84,194 @@ function PokerTable() {
     fetchTableName();
   }, [tableId]);
 
-  // Add action handler
-  const handleAction = async (action, amount = '0') => {
+  // Add these new state variables at the top with other state declarations
+  const [debugInfo, setDebugInfo] = useState({
+    currentPosition: null,
+    hasActed: {},
+    roundComplete: false,
+    gamePhase: '',
+    lastAction: null
+  });
+
+  // Add this new effect to listen for turn events
+  useEffect(() => {
+    if (!pokerContract || !account) return;
+
+    const turnStartedFilter = pokerContract.filters.TurnStarted();
+    const turnEndedFilter = pokerContract.filters.TurnEnded();
+    const roundCompleteFilter = pokerContract.filters.RoundComplete();
+
+    const handleTurnStarted = (tableId, player) => {
+      console.log('Turn started:', { tableId, player });
+      setCurrentTurn(player);
+      setDebugInfo(prev => ({
+        ...prev,
+        currentPosition: player,
+        lastAction: 'Turn Started'
+      }));
+    };
+
+    const handleTurnEnded = (tableId, player, action) => {
+      console.log('Turn ended:', { tableId, player, action });
+      setDebugInfo(prev => ({
+        ...prev,
+        lastAction: `${action} by ${player.slice(0, 6)}...`
+      }));
+    };
+
+    const handleRoundComplete = (tableId) => {
+      console.log('Round complete:', tableId);
+      setDebugInfo(prev => ({
+        ...prev,
+        roundComplete: true,
+        lastAction: 'Round Complete'
+      }));
+    };
+
+    pokerContract.on(turnStartedFilter, handleTurnStarted);
+    pokerContract.on(turnEndedFilter, handleTurnEnded);
+    pokerContract.on(roundCompleteFilter, handleRoundComplete);
+
+    return () => {
+      pokerContract.off(turnStartedFilter, handleTurnStarted);
+      pokerContract.off(turnEndedFilter, handleTurnEnded);
+      pokerContract.off(roundCompleteFilter, handleRoundComplete);
+    };
+  }, [pokerContract, account]);
+
+  // Add this helper function near the top of your component
+  const isActionValid = async (action, tableId, account) => {
     try {
-      let tx;
+      const table = await pokerContract.tables(tableId);
+      const playerInfo = await pokerContract.getPlayerInfo(tableId, account);
+      
+      // Basic validation checks
+      if (!playerInfo.isActive) {
+        throw new Error('Player not active at table');
+      }
+      
+      if (table.gameState === 0) { // Waiting
+        throw new Error('Game not started');
+      }
+      
+      // Action-specific validation
       switch (action) {
-        case 'fold':
-          tx = await pokerContract.fold(tableId);
-          break;
         case 'check':
-          tx = await pokerContract.check(tableId);
+          if (table.currentBet > playerInfo.currentBet) {
+            throw new Error('Cannot check when there is a bet to call');
+          }
           break;
         case 'call':
-          tx = await pokerContract.call(tableId);
+          if (table.currentBet === playerInfo.currentBet) {
+            throw new Error('No bet to call');
+          }
+          break;
+        case 'fold':
+          // Folding is always valid for active players
           break;
         case 'raise':
-          tx = await pokerContract.raise(tableId, ethers.parseEther(amount));
+          if (playerInfo.tableStake < table.currentBet * 2n) {
+            throw new Error('Insufficient funds to raise');
+          }
+          break;
+      }
+      
+      return true;
+    } catch (err) {
+      console.error('Action validation failed:', err);
+      return false;
+    }
+  };
+
+  // Update the handleAction function
+  const handleAction = async (action, amount = '0') => {
+    try {
+      console.log('=== Starting action:', action, '===');
+      console.log('Table state:', {
+        tableId,
+        currentPosition: await pokerContract.tables(tableId).then(t => t.currentPosition.toString()),
+        playerCount: await pokerContract.tables(tableId).then(t => t.playerCount.toString()),
+        gameState: await pokerContract.tables(tableId).then(t => t.gameState.toString())
+      });
+      
+      // Get player info before action
+      const playerInfo = await pokerContract.getPlayerInfo(tableId, account);
+      console.log('Player info:', {
+        position: playerInfo.position.toString(),
+        isActive: playerInfo.isActive,
+        tableStake: ethers.formatEther(playerInfo.tableStake),
+        currentBet: ethers.formatEther(playerInfo.currentBet)
+      });
+      
+      // Validate action first
+      const isValid = await isActionValid(action, tableId, account);
+      if (!isValid) {
+        throw new Error('Invalid action for current game state');
+      }
+
+      let tx;
+      const options = { 
+        gasLimit: 1000000,
+        gasPrice: await provider.getFeeData().then(data => data.gasPrice)
+      };
+      
+      console.log('Transaction options:', options);
+      
+      switch (action) {
+        case 'fold':
+          tx = await pokerContract.fold(tableId, options);
+          break;
+        case 'check':
+          tx = await pokerContract.check(tableId, options);
+          break;
+        case 'call':
+          tx = await pokerContract.call(tableId, options);
+          break;
+        case 'raise':
+          if (parseFloat(amount) <= parseFloat(currentBet) * 2) {
+            toast.error('Raise must be more than double the current bet');
+            return;
+          }
+          tx = await pokerContract.raise(tableId, ethers.parseEther(amount), options);
           break;
         default:
           throw new Error('Invalid action');
       }
 
-      await tx.wait();
-      toast.success(`Successfully ${action}ed`);
+      console.log('Transaction sent:', tx.hash);
+      const receipt = await tx.wait();
+      console.log('Transaction receipt:', receipt);
       
-      // Refresh game state after action
+      toast.success(`Successfully ${action}ed`);
       await updateGameState();
+      
     } catch (err) {
-      console.error(`Error performing ${action}:`, err);
-      toast.error(`Failed to ${action}`);
+      console.error('Detailed error:', err);
+      let errorMessage = err.message;
+      
+      // Handle panic errors
+      if (err.data?.data?.includes('0x4e487b71')) {
+        const panicCode = err.data.data.slice(-2);
+        switch (panicCode) {
+          case '11':
+            errorMessage = 'Operation failed due to arithmetic overflow';
+            break;
+          case '21':
+            errorMessage = 'Invalid player position';
+            break;
+          default:
+            errorMessage = `Contract error: panic code 0x${panicCode}`;
+        }
+      } else if (err.data) {
+        try {
+          const revertData = err.data.replace('Reverted ', '');
+          const decodedError = ethers.toUtf8String('0x' + revertData.substr(138));
+          errorMessage = decodedError;
+        } catch (e) {
+          console.error('Error decoding revert reason:', e);
+        }
+      }
+      toast.error(errorMessage || `Failed to ${action}`);
     }
   };
 
@@ -705,7 +864,7 @@ function PokerTable() {
 
   // Add this helper function
   const cardValueToString = (cardNumber) => {
-    const suits = ['♠', '♣', '♥', '♦'];
+    const suits = ['♠', '♣', '���', '♦'];
     const values = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
     
     const suit = suits[Math.floor((cardNumber - 1) / 13)];
@@ -761,20 +920,31 @@ function PokerTable() {
   const [currentBet, setCurrentBet] = useState('0');
   const [isPlayerTurn, setIsPlayerTurn] = useState(false);
 
-  // Add this effect to check if it's player's turn
+  // Update the effect that checks for turns
   useEffect(() => {
     const checkTurn = async () => {
       if (!pokerContract || !account || !tableId) return;
       
       try {
-        const [tableInfo, playerInfo] = await Promise.all([
-          pokerContract.getTableInfo(tableId),
-          pokerContract.getPlayerInfo(tableId, account)
+        const [table, playerInfo, players] = await Promise.all([
+          pokerContract.tables(tableId),
+          pokerContract.getPlayerInfo(tableId, account),
+          pokerContract.getTablePlayers(tableId)
         ]);
         
-        setCurrentPosition(tableInfo.currentPosition || 0);
-        setCurrentBet(tableInfo.currentBet ? ethers.formatEther(tableInfo.currentBet) : '0');
-        setIsPlayerTurn(playerInfo.position === tableInfo.currentPosition);
+        const currentPlayerAddress = players[table.currentPosition];
+        
+        console.log('Turn check:', {
+          currentPosition: table.currentPosition.toString(),
+          playerPosition: playerInfo.position.toString(),
+          currentPlayerAddress,
+          myAddress: account,
+          isMyTurn: currentPlayerAddress?.toLowerCase() === account?.toLowerCase()
+        });
+
+        setCurrentPosition(table.currentPosition);
+        setCurrentBet(table.currentBet ? ethers.formatEther(table.currentBet) : '0');
+        setIsPlayerTurn(currentPlayerAddress?.toLowerCase() === account?.toLowerCase());
       } catch (err) {
         console.error('Error checking turn:', err);
       }
@@ -787,20 +957,30 @@ function PokerTable() {
 
   // Update the betting controls render
   const renderBettingControls = () => {
-    if (!isPlayerTurn) return null;
-
+    const isMyTurn = currentTurn?.toLowerCase() === account?.toLowerCase();
+    
     return (
       <div className="betting-controls">
         <button 
           onClick={() => handleAction('fold')}
-          disabled={!isPlayerTurn}
+          disabled={!isMyTurn}
+          className={`action-button ${!isMyTurn ? 'disabled' : ''}`}
         >
           Fold
         </button>
         
         <button 
+          onClick={() => handleAction('check')}
+          disabled={!isMyTurn || parseFloat(currentBet) > 0}
+          className={`action-button ${(!isMyTurn || parseFloat(currentBet) > 0) ? 'disabled' : ''}`}
+        >
+          Check
+        </button>
+        
+        <button 
           onClick={() => handleAction('call')}
-          disabled={!isPlayerTurn || currentBet === '0'}
+          disabled={!isMyTurn || parseFloat(currentBet) === 0}
+          className={`action-button ${(!isMyTurn || parseFloat(currentBet) === 0) ? 'disabled' : ''}`}
         >
           Call {currentBet} ETH
         </button>
@@ -812,10 +992,12 @@ function PokerTable() {
             onChange={(e) => setRaiseAmount(e.target.value)}
             min={parseFloat(currentBet) * 2}
             step="0.001"
+            disabled={!isMyTurn}
           />
           <button 
             onClick={() => handleAction('raise', raiseAmount)}
-            disabled={!isPlayerTurn || raiseAmount < parseFloat(currentBet) * 2}
+            disabled={!isMyTurn || parseFloat(raiseAmount) <= parseFloat(currentBet) * 2}
+            className={`action-button ${(!isMyTurn || parseFloat(raiseAmount) <= parseFloat(currentBet) * 2) ? 'disabled' : ''}`}
           >
             Raise to {raiseAmount} ETH
           </button>
@@ -962,6 +1144,28 @@ function PokerTable() {
       toast.error('Failed to start new hand');
     }
   };
+
+  // Add this debug panel component
+  const DebugPanel = ({ info }) => (
+    <div className="debug-panel" style={{ 
+      position: 'fixed', 
+      bottom: '10px', 
+      right: '10px', 
+      background: 'rgba(0,0,0,0.8)', 
+      padding: '10px',
+      borderRadius: '5px',
+      color: '#0ff',
+      fontSize: '12px',
+      maxWidth: '300px',
+      zIndex: 1000
+    }}>
+      <h4 style={{ margin: '0 0 5px 0', color: '#0ff' }}>Debug Info</h4>
+      <div>Current Turn: {info.currentPosition?.slice(0, 6)}...</div>
+      <div>Game Phase: {info.gamePhase}</div>
+      <div>Round Complete: {info.roundComplete ? 'Yes' : 'No'}</div>
+      <div>Last Action: {info.lastAction}</div>
+    </div>
+  );
 
   if (!account) {
     return <div className="poker-container">Please connect your wallet</div>;
@@ -1348,6 +1552,7 @@ function PokerTable() {
           pauseOnHover
           theme="dark"
         />
+        {hasJoined && <DebugPanel info={debugInfo} />}
       </div>
     );
   }
