@@ -86,11 +86,27 @@ function PokerTable() {
 
   // Add this new effect to listen for turn events
   useEffect(() => {
-    if (!pokerContract || !account) return;
+    if (!pokerContract || !account) {
+      console.log('Skipping event setup - missing dependencies:', { 
+        hasContract: !!pokerContract, 
+        hasAccount: !!account 
+      });
+      return;
+    }
+
+    console.log('Setting up poker event listeners');
 
     const turnStartedFilter = pokerContract.filters.TurnStarted();
     const turnEndedFilter = pokerContract.filters.TurnEnded();
     const roundCompleteFilter = pokerContract.filters.RoundComplete();
+    const handWinnerFilter = pokerContract.filters.HandWinner();
+
+    console.log('Created event filters:', {
+      turnStartedFilter,
+      turnEndedFilter,
+      roundCompleteFilter,
+      handWinnerFilter
+    });
 
     const handleTurnStarted = (tableId, player) => {
       console.log('Turn started:', { tableId, player });
@@ -105,14 +121,109 @@ function PokerTable() {
       console.log('Round complete:', tableId);
     };
 
-    pokerContract.on(turnStartedFilter, handleTurnStarted);
-    pokerContract.on(turnEndedFilter, handleTurnEnded);
-    pokerContract.on(roundCompleteFilter, handleRoundComplete);
+    const handleHandWinner = async (tableId, winner, handRank, potAmount) => {
+      console.log('=== HandWinner Event Received ===');
+      
+      // Extract event data from the tableId parameter which contains the full event
+      const eventData = tableId?.args;
+      if (!eventData) {
+        console.error('No event data received');
+        return;
+      }
+      
+      console.log('Parsed event data:', {
+        tableId: Number(eventData[0]),
+        winner: eventData[1],
+        handRank: Number(eventData[2]),
+        potAmount: eventData[3]
+      });
+      
+      try {
+        // Get winner's display name using the correct winner address
+        console.log('Fetching display name for winner:', eventData[1]);
+        const displayName = await getPlayerDisplayName(eventData[1]);
+        console.log('Got display name:', displayName);
+        
+        // Convert hand rank number to string
+        const handRanks = [
+          'High Card', 'Pair', 'Two Pair', 'Three of a Kind',
+          'Straight', 'Flush', 'Full House', 'Four of a Kind',
+          'Straight Flush', 'Royal Flush'
+        ];
+        
+        const handRankNum = Number(eventData[2]);
+        console.log('Converting hand rank:', { 
+          original: eventData[2],
+          asNumber: handRankNum,
+          available: handRanks
+        });
+        
+        const handRankString = handRanks[handRankNum];
+        console.log('Converted to hand rank string:', handRankString);
+        
+        // Update last winner state
+        const winnerState = {
+          address: eventData[1],
+          displayName,
+          handRank: handRankString,
+          potAmount: ethers.formatEther(eventData[3])
+        };
+        console.log('Setting last winner state:', winnerState);
+        setLastWinner(winnerState);
+        
+        // Show toast notification
+        const toastMessage = `${displayName} won with ${handRankString}!`;
+        console.log('Showing toast with message:', toastMessage);
+        toast.success(toastMessage, {
+          position: "bottom-right",
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+        });
+        console.log('Toast notification sent');
+        
+      } catch (error) {
+        console.error('Error handling HandWinner event:', error);
+        console.error('Error details:', {
+          error,
+          stack: error.stack,
+          eventData: eventData ? {
+            tableId: Number(eventData[0]),
+            winner: eventData[1],
+            handRank: Number(eventData[2]),
+            potAmount: eventData[3]?.toString()
+          } : 'No event data'
+        });
+      }
+      console.log('=== HandWinner Event Processing Complete ===');
+    };
+
+    console.log('Registering event handlers...');
+    
+    try {
+      pokerContract.on(turnStartedFilter, handleTurnStarted);
+      pokerContract.on(turnEndedFilter, handleTurnEnded);
+      pokerContract.on(roundCompleteFilter, handleRoundComplete);
+      pokerContract.on(handWinnerFilter, handleHandWinner);
+      console.log('Successfully registered all event handlers');
+    } catch (error) {
+      console.error('Error registering event handlers:', error);
+    }
 
     return () => {
-      pokerContract.off(turnStartedFilter, handleTurnStarted);
-      pokerContract.off(turnEndedFilter, handleTurnEnded);
-      pokerContract.off(roundCompleteFilter, handleRoundComplete);
+      console.log('Cleaning up event listeners...');
+      try {
+        pokerContract.off(turnStartedFilter, handleTurnStarted);
+        pokerContract.off(turnEndedFilter, handleTurnEnded);
+        pokerContract.off(roundCompleteFilter, handleRoundComplete);
+        pokerContract.off(handWinnerFilter, handleHandWinner);
+        console.log('Successfully removed all event listeners');
+      } catch (error) {
+        console.error('Error removing event listeners:', error);
+      }
     };
   }, [pokerContract, account]);
 
@@ -848,12 +959,12 @@ function PokerTable() {
 
   // Add this helper function
   const cardValueToString = (cardNumber) => {
-    const suits = ['♠', '♣', '���', '♦'];
+    const suits = ['♠', '♣', '♥', '♦'];
     const values = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
     
     const suit = suits[Math.floor((cardNumber - 1) / 13)];
     const value = values[(cardNumber - 1) % 13];
-    const color = suit === '���' || suit === '♦' ? 'red' : 'black';
+    const color = suit === '♥' || suit === '♦' ? 'red' : 'black';
     
     return { value, suit, color };
   };
@@ -1097,8 +1208,7 @@ function PokerTable() {
     address: null,
     displayName: null,
     handRank: null,
-    potAmount: '0',
-    handType: null
+    potAmount: '0'
   });
 
   // Update the handleStartNewHand function to reset the last winner
