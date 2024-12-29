@@ -138,6 +138,7 @@ function PokerTable() {
         potAmount: eventData[3]
       });
       
+      
       try {
         // Get winner's display name using the correct winner address
         console.log('Fetching display name for winner:', eventData[1]);
@@ -922,9 +923,6 @@ function PokerTable() {
           handRank: handRanks[handRank],
           potAmount: ethers.formatEther(potAmount)
         });
-
-        // Show toast notification with display name
-        toast.success(`${winnerName} won with ${handRanks[handRank]}!`);
       }
       
       // Update game state to Complete
@@ -1244,7 +1242,7 @@ function PokerTable() {
     }
   };
 
-  const handleHandWinner = async (tableId, winner, handRank, potAmount) => {
+  /*const handleHandWinner = async (tableId, winner, handRank, potAmount) => {
     console.log('=== HandWinner Event Received ===');
     
     // Extract event data from the tableId parameter which contains the full event
@@ -1322,7 +1320,7 @@ function PokerTable() {
       });
     }
     console.log('=== HandWinner Event Processing Complete ===');
-  };
+  }; */
 
   if (!account) {
     return <div className="poker-container">Please connect your wallet</div>;
