@@ -138,7 +138,6 @@ function PokerTable() {
         potAmount: eventData[3]
       });
       
-      
       try {
         // Get winner's display name using the correct winner address
         console.log('Fetching display name for winner:', eventData[1]);
@@ -1241,86 +1240,6 @@ function PokerTable() {
       toast.error('Failed to start new hand');
     }
   };
-
-  /*const handleHandWinner = async (tableId, winner, handRank, potAmount) => {
-    console.log('=== HandWinner Event Received ===');
-    
-    // Extract event data from the tableId parameter which contains the full event
-    const eventData = tableId?.args;
-    if (!eventData) {
-      console.error('No event data received');
-      return;
-    }
-    
-    console.log('Parsed event data:', {
-      tableId: Number(eventData[0]),
-      winner: eventData[1],
-      handRank: Number(eventData[2]),
-      potAmount: eventData[3]
-    });
-    
-    try {
-      // Get winner's display name using the correct winner address
-      console.log('Fetching display name for winner:', eventData[1]);
-      const displayName = await getPlayerDisplayName(eventData[1]);
-      console.log('Got display name:', displayName);
-      
-      // Convert hand rank number to string
-      const handRanks = [
-        'High Card', 'Pair', 'Two Pair', 'Three of a Kind',
-        'Straight', 'Flush', 'Full House', 'Four of a Kind',
-        'Straight Flush', 'Royal Flush'
-      ];
-      
-      const handRankNum = Number(eventData[2]);
-      console.log('Converting hand rank:', { 
-        original: eventData[2],
-        asNumber: handRankNum,
-        available: handRanks
-      });
-      
-      const handRankString = handRanks[handRankNum];
-      console.log('Converted to hand rank string:', handRankString);
-      
-      // Update last winner state
-      const winnerState = {
-        address: eventData[1],
-        displayName,
-        handRank: handRankString,
-        potAmount: ethers.formatEther(eventData[3])
-      };
-      console.log('Setting last winner state:', winnerState);
-      setLastWinner(winnerState);
-      
-      // Show toast notification
-      const toastMessage = `${displayName} won with ${handRankString}!`;
-      console.log('Showing toast with message:', toastMessage);
-      toast.success(toastMessage, {
-        position: "bottom-right",
-        autoClose: 5000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-      });
-      console.log('Toast notification sent');
-      
-    } catch (error) {
-      console.error('Error handling HandWinner event:', error);
-      console.error('Error details:', {
-        error,
-        stack: error.stack,
-        eventData: eventData ? {
-          tableId: Number(eventData[0]),
-          winner: eventData[1],
-          handRank: Number(eventData[2]),
-          potAmount: eventData[3]?.toString()
-        } : 'No event data'
-      });
-    }
-    console.log('=== HandWinner Event Processing Complete ===');
-  }; */
 
   if (!account) {
     return <div className="poker-container">Please connect your wallet</div>;
