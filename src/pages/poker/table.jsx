@@ -1146,60 +1146,6 @@ function PokerTable() {
     return () => clearInterval(interval);
   }, [pokerContract, tableId, hasJoined, account]);
 
-  // Update the dealer controls render function
-  const renderDealerControls = () => {
-    if (!isDealer) return null;
-
-    return (
-      <div className="dealer-controls">
-        {gameState.gamePhase === 'PreFlop' && (
-          <button 
-            onClick={handleStartFlop}
-            disabled={!isBettingRoundComplete}
-            className={`dealer-button ${!isBettingRoundComplete ? 'disabled' : ''}`}
-          >
-            Deal Flop
-          </button>
-        )}
-        {gameState.gamePhase === 'Flop' && (
-          <button 
-            onClick={handleStartTurn}
-            disabled={!isBettingRoundComplete}
-            className={`dealer-button ${!isBettingRoundComplete ? 'disabled' : ''}`}
-          >
-            Deal Turn
-          </button>
-        )}
-        {gameState.gamePhase === 'Turn' && (
-          <button 
-            onClick={handleStartRiver}
-            disabled={!isBettingRoundComplete}
-            className={`dealer-button ${!isBettingRoundComplete ? 'disabled' : ''}`}
-          >
-            Deal River
-          </button>
-        )}
-        {gameState.gamePhase === 'River' && (
-          <button 
-            onClick={handleShowdown}
-            disabled={!isBettingRoundComplete}
-            className={`dealer-button ${!isBettingRoundComplete ? 'disabled' : ''}`}
-          >
-            Start Showdown
-          </button>
-        )}
-        {gameState.gamePhase === 'Complete' && (
-          <button 
-            onClick={handleStartNewHand}
-            className="dealer-button"
-          >
-            Play Again
-          </button>
-        )}
-      </div>
-    );
-  };
-
   // Update the existing HandWinner event handler to include both toast and last hand state
   const [lastWinner, setLastWinner] = useState({
     address: null,
@@ -1479,73 +1425,6 @@ function PokerTable() {
               )}
             </div>
           </div>
-
-          {/* Add the dealer controls */}
-          {isDealer && (
-            <div className="dealer-controls">
-              {gameState.gamePhase === 'Waiting' && (
-                <button 
-                  className="start-game-button"
-                  onClick={async () => {
-                    try {
-                      // First deal initial cards
-                      await fetch(`${API_BASE_URL}/poker/deal-initial-cards`, {
-                        method: 'POST',
-                        headers: {
-                          'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ tableId })
-                      });
-                      
-                      // Then start the game
-                      await handleAction('startGame');
-                      // Post blinds after starting game
-                      await handlePostBlinds();
-                      updateGameState();
-                    } catch (err) {
-                      console.error('Error starting game:', err);
-                      toast.error('Failed to start game');
-                    }
-                  }}
-                  disabled={Number(gameState.playerCount) < 2}
-                >
-                  Start Game ({gameState.playerCount}/2 players)
-                </button>
-              )}
-              {gameState.gamePhase === 'PreFlop' && (
-                <button 
-                  className="start-flop-button"
-                  onClick={handleStartFlop}
-                >
-                  Deal Flop
-                </button>
-              )}
-              {gameState.gamePhase === 'Flop' && (
-                <button 
-                  className="start-flop-button"
-                  onClick={handleStartTurn}
-                >
-                  Deal Turn
-                </button>
-              )}
-              {gameState.gamePhase === 'Turn' && (
-                <button 
-                  className="start-flop-button"
-                  onClick={handleStartRiver}
-                >
-                  Deal River
-                </button>
-              )}
-              {gameState.gamePhase === 'River' && (
-                <button 
-                  className="start-flop-button"
-                  onClick={handleShowdown}
-                >
-                  Start Showdown
-                </button>
-              )}
-            </div>
-          )}
         </div>
         <div className="game-controls">
           <div className="action-buttons">
