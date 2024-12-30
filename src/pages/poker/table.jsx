@@ -275,21 +275,9 @@ function PokerTable() {
   const handleAction = async (action, amount = '0') => {
     try {
       console.log('=== Starting action:', action, '===');
-      console.log('Table state:', {
-        tableId,
-        currentPosition: await pokerContract.tables(tableId).then(t => t.currentPosition.toString()),
-        playerCount: await pokerContract.tables(tableId).then(t => t.playerCount.toString()),
-        gameState: await pokerContract.tables(tableId).then(t => t.gameState.toString())
-      });
       
-      // Get player info before action
-      const playerInfo = await pokerContract.getPlayerInfo(tableId, account);
-      console.log('Player info:', {
-        position: playerInfo.position.toString(),
-        isActive: playerInfo.isActive,
-        tableStake: ethers.formatEther(playerInfo.tableStake),
-        currentBet: ethers.formatEther(playerInfo.currentBet)
-      });
+      // Convert amount to string if it's a number
+      const amountString = amount.toString();
       
       // Validate action first
       const isValid = await isActionValid(action, tableId, account);
@@ -303,8 +291,6 @@ function PokerTable() {
         gasPrice: await provider.getFeeData().then(data => data.gasPrice)
       };
       
-      console.log('Transaction options:', options);
-      
       switch (action) {
         case 'fold':
           tx = await pokerContract.fold(tableId, options);
@@ -316,11 +302,11 @@ function PokerTable() {
           tx = await pokerContract.call(tableId, options);
           break;
         case 'raise':
-          if (parseFloat(amount) <= parseFloat(currentBet) * 2) {
+          if (parseFloat(amountString) <= parseFloat(currentBet) * 2) {
             toast.error('Raise must be more than double the current bet');
             return;
           }
-          tx = await pokerContract.raise(tableId, ethers.parseEther(amount), options);
+          tx = await pokerContract.raise(tableId, ethers.parseEther(amountString), options);
           break;
         default:
           throw new Error('Invalid action');
@@ -1084,9 +1070,12 @@ function PokerTable() {
         
         <div className="raise-controls">
           <input
-            type="number"
+            type="text"
             value={raiseAmount}
-            onChange={(e) => setRaiseAmount(e.target.value)}
+            onChange={(e) => {
+              const value = e.target.value.replace(/[^\d.]/g, '');
+              setRaiseAmount(value);
+            }}
             min={parseFloat(currentBet) * 2}
             step="0.001"
             disabled={!isMyTurn}
@@ -1451,46 +1440,18 @@ function PokerTable() {
             </button>
             <div className="raise-controls">
               <input
-                type="number"
+                type="text"
                 value={raiseAmount}
                 onChange={(e) => {
-                  const value = e.target.value;
-                  // Allow empty input, decimals, and partial numbers
-                  if (value === '' || value === '.' || value === '0.' || value.match(/^\d*\.?\d*$/)) {
-                    setRaiseAmount(value);
-                    return;
-                  }
-                  
-                  const numValue = parseFloat(value);
-                  if (isNaN(numValue)) {
-                    toast.error('Please enter a valid number');
-                    return;
-                  }
-                  
-                  // Check for more than 3 decimal places
-                  if (value.includes('.') && value.split('.')[1].length > 3) {
-                    toast.error('Maximum of 3 decimal places allowed');
-                    return;
-                  }
-                  
-                  const minRaise = parseFloat(gameState.minRaise);
-                  const maxRaise = parseFloat(gameState.maxRaise);
-                  
-                  // Only show range error if user has finished typing
-                  if (value.length > 0 && !value.endsWith('.') && (numValue < minRaise || numValue > maxRaise)) {
-                    toast.error(`Raise amount must be between ${minRaise} and ${maxRaise} ETH`);
-                    return;
-                  }
-                  
+                  const value = e.target.value.replace(/[^\d.]/g, '');
                   setRaiseAmount(value);
                 }}
-                min={gameState.minRaise}
-                max={gameState.maxRaise}
+                min={parseFloat(currentBet) * 2}
                 step="0.001"
               />
               <button 
                 className="raise-button"
-                onClick={() => handleAction('raise', parseFloat(raiseAmount))}
+                onClick={() => handleAction('raise', raiseAmount)}
                 disabled={!gameState.isPlayerTurn || raiseAmount === '' || raiseAmount === '.' || 
                          parseFloat(raiseAmount) < parseFloat(gameState.minRaise) || 
                          parseFloat(raiseAmount) > parseFloat(gameState.maxRaise)}
