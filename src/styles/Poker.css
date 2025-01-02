@@ -816,3 +816,54 @@ h2 {
   0%, 100% { opacity: 0.8; }
   50% { opacity: 1; }
 }
+
+.leave-table-button {
+  margin-top: 15px;
+  padding: 10px 20px;
+  background: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 0.9em;
+  transition: all 0.3s ease;
+  width: 100%;
+}
+
+.leave-table-button:hover:not(:disabled) {
+  background: #c82333;
+  transform: translateY(-2px);
+}
+
+.leave-table-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.leave-table-button.loading {
+  background: #6c757d;
+  position: relative;
+}
+
+.leave-table-button.loading:after {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  top: 50%;
+  left: 50%;
+  margin: -8px 0 0 -8px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 1s infinite linear;
+}
+
+.leave-table-button.pending {
+  background: #ffc107;
+  color: #000;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useWeb3 } from '../../context/Web3Context';
 import { ethers } from 'ethers';
@@ -1176,6 +1176,48 @@ function PokerTable() {
     }
   };
 
+  const [isLeavingTable, setIsLeavingTable] = useState(false);
+  const [pendingLeave, setPendingLeave] = useState(false);
+
+  const handleLeaveTable = useCallback(async () => {
+    try {
+      setIsLeavingTable(true);
+      
+      // If in middle of hand, mark as pending leave
+      if (gameState.gamePhase !== 'Waiting' && gameState.gamePhase !== 'Complete') {
+        setPendingLeave(true);
+        toast.info('You will leave the table after this hand completes');
+        return;
+      }
+
+      // Otherwise leave immediately
+      const tx = await pokerContract.leaveTable(tableId);
+      await tx.wait(); // Wait for transaction confirmation
+      
+      toast.success('Successfully left table');
+      
+      // Reset states before navigating
+      setPendingLeave(false);
+      setHasJoined(false);
+      
+      // Redirect to lobby
+      navigate('/poker');
+    } catch (err) {
+      console.error('Error leaving table:', err);
+      toast.error('Failed to leave table');
+      setPendingLeave(false); // Reset pending state on error
+    } finally {
+      setIsLeavingTable(false);
+    }
+  }, [gameState.gamePhase, tableId, pokerContract, navigate]);
+
+  // Add this effect to handle pending leaves when hand completes
+  useEffect(() => {
+    if (pendingLeave && gameState.gamePhase === 'Complete') {
+      handleLeaveTable();
+    }
+  }, [gameState.gamePhase, pendingLeave, handleLeaveTable, tableId]);
+
   if (!account) {
     return <div className="poker-container">Please connect your wallet</div>;
   }
@@ -1211,6 +1253,14 @@ function PokerTable() {
           <p>Game Phase: {gameState.gamePhase}</p>
           <p className="pot-amount">Pot: {gameState.pot} ETH</p>
           <p>Players: {gameState.playerCount}/6</p>
+          
+          <button 
+            className={`leave-table-button ${isLeavingTable ? 'loading' : ''} ${pendingLeave ? 'pending' : ''}`}
+            onClick={handleLeaveTable}
+            disabled={isLeavingTable}
+          >
+            {isLeavingTable ? 'Leaving...' : pendingLeave ? 'Leave After Hand' : 'Leave Table'}
+          </button>
         </div>
         <div className="poker-table">
           {/* Replace the existing SVG with this one */}
