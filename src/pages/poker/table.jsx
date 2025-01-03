@@ -1177,46 +1177,88 @@ function PokerTable() {
   };
 
   const [isLeavingTable, setIsLeavingTable] = useState(false);
-  const [pendingLeave, setPendingLeave] = useState(false);
 
   const handleLeaveTable = useCallback(async () => {
     try {
       setIsLeavingTable(true);
       
-      // If in middle of hand, mark as pending leave
-      if (gameState.gamePhase !== 'Waiting' && gameState.gamePhase !== 'Complete') {
-        setPendingLeave(true);
-        toast.info('You will leave the table after this hand completes');
-        return;
-      }
-
-      // Otherwise leave immediately
-      const tx = await pokerContract.leaveTable(tableId);
-      await tx.wait(); // Wait for transaction confirmation
+      // Add gas limit to transaction
+      const tx = await pokerContract.leaveTable(tableId, {
+        gasLimit: 500000 // Increase gas limit
+      });
+      
+      // Wait for transaction with timeout
+      const receipt = await Promise.race([
+        tx.wait(),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Transaction timeout')), 30000)
+        )
+      ]);
+      
+      console.log('Leave table transaction receipt:', receipt);
       
       toast.success('Successfully left table');
-      
-      // Reset states before navigating
-      setPendingLeave(false);
       setHasJoined(false);
-      
-      // Redirect to lobby
       navigate('/poker');
     } catch (err) {
       console.error('Error leaving table:', err);
-      toast.error('Failed to leave table');
-      setPendingLeave(false); // Reset pending state on error
+      
+      // More detailed error handling
+      let errorMessage = 'Failed to leave table';
+      if (err.reason) {
+        errorMessage = err.reason;
+      } else if (err.data?.message) {
+        errorMessage = err.data.message;
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      toast.error(errorMessage);
     } finally {
       setIsLeavingTable(false);
     }
-  }, [gameState.gamePhase, tableId, pokerContract, navigate]);
+  }, [tableId, pokerContract, navigate]);
 
-  // Add this effect to handle pending leaves when hand completes
-  useEffect(() => {
-    if (pendingLeave && gameState.gamePhase === 'Complete') {
+  // Add a warning modal component for leaving during active hand
+  const LeaveWarningModal = ({ isOpen, onConfirm, onCancel }) => {
+    if (!isOpen) return null;
+
+    // Add stopPropagation to prevent clicks from bubbling
+    const handleOverlayClick = (e) => {
+      if (e.target === e.currentTarget) {
+        onCancel();
+      }
+    };
+
+    return (
+      <div className="modal-overlay" onClick={handleOverlayClick}>
+        <div className="modal-content" onClick={e => e.stopPropagation()}>
+          <h3>Leave Table?</h3>
+          <p>
+            You are about to leave during an active hand. 
+            Your current bet will remain in the pot, but your remaining stack 
+            will be returned to your treasury.
+          </p>
+          <div className="modal-buttons">
+            <button onClick={onConfirm}>Leave Table</button>
+            <button onClick={onCancel}>Stay</button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Add state for the warning modal
+  const [showLeaveWarning, setShowLeaveWarning] = useState(false);
+
+  // Update the leave button click handler
+  const handleLeaveClick = () => {
+    if (gameState.gamePhase !== 'Waiting' && gameState.gamePhase !== 'Complete') {
+      setShowLeaveWarning(true);
+    } else {
       handleLeaveTable();
     }
-  }, [gameState.gamePhase, pendingLeave, handleLeaveTable, tableId]);
+  };
 
   if (!account) {
     return <div className="poker-container">Please connect your wallet</div>;
@@ -1229,301 +1271,312 @@ function PokerTable() {
   // Render game interface
   if (hasJoined) {
     return (
-      <div className="poker-game">
-        <div className="last-hand-container">
-          <h3>Last Hand</h3>
-          {lastWinner ? (
-            <div className="last-hand-info">
-              <p className="winner-address">
-                Winner: {lastWinner.displayName || formatAddress(lastWinner.address)}
-              </p>
-              <p className="hand-rank">
-                Hand: <span className="rank">{lastWinner.handRank}</span>
-              </p>
-              <p className="pot-won">
-                Won: <span className="amount">{lastWinner.potAmount} ETH</span>
-              </p>
-            </div>
-          ) : (
-            <p>None</p>
-          )}
-        </div>
-        <div className="table-info">
-          <h2>{tableName || `Poker Table #${tableId}`}</h2>
-          <p>Game Phase: {gameState.gamePhase}</p>
-          <p className="pot-amount">Pot: {gameState.pot} ETH</p>
-          <p>Players: {gameState.playerCount}/6</p>
-          
-          <button 
-            className={`leave-table-button ${isLeavingTable ? 'loading' : ''} ${pendingLeave ? 'pending' : ''}`}
-            onClick={handleLeaveTable}
-            disabled={isLeavingTable}
-          >
-            {isLeavingTable ? 'Leaving...' : pendingLeave ? 'Leave After Hand' : 'Leave Table'}
-          </button>
-        </div>
-        <div className="poker-table">
-          {/* Replace the existing SVG with this one */}
-          <svg className="table-background" viewBox="0 0 300 200">
-            <defs>
-              <filter id="glow">
-                <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
-                <feMerge>
-                  <feMergeNode in="coloredBlur"/>
-                  <feMergeNode in="SourceGraphic"/>
-                </feMerge>
-              </filter>
-              
-              <linearGradient id="holoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" style={{stopColor: '#0ff', stopOpacity: 0.1}}/>
-                <stop offset="50%" style={{stopColor: '#08f', stopOpacity: 0.2}}/>
-                <stop offset="100%" style={{stopColor: '#0ff', stopOpacity: 0.1}}/>
-              </linearGradient>
-
-              <linearGradient id="flowGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                <animate 
-                  attributeName="x1" 
-                  values="-100%;0%;100%" 
-                  dur="3s" 
-                  repeatCount="indefinite" 
-                />
-                <animate 
-                  attributeName="x2" 
-                  values="0%;100%;200%" 
-                  dur="3s" 
-                  repeatCount="indefinite" 
-                />
-                <stop offset="0%" stopColor="rgba(0,255,255,0)" />
-                <stop offset="25%" stopColor="rgba(0,255,255,0.5)" />
-                <stop offset="50%" stopColor="rgba(0,255,255,0)" />
-                <stop offset="75%" stopColor="rgba(0,255,255,0)" />
-                <stop offset="100%" stopColor="rgba(0,255,255,0)" />
-              </linearGradient>
-
-              <clipPath id="tableClip">
-                <ellipse 
-                  cx="150" 
-                  cy="100" 
-                  rx="135" 
-                  ry="85"
-                />
-              </clipPath>
-            </defs>
-
-            {/* Base table shape */}
-            <ellipse 
-              cx="150" 
-              cy="100" 
-              rx="140" 
-              ry="90" 
-              fill="url(#holoGradient)" 
-              stroke="#0ff" 
-              strokeWidth="2"
-              filter="url(#glow)"
-            />
-
-            {/* Apply clip-path to the line design group */}
-            <g stroke="url(#flowGradient)" strokeWidth="1.5" fill="none" clipPath="url(#tableClip)">
-              {/* Curved horizontal lines spanning full width */}
-              <path d="M 30,60 Q 150,30 270,60" />
-              <path d="M 30,140 Q 150,170 270,140" />
-              <path d="M 30,100 Q 150,70 270,100" />
-              
-              {/* Vertical curved lines at wider positions */}
-              <path d="M 60,40 Q 60,100 60,160" />
-              <path d="M 240,40 Q 240,100 240,160" />
-              <path d="M 150,30 Q 150,100 150,170" />
-              
-              {/* Larger diamond pattern in center */}
-              <path d="M 150,50 L 200,100 L 150,150 L 100,100 Z" />
-              
-              {/* Extended diagonal lines */}
-              <path d="M 70,60 L 120,140" />
-              <path d="M 230,60 L 180,140" />
-              <path d="M 70,140 L 120,60" />
-              <path d="M 230,140 L 180,60" />
-              
-              {/* Additional horizontal lines */}
-              <path d="M 80,85 L 220,85" />
-              <path d="M 80,115 L 220,115" />
-              
-              {/* Extended corner connectors */}
-              <path d="M 50,70 Q 80,70 100,90" />
-              <path d="M 250,70 Q 220,70 200,90" />
-              <path d="M 50,130 Q 80,130 100,110" />
-              <path d="M 250,130 Q 220,130 200,110" />
-              
-              {/* Center circle */}
-              <circle cx="150" cy="100" r="20" />
-              
-              {/* Wider decorative arcs */}
-              <path d="M 70,50 A 80,80 0 0,1 230,50" />
-              <path d="M 70,150 A 80,80 0 0,0 230,150" />
-              
-              {/* Additional connecting lines */}
-              <path d="M 40,100 L 260,100" />
-              <path d="M 100,40 L 200,160" />
-              <path d="M 100,160 L 200,40" />
-            </g>
-
-            {/* Keep existing corner accents */}
-            <g filter="url(#glow)">
-              <circle cx="30" cy="50" r="3" fill="#0ff">
-                <animate 
-                  attributeName="opacity"
-                  values="0.3;1;0.3"
-                  dur="2s"
-                  repeatCount="indefinite"
-                />
-              </circle>
-              <circle cx="270" cy="50" r="3" fill="#0ff">
-                <animate 
-                  attributeName="opacity"
-                  values="0.3;1;0.3"
-                  dur="2s"
-                  repeatCount="indefinite"
-                  begin="0.5s"
-                />
-              </circle>
-              <circle cx="30" cy="150" r="3" fill="#0ff">
-                <animate 
-                  attributeName="opacity"
-                  values="0.3;1;0.3"
-                  dur="2s"
-                  repeatCount="indefinite"
-                  begin="1s"
-                />
-              </circle>
-              <circle cx="270" cy="150" r="3" fill="#0ff">
-                <animate 
-                  attributeName="opacity"
-                  values="0.3;1;0.3"
-                  dur="2s"
-                  repeatCount="indefinite"
-                  begin="1.5s"
-                />
-              </circle>
-            </g>
-          </svg>
-
-          <div className="player-positions">
-            {Array.from({ length: maxPlayersPerTable }).map((_, i) => {
-              const player = players.find(p => p.position === i);
-              const isCurrentTurn = player && currentTurn && 
-                player.address?.toLowerCase() === currentTurn.toLowerCase();
-              
-              return (
-                <div 
-                  key={i} 
-                  className={`player-position position-${i} ${isCurrentTurn ? 'current-turn' : ''}`}
-                >
-                  {isCurrentTurn && <div className="turn-indicator">Current Turn</div>}
-                  <div className="player-info">
-                    <h3>{player ? player.displayName : `Seat ${i + 1}`}</h3>
-                    {player && (
-                      <>
-                        <p className="player-stack">Stack: {player.tableStake} ETH</p>
-                        <p className="player-bet">Bet: {player.currentBet} ETH</p>
-                      </>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
+      <>
+        <div className="poker-game">
+          <div className="last-hand-container">
+            <h3>Last Hand</h3>
+            {lastWinner ? (
+              <div className="last-hand-info">
+                <p className="winner-address">
+                  Winner: {lastWinner.displayName || formatAddress(lastWinner.address)}
+                </p>
+                <p className="hand-rank">
+                  Hand: <span className="rank">{lastWinner.handRank}</span>
+                </p>
+                <p className="pot-won">
+                  Won: <span className="amount">{lastWinner.potAmount} ETH</span>
+                </p>
+              </div>
+            ) : (
+              <p>None</p>
+            )}
           </div>
-
-          <div className="card-display">
-            <div className="community-cards">
-              {communityCards.length === 0 ? (
-                <p>No table cards yet</p>
-              ) : (
-                communityCards.map((card, index) => {
-                  const { value, suit, color } = cardValueToString(card);
-                  return (
-                    <div key={index} className="card" style={{ color }}>
-                      {value}{suit}
-                    </div>
-                  );
-                })
-              )}
-            </div>
+          <div className="table-info">
+            <h2>{tableName || `Poker Table #${tableId}`}</h2>
+            <p>Game Phase: {gameState.gamePhase}</p>
+            <p className="pot-amount">Pot: {gameState.pot} ETH</p>
+            <p>Players: {gameState.playerCount}/6</p>
             
-            <div className="player-cards">
-              <h3>Your Cards:</h3>
-              {playerCards.length === 0 ? (
-                <p>No player cards yet</p>
-              ) : (
-                playerCards.map((card, index) => {
-                  const { value, suit, color } = cardValueToString(card);
-                  return (
-                    <div key={index} className="card" style={{ color }}>
-                      {value}{suit}
-                    </div>
-                  );
-                })
-              )}
-            </div>
+            <button 
+              className={`leave-table-button ${isLeavingTable ? 'loading' : ''}`}
+              onClick={handleLeaveClick}
+              disabled={isLeavingTable}
+            >
+              {isLeavingTable ? 'Leaving...' : 'Leave Table'}
+            </button>
           </div>
-        </div>
-        <div className="game-controls">
-          <div className="action-buttons">
-            <button 
-              className="fold-button" 
-              onClick={() => handleAction('fold')}
-              disabled={!gameState.isPlayerTurn}
-            >
-              Fold
-            </button>
-            <button 
-              className="check-button" 
-              onClick={() => handleAction('check')}
-              //disabled={!gameState.isPlayerTurn || !gameState.canCheck}
-            >
-              Check
-            </button>
-            <button 
-              className="call-button" 
-              onClick={() => handleAction('call')}
-              disabled={!gameState.isPlayerTurn}
-            >
-              Call
-            </button>
-            <div className="raise-controls">
-              <input
-                type="text"
-                value={raiseAmount}
-                onChange={(e) => {
-                  const value = e.target.value.replace(/[^\d.]/g, '');
-                  setRaiseAmount(value);
-                }}
-                min={parseFloat(currentBet) * 2}
-                step="0.001"
+          <div className="poker-table">
+            {/* Replace the existing SVG with this one */}
+            <svg className="table-background" viewBox="0 0 300 200">
+              <defs>
+                <filter id="glow">
+                  <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+                  <feMerge>
+                    <feMergeNode in="coloredBlur"/>
+                    <feMergeNode in="SourceGraphic"/>
+                  </feMerge>
+                </filter>
+                
+                <linearGradient id="holoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" style={{stopColor: '#0ff', stopOpacity: 0.1}}/>
+                  <stop offset="50%" style={{stopColor: '#08f', stopOpacity: 0.2}}/>
+                  <stop offset="100%" style={{stopColor: '#0ff', stopOpacity: 0.1}}/>
+                </linearGradient>
+
+                <linearGradient id="flowGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <animate 
+                    attributeName="x1" 
+                    values="-100%;0%;100%" 
+                    dur="3s" 
+                    repeatCount="indefinite" 
+                  />
+                  <animate 
+                    attributeName="x2" 
+                    values="0%;100%;200%" 
+                    dur="3s" 
+                    repeatCount="indefinite" 
+                  />
+                  <stop offset="0%" stopColor="rgba(0,255,255,0)" />
+                  <stop offset="25%" stopColor="rgba(0,255,255,0.5)" />
+                  <stop offset="50%" stopColor="rgba(0,255,255,0)" />
+                  <stop offset="75%" stopColor="rgba(0,255,255,0)" />
+                  <stop offset="100%" stopColor="rgba(0,255,255,0)" />
+                </linearGradient>
+
+                <clipPath id="tableClip">
+                  <ellipse 
+                    cx="150" 
+                    cy="100" 
+                    rx="135" 
+                    ry="85"
+                  />
+                </clipPath>
+              </defs>
+
+              {/* Base table shape */}
+              <ellipse 
+                cx="150" 
+                cy="100" 
+                rx="140" 
+                ry="90" 
+                fill="url(#holoGradient)" 
+                stroke="#0ff" 
+                strokeWidth="2"
+                filter="url(#glow)"
               />
-              <button 
-                className="raise-button"
-                onClick={() => handleAction('raise', raiseAmount)}
-                disabled={!gameState.isPlayerTurn || raiseAmount === '' || raiseAmount === '.' || 
-                         parseFloat(raiseAmount) < parseFloat(gameState.minRaise) || 
-                         parseFloat(raiseAmount) > parseFloat(gameState.maxRaise)}
-              >
-                Raise to {raiseAmount || '0'} ETH
-              </button>
+
+              {/* Apply clip-path to the line design group */}
+              <g stroke="url(#flowGradient)" strokeWidth="1.5" fill="none" clipPath="url(#tableClip)">
+                {/* Curved horizontal lines spanning full width */}
+                <path d="M 30,60 Q 150,30 270,60" />
+                <path d="M 30,140 Q 150,170 270,140" />
+                <path d="M 30,100 Q 150,70 270,100" />
+                
+                {/* Vertical curved lines at wider positions */}
+                <path d="M 60,40 Q 60,100 60,160" />
+                <path d="M 240,40 Q 240,100 240,160" />
+                <path d="M 150,30 Q 150,100 150,170" />
+                
+                {/* Larger diamond pattern in center */}
+                <path d="M 150,50 L 200,100 L 150,150 L 100,100 Z" />
+                
+                {/* Extended diagonal lines */}
+                <path d="M 70,60 L 120,140" />
+                <path d="M 230,60 L 180,140" />
+                <path d="M 70,140 L 120,60" />
+                <path d="M 230,140 L 180,60" />
+                
+                {/* Additional horizontal lines */}
+                <path d="M 80,85 L 220,85" />
+                <path d="M 80,115 L 220,115" />
+                
+                {/* Extended corner connectors */}
+                <path d="M 50,70 Q 80,70 100,90" />
+                <path d="M 250,70 Q 220,70 200,90" />
+                <path d="M 50,130 Q 80,130 100,110" />
+                <path d="M 250,130 Q 220,130 200,110" />
+                
+                {/* Center circle */}
+                <circle cx="150" cy="100" r="20" />
+                
+                {/* Wider decorative arcs */}
+                <path d="M 70,50 A 80,80 0 0,1 230,50" />
+                <path d="M 70,150 A 80,80 0 0,0 230,150" />
+                
+                {/* Additional connecting lines */}
+                <path d="M 40,100 L 260,100" />
+                <path d="M 100,40 L 200,160" />
+                <path d="M 100,160 L 200,40" />
+              </g>
+
+              {/* Keep existing corner accents */}
+              <g filter="url(#glow)">
+                <circle cx="30" cy="50" r="3" fill="#0ff">
+                  <animate 
+                    attributeName="opacity"
+                    values="0.3;1;0.3"
+                    dur="2s"
+                    repeatCount="indefinite"
+                  />
+                </circle>
+                <circle cx="270" cy="50" r="3" fill="#0ff">
+                  <animate 
+                    attributeName="opacity"
+                    values="0.3;1;0.3"
+                    dur="2s"
+                    repeatCount="indefinite"
+                    begin="0.5s"
+                  />
+                </circle>
+                <circle cx="30" cy="150" r="3" fill="#0ff">
+                  <animate 
+                    attributeName="opacity"
+                    values="0.3;1;0.3"
+                    dur="2s"
+                    repeatCount="indefinite"
+                    begin="1s"
+                  />
+                </circle>
+                <circle cx="270" cy="150" r="3" fill="#0ff">
+                  <animate 
+                    attributeName="opacity"
+                    values="0.3;1;0.3"
+                    dur="2s"
+                    repeatCount="indefinite"
+                    begin="1.5s"
+                  />
+                </circle>
+              </g>
+            </svg>
+
+            <div className="player-positions">
+              {Array.from({ length: maxPlayersPerTable }).map((_, i) => {
+                const player = players.find(p => p.position === i);
+                const isCurrentTurn = player && currentTurn && 
+                  player.address?.toLowerCase() === currentTurn.toLowerCase();
+                
+                return (
+                  <div 
+                    key={i} 
+                    className={`player-position position-${i} ${isCurrentTurn ? 'current-turn' : ''}`}
+                  >
+                    {isCurrentTurn && <div className="turn-indicator">Current Turn</div>}
+                    <div className="player-info">
+                      <h3>{player ? player.displayName : `Seat ${i + 1}`}</h3>
+                      {player && (
+                        <>
+                          <p className="player-stack">Stack: {player.tableStake} ETH</p>
+                          <p className="player-bet">Bet: {player.currentBet} ETH</p>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="card-display">
+              <div className="community-cards">
+                {communityCards.length === 0 ? (
+                  <p>No table cards yet</p>
+                ) : (
+                  communityCards.map((card, index) => {
+                    const { value, suit, color } = cardValueToString(card);
+                    return (
+                      <div key={index} className="card" style={{ color }}>
+                        {value}{suit}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+              
+              <div className="player-cards">
+                <h3>Your Cards:</h3>
+                {playerCards.length === 0 ? (
+                  <p>No player cards yet</p>
+                ) : (
+                  playerCards.map((card, index) => {
+                    const { value, suit, color } = cardValueToString(card);
+                    return (
+                      <div key={index} className="card" style={{ color }}>
+                        {value}{suit}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
             </div>
           </div>
+          <div className="game-controls">
+            <div className="action-buttons">
+              <button 
+                className="fold-button" 
+                onClick={() => handleAction('fold')}
+                disabled={!gameState.isPlayerTurn}
+              >
+                Fold
+              </button>
+              <button 
+                className="check-button" 
+                onClick={() => handleAction('check')}
+                //disabled={!gameState.isPlayerTurn || !gameState.canCheck}
+              >
+                Check
+              </button>
+              <button 
+                className="call-button" 
+                onClick={() => handleAction('call')}
+                disabled={!gameState.isPlayerTurn}
+              >
+                Call
+              </button>
+              <div className="raise-controls">
+                <input
+                  type="text"
+                  value={raiseAmount}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/[^\d.]/g, '');
+                    setRaiseAmount(value);
+                  }}
+                  min={parseFloat(currentBet) * 2}
+                  step="0.001"
+                />
+                <button 
+                  className="raise-button"
+                  onClick={() => handleAction('raise', raiseAmount)}
+                  disabled={!gameState.isPlayerTurn || raiseAmount === '' || raiseAmount === '.' || 
+                           parseFloat(raiseAmount) < parseFloat(gameState.minRaise) || 
+                           parseFloat(raiseAmount) > parseFloat(gameState.maxRaise)}
+                >
+                  Raise to {raiseAmount || '0'} ETH
+                </button>
+              </div>
+            </div>
+          </div>
+          <ToastContainer 
+            position="bottom-right"
+            autoClose={5000}
+            hideProgressBar={false}
+            newestOnTop={false}
+            closeOnClick
+            rtl={false}
+            pauseOnFocusLoss
+            draggable
+            pauseOnHover
+            theme="dark"
+          />
         </div>
-        <ToastContainer 
-          position="bottom-right"
-          autoClose={5000}
-          hideProgressBar={false}
-          newestOnTop={false}
-          closeOnClick
-          rtl={false}
-          pauseOnFocusLoss
-          draggable
-          pauseOnHover
-          theme="dark"
+        
+        <LeaveWarningModal
+          isOpen={showLeaveWarning}
+          onConfirm={() => {
+            setShowLeaveWarning(false);
+            handleLeaveTable();
+          }}
+          onCancel={() => setShowLeaveWarning(false)}
         />
-      </div>
+      </>
     );
   }
 

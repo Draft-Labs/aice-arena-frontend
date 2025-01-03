@@ -867,3 +867,124 @@ h2 {
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.95);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 99999;
+  backdrop-filter: blur(5px);
+}
+
+.modal-content {
+  background-color: #1a1a1a;
+  padding: 2rem;
+  border-radius: 8px;
+  max-width: 400px;
+  width: 90%;
+  border: 2px solid #0ff;
+  box-shadow: 
+    0 0 20px rgba(0, 255, 255, 0.2),
+    0 0 40px rgba(0, 0, 0, 0.4);
+  position: relative;
+  z-index: 100000;
+  animation: modalFadeIn 0.3s ease;
+  transform: translateZ(0);
+  background: linear-gradient(
+    145deg,
+    #1a1a1a 0%,
+    #2a2a2a 100%
+  );
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) translateZ(0);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) translateZ(0);
+  }
+}
+
+.modal-content * {
+  position: relative;
+  z-index: 100001;
+}
+
+.modal-content h3 {
+  color: #0ff;
+  margin-top: 0;
+  font-size: 1.4em;
+  margin-bottom: 1rem;
+  text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+}
+
+.modal-content p {
+  color: #fff;
+  margin: 1rem 0;
+  line-height: 1.5;
+  font-size: 1.1em;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 1rem;
+  border-radius: 4px;
+}
+
+.modal-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  position: relative;
+  z-index: 100002;
+}
+
+.modal-buttons button {
+  padding: 0.8rem 1.5rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 1em;
+  font-weight: bold;
+  min-width: 100px;
+  position: relative;
+  overflow: hidden;
+}
+
+.modal-buttons button:first-child {
+  background-color: #ff4444;
+  color: white;
+  box-shadow: 0 0 15px rgba(255, 68, 68, 0.3);
+}
+
+.modal-buttons button:last-child {
+  background-color: #333;
+  color: white;
+  border: 1px solid #666;
+  box-shadow: 0 0 15px rgba(102, 102, 102, 0.3);
+}
+
+.modal-buttons button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.modal-buttons button:first-child:hover {
+  background-color: #ff6666;
+}
+
+.modal-buttons button:last-child:hover {
+  background-color: #444;
+}
+
+.modal-buttons button:active {
+  transform: translateY(1px);
+}
