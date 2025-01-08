@@ -9,7 +9,7 @@ import '../../styles/Poker.css';
 import { getTableName } from '../../config/firebase';
 
 function PokerLobby() {
-  const { account, pokerContract, isLoading, error: web3Error } = useWeb3();
+  const { account, pokerTableContract, pokerTreasuryContract, isLoading, error: web3Error } = useWeb3();
   const { checkTreasuryAccount } = useContractInteraction();
   const [tables, setTables] = useState([]);
   const [error, setError] = useState(null);
@@ -17,7 +17,6 @@ function PokerLobby() {
   const [isCheckingAccount, setIsCheckingAccount] = useState(true);
   const navigate = useNavigate();
   const [tableNames, setTableNames] = useState({});
-  const [players, setPlayers] = useState([]);
 
   // Check if user has an account
   useEffect(() => {
@@ -40,7 +39,7 @@ function PokerLobby() {
   // Fetch tables
   useEffect(() => {
     const fetchTables = async () => {
-      if (!pokerContract) {
+      if (!pokerTableContract) {
         console.log('No poker contract available');
         return;
       }
@@ -53,29 +52,34 @@ function PokerLobby() {
         while (true) {
           try {
             console.log('Fetching table', i);
-            const table = await pokerContract.tables(i);
-            console.log('Table data:', table);
+            const tableInfo = await pokerTableContract.getTableInfo(i);
+            console.log('Table data:', tableInfo);
             
-            // Check if the table exists and is properly initialized
-            if (!table || !table.isActive) {
-              console.log('No more tables or inactive table found at index', i);
+            // Check if the table exists (minBuyIn > 0 indicates an active table)
+            if (tableInfo.minBuyIn === 0n) {
+              console.log('No more tables found at index', i);
               break;
             }
             
             tables.push({
               id: i,
-              minBuyIn: ethers.formatEther(table.minBuyIn),
-              maxBuyIn: ethers.formatEther(table.maxBuyIn),
-              smallBlind: ethers.formatEther(table.smallBlind),
-              bigBlind: ethers.formatEther(table.bigBlind),
-              playerCount: table.playerCount.toString(),
+              minBuyIn: ethers.formatEther(tableInfo.minBuyIn),
+              maxBuyIn: ethers.formatEther(tableInfo.maxBuyIn),
+              smallBlind: ethers.formatEther(tableInfo.smallBlind),
+              bigBlind: ethers.formatEther(tableInfo.bigBlind),
+              playerCount: tableInfo.playerCount.toString(),
               maxPlayers: 6,
-              isActive: table.isActive
+              isActive: true
             });
             
             i++;
           } catch (err) {
             console.log('Error fetching table', i, ':', err);
+            // If we get an error for index 0, there are no tables yet
+            if (i === 0) {
+              console.log('No tables exist yet');
+              setTables([]);
+            }
             break;
           }
         }
@@ -91,7 +95,7 @@ function PokerLobby() {
     fetchTables();
     const interval = setInterval(fetchTables, 5000);
     return () => clearInterval(interval);
-  }, [pokerContract]);
+  }, [pokerTableContract]);
 
   // Add new useEffect for fetching table names
   useEffect(() => {
@@ -111,9 +115,6 @@ function PokerLobby() {
       loadTableNames();
     }
   }, [tables]);
-
-  // Add console log for render
-  console.log('Current tables state:', tables);
 
   if (isCheckingAccount) {
     return <div>Loading...</div>;

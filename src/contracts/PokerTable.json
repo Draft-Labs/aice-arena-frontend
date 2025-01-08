@@ -1,15 +1,25 @@
 {
-  "abi": [
+    "abi": [
     {
       "inputs": [
         {
-          "internalType": "uint256",
-          "name": "_minBetAmount",
-          "type": "uint256"
+          "internalType": "address payable",
+          "name": "_bettingContract",
+          "type": "address"
         },
         {
           "internalType": "address payable",
-          "name": "_treasuryAddress",
+          "name": "_playerManager",
+          "type": "address"
+        },
+        {
+          "internalType": "address payable",
+          "name": "_gameState",
+          "type": "address"
+        },
+        {
+          "internalType": "address payable",
+          "name": "_treasury",
           "type": "address"
         }
       ],
@@ -18,22 +28,12 @@
     },
     {
       "inputs": [],
-      "name": "InsufficientBalance",
+      "name": "InsufficientPlayers",
       "type": "error"
     },
     {
       "inputs": [],
-      "name": "InvalidBetAmount",
-      "type": "error"
-    },
-    {
-      "inputs": [],
-      "name": "InvalidBetLimits",
-      "type": "error"
-    },
-    {
-      "inputs": [],
-      "name": "InvalidBuyIn",
+      "name": "InvalidAmount",
       "type": "error"
     },
     {
@@ -43,12 +43,7 @@
     },
     {
       "inputs": [],
-      "name": "NotPlayerTurn",
-      "type": "error"
-    },
-    {
-      "inputs": [],
-      "name": "OnlyOwnerAllowed",
+      "name": "NotAuthorized",
       "type": "error"
     },
     {
@@ -75,7 +70,7 @@
     },
     {
       "inputs": [],
-      "name": "PlayerNotAtTable",
+      "name": "PlayerNotFound",
       "type": "error"
     },
     {
@@ -90,7 +85,7 @@
     },
     {
       "inputs": [],
-      "name": "TableNotActive",
+      "name": "TableNotFound",
       "type": "error"
     },
     {
@@ -126,77 +121,9 @@
           "internalType": "uint256",
           "name": "tableId",
           "type": "uint256"
-        },
-        {
-          "indexed": false,
-          "internalType": "address",
-          "name": "smallBlind",
-          "type": "address"
-        },
-        {
-          "indexed": false,
-          "internalType": "address",
-          "name": "bigBlind",
-          "type": "address"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "smallBlindAmount",
-          "type": "uint256"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "bigBlindAmount",
-          "type": "uint256"
         }
       ],
-      "name": "BlindsPosted",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "internalType": "uint256",
-          "name": "tableId",
-          "type": "uint256"
-        },
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "player",
-          "type": "address"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint8[]",
-          "name": "cards",
-          "type": "uint8[]"
-        }
-      ],
-      "name": "CardsDealt",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "internalType": "uint256",
-          "name": "tableId",
-          "type": "uint256"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint8[]",
-          "name": "cards",
-          "type": "uint8[]"
-        }
-      ],
-      "name": "CommunityCardsDealt",
+      "name": "FlopDealt",
       "type": "event"
     },
     {
@@ -222,19 +149,13 @@
           "type": "uint256"
         },
         {
-          "indexed": true,
-          "internalType": "address",
-          "name": "winner",
-          "type": "address"
-        },
-        {
           "indexed": false,
-          "internalType": "uint256",
-          "name": "pot",
-          "type": "uint256"
+          "internalType": "enum IPokerTable.GameState",
+          "name": "newState",
+          "type": "uint8"
         }
       ],
-      "name": "HandComplete",
+      "name": "GameStateChanged",
       "type": "event"
     },
     {
@@ -245,27 +166,9 @@
           "internalType": "uint256",
           "name": "tableId",
           "type": "uint256"
-        },
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "winner",
-          "type": "address"
-        },
-        {
-          "indexed": false,
-          "internalType": "enum Poker.HandRank",
-          "name": "winningHandRank",
-          "type": "uint8"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "potAmount",
-          "type": "uint256"
         }
       ],
-      "name": "HandWinner",
+      "name": "HandDealt",
       "type": "event"
     },
     {
@@ -285,50 +188,6 @@
         }
       ],
       "name": "OwnershipTransferred",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "internalType": "uint256",
-          "name": "tableId",
-          "type": "uint256"
-        },
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "player",
-          "type": "address"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint8[]",
-          "name": "cards",
-          "type": "uint8[]"
-        }
-      ],
-      "name": "PlayerCardsDealt",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "internalType": "uint256",
-          "name": "tableId",
-          "type": "uint256"
-        },
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "player",
-          "type": "address"
-        }
-      ],
-      "name": "PlayerFolded",
       "type": "event"
     },
     {
@@ -370,12 +229,6 @@
           "internalType": "address",
           "name": "player",
           "type": "address"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "remainingStake",
-          "type": "uint256"
         }
       ],
       "name": "PlayerLeft",
@@ -389,9 +242,21 @@
           "internalType": "uint256",
           "name": "tableId",
           "type": "uint256"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "winner",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
         }
       ],
-      "name": "RoundComplete",
+      "name": "PotAwarded",
       "type": "event"
     },
     {
@@ -402,21 +267,9 @@
           "internalType": "uint256",
           "name": "tableId",
           "type": "uint256"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "minBet",
-          "type": "uint256"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "maxBet",
-          "type": "uint256"
         }
       ],
-      "name": "TableConfigUpdated",
+      "name": "RiverDealt",
       "type": "event"
     },
     {
@@ -452,65 +305,37 @@
           "internalType": "uint256",
           "name": "tableId",
           "type": "uint256"
-        },
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "player",
-          "type": "address"
-        },
-        {
-          "indexed": false,
-          "internalType": "string",
-          "name": "action",
-          "type": "string"
         }
       ],
-      "name": "TurnEnded",
+      "name": "TurnDealt",
       "type": "event"
     },
     {
-      "anonymous": false,
       "inputs": [
         {
-          "indexed": true,
           "internalType": "uint256",
           "name": "tableId",
           "type": "uint256"
         },
         {
-          "indexed": true,
           "internalType": "address",
           "name": "player",
           "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "buyIn",
+          "type": "uint256"
         }
       ],
-      "name": "TurnStarted",
-      "type": "event"
-    },
-    {
-      "inputs": [],
-      "name": "activeTableCount",
+      "name": "addPlayer",
       "outputs": [
         {
-          "internalType": "uint256",
+          "internalType": "bool",
           "name": "",
-          "type": "uint256"
+          "type": "bool"
         }
       ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "tableId",
-          "type": "uint256"
-        }
-      ],
-      "name": "call",
-      "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
     },
@@ -522,8 +347,104 @@
           "type": "uint256"
         }
       ],
+      "name": "advanceToNextPlayer",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "tableId",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "winner",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "awardPotToPlayer",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "bettingContract",
+      "outputs": [
+        {
+          "internalType": "contract PokerBetting",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "tableId",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "player",
+          "type": "address"
+        }
+      ],
+      "name": "call",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "tableId",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "player",
+          "type": "address"
+        }
+      ],
       "name": "check",
-      "outputs": [],
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
       "stateMutability": "nonpayable",
       "type": "function"
     },
@@ -548,16 +469,6 @@
           "internalType": "uint256",
           "name": "bigBlind",
           "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "minBet",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "maxBet",
-          "type": "uint256"
         }
       ],
       "name": "createTable",
@@ -579,9 +490,128 @@
           "type": "uint256"
         }
       ],
-      "name": "fold",
-      "outputs": [],
+      "name": "dealCards",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
       "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "tableId",
+          "type": "uint256"
+        }
+      ],
+      "name": "dealFlop",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "tableId",
+          "type": "uint256"
+        }
+      ],
+      "name": "dealRiver",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "tableId",
+          "type": "uint256"
+        }
+      ],
+      "name": "dealTurn",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "tableId",
+          "type": "uint256"
+        }
+      ],
+      "name": "endGame",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "tableId",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "player",
+          "type": "address"
+        }
+      ],
+      "name": "fold",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "gameState",
+      "outputs": [
+        {
+          "internalType": "contract PokerGameState",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
       "type": "function"
     },
     {
@@ -595,9 +625,21 @@
       "name": "getCommunityCards",
       "outputs": [
         {
-          "internalType": "uint8[]",
+          "components": [
+            {
+              "internalType": "uint8",
+              "name": "suit",
+              "type": "uint8"
+            },
+            {
+              "internalType": "uint8",
+              "name": "rank",
+              "type": "uint8"
+            }
+          ],
+          "internalType": "struct PokerHandEvaluator.Card[]",
           "name": "",
-          "type": "uint8[]"
+          "type": "tuple[]"
         }
       ],
       "stateMutability": "view",
@@ -619,9 +661,26 @@
       "name": "getPlayerCards",
       "outputs": [
         {
-          "internalType": "uint8[]",
-          "name": "",
-          "type": "uint8[]"
+          "components": [
+            {
+              "internalType": "uint8",
+              "name": "suit",
+              "type": "uint8"
+            },
+            {
+              "internalType": "uint8",
+              "name": "rank",
+              "type": "uint8"
+            }
+          ],
+          "internalType": "struct PokerHandEvaluator.Card[]",
+          "name": "holeCards",
+          "type": "tuple[]"
+        },
+        {
+          "internalType": "bool",
+          "name": "isRevealed",
+          "type": "bool"
         }
       ],
       "stateMutability": "view",
@@ -663,9 +722,9 @@
           "type": "bool"
         },
         {
-          "internalType": "uint256",
-          "name": "position",
-          "type": "uint256"
+          "internalType": "bool",
+          "name": "inHand",
+          "type": "bool"
         }
       ],
       "stateMutability": "view",
@@ -722,14 +781,9 @@
           "type": "uint256"
         },
         {
-          "internalType": "enum Poker.GameState",
-          "name": "gameState",
+          "internalType": "enum IPokerTable.GameState",
+          "name": "currentState",
           "type": "uint8"
-        },
-        {
-          "internalType": "bool",
-          "name": "isActive",
-          "type": "bool"
         }
       ],
       "stateMutability": "view",
@@ -762,14 +816,20 @@
           "type": "uint256"
         },
         {
-          "internalType": "uint256",
-          "name": "buyInAmount",
-          "type": "uint256"
+          "internalType": "address",
+          "name": "player",
+          "type": "address"
         }
       ],
-      "name": "joinTable",
-      "outputs": [],
-      "stateMutability": "nonpayable",
+      "name": "isPlayerTurn",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
       "type": "function"
     },
     {
@@ -778,47 +838,19 @@
           "internalType": "uint256",
           "name": "tableId",
           "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "player",
+          "type": "address"
         }
       ],
-      "name": "leaveTable",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "maxPlayersPerTable",
+      "name": "isValidPlayer",
       "outputs": [
         {
-          "internalType": "uint256",
+          "internalType": "bool",
           "name": "",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "maxTables",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "minBetAmount",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
+          "type": "bool"
         }
       ],
       "stateMutability": "view",
@@ -838,37 +870,13 @@
       "type": "function"
     },
     {
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "tableId",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "betAmount",
-          "type": "uint256"
-        }
-      ],
-      "name": "placeBet",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "",
-          "type": "address"
-        }
-      ],
-      "name": "playerTables",
+      "inputs": [],
+      "name": "playerManager",
       "outputs": [
         {
-          "internalType": "uint256",
+          "internalType": "contract PokerPlayerManager",
           "name": "",
-          "type": "uint256"
+          "type": "address"
         }
       ],
       "stateMutability": "view",
@@ -880,10 +888,26 @@
           "internalType": "uint256",
           "name": "tableId",
           "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
         }
       ],
-      "name": "postBlinds",
-      "outputs": [],
+      "name": "raise",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
       "stateMutability": "nonpayable",
       "type": "function"
     },
@@ -895,13 +919,19 @@
           "type": "uint256"
         },
         {
-          "internalType": "uint256",
-          "name": "amount",
-          "type": "uint256"
+          "internalType": "address",
+          "name": "player",
+          "type": "address"
         }
       ],
-      "name": "raise",
-      "outputs": [],
+      "name": "removePlayer",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
       "stateMutability": "nonpayable",
       "type": "function"
     },
@@ -920,137 +950,15 @@
           "type": "uint256"
         }
       ],
-      "name": "startFlop",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "tableId",
-          "type": "uint256"
-        }
-      ],
-      "name": "startRiver",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "tableId",
-          "type": "uint256"
-        }
-      ],
-      "name": "startShowdown",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "tableId",
-          "type": "uint256"
-        }
-      ],
-      "name": "startTurn",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "name": "tables",
+      "name": "startGame",
       "outputs": [
         {
-          "internalType": "uint256",
-          "name": "tableId",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "minBuyIn",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "maxBuyIn",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "smallBlind",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "bigBlind",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "minBet",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "maxBet",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "pot",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "currentBet",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "dealerPosition",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "currentPosition",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "playerCount",
-          "type": "uint256"
-        },
-        {
-          "internalType": "enum Poker.GameState",
-          "name": "gameState",
-          "type": "uint8"
-        },
-        {
           "internalType": "bool",
-          "name": "isActive",
-          "type": "bool"
-        },
-        {
-          "internalType": "bool",
-          "name": "roundComplete",
+          "name": "",
           "type": "bool"
         }
       ],
-      "stateMutability": "view",
+      "stateMutability": "nonpayable",
       "type": "function"
     },
     {
@@ -1071,7 +979,7 @@
       "name": "treasury",
       "outputs": [
         {
-          "internalType": "contract HouseTreasury",
+          "internalType": "contract PokerTreasury",
           "name": "",
           "type": "address"
         }
@@ -1087,18 +995,130 @@
           "type": "uint256"
         },
         {
+          "internalType": "address",
+          "name": "player",
+          "type": "address"
+        }
+      ],
+      "name": "updateCurrentPlayer",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
           "internalType": "uint256",
-          "name": "newMinBet",
+          "name": "tableId",
+          "type": "uint256"
+        },
+        {
+          "internalType": "enum IPokerTable.GameState",
+          "name": "newState",
+          "type": "uint8"
+        }
+      ],
+      "name": "updateGameState",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "tableId",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "player",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "betAmount",
           "type": "uint256"
         },
         {
           "internalType": "uint256",
-          "name": "newMaxBet",
+          "name": "newStake",
           "type": "uint256"
         }
       ],
-      "name": "updateTableBetLimits",
-      "outputs": [],
+      "name": "updatePlayerBet",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "tableId",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "player",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "newStake",
+          "type": "uint256"
+        }
+      ],
+      "name": "updatePlayerStake",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "tableId",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "updatePot",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
       "stateMutability": "nonpayable",
       "type": "function"
     }

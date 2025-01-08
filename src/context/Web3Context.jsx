@@ -1,170 +1,180 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { ethers } from 'ethers';
-import BlackjackJSON from '../contracts/Blackjack.json';
-import TreasuryJSON from '../contracts/HouseTreasury.json';
-import RouletteJSON from '../contracts/Roulette.json';
-import PokerJSON from '../contracts/Poker.json';
+import BlackjackABI from '../contracts/Blackjack.json';
+import RouletteABI from '../contracts/Roulette.json';
+import TreasuryABI from '../contracts/HouseTreasury.json';
+import PokerTableABI from '../contracts/PokerTable.json';
+import PokerBettingABI from '../contracts/PokerBetting.json';
+import PokerPlayerManagerABI from '../contracts/PokerPlayerManager.json';
+import PokerGameStateABI from '../contracts/PokerGameState.json';
+import PokerTreasuryABI from '../contracts/PokerTreasury.json';
 
 const Web3Context = createContext();
 
 export function Web3Provider({ children }) {
-  const [provider, setProvider] = useState(null);
-  const [signer, setSigner] = useState(null);
-  const [blackjackContract, setBlackjackContract] = useState(null);
-  const [treasuryContract, setTreasuryContract] = useState(null);
-  const [rouletteContract, setRouletteContract] = useState(null);
-  const [pokerContract, setPokerContract] = useState(null);
   const [account, setAccount] = useState(null);
-  const [error, setError] = useState(null);
+  const [signer, setSigner] = useState(null);
+  const [provider, setProvider] = useState(null);
+  const [blackjackContract, setBlackjackContract] = useState(null);
+  const [rouletteContract, setRouletteContract] = useState(null);
+  const [treasuryContract, setTreasuryContract] = useState(null);
+  const [pokerTableContract, setPokerTableContract] = useState(null);
+  const [pokerBettingContract, setPokerBettingContract] = useState(null);
+  const [pokerPlayerManagerContract, setPokerPlayerManagerContract] = useState(null);
+  const [pokerGameStateContract, setPokerGameStateContract] = useState(null);
+  const [pokerTreasuryContract, setPokerTreasuryContract] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const connectWallet = async () => {
-    try {
-      if (!window.ethereum) {
-        throw new Error("Please install MetaMask!");
-      }
-
-      setIsLoading(true);
-
+  useEffect(() => {
+    const init = async () => {
       try {
-        const accounts = await window.ethereum.request({
-          method: 'eth_requestAccounts'
-        });
-        
-        if (!accounts || accounts.length === 0) {
-          throw new Error('No accounts found');
+        console.log('Initializing Web3...');
+        if (typeof window.ethereum === 'undefined') {
+          throw new Error('Please install MetaMask');
         }
-
-        const account = accounts[0];
-        setAccount(account);
+        console.log('MetaMask detected');
 
         const provider = new ethers.BrowserProvider(window.ethereum);
+        console.log('Provider initialized');
+        
+        const accounts = await provider.listAccounts();
+        console.log('Found accounts:', accounts);
+        
+        if (accounts.length === 0) {
+          throw new Error('Please connect your wallet');
+        }
+
         const signer = await provider.getSigner();
+        const account = await signer.getAddress();
 
-        // Get network to ensure we're on the correct chain
-        const network = await provider.getNetwork();
-        console.log('Connected to network:', network);
-
-        // Contract addresses
-        const blackjackAddress = "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512";
-        const treasuryAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
-        const rouletteAddress = "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0";
-        const pokerAddress = "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9";
-
-        // Create contract instances
-        const blackjack = new ethers.Contract(
-          blackjackAddress,
-          BlackjackJSON.abi,
+        // Initialize contracts
+        const blackjackContract = new ethers.Contract(
+          process.env.REACT_APP_BLACKJACK_ADDRESS,
+          BlackjackABI.abi,
           signer
         );
 
-        const treasury = new ethers.Contract(
-          treasuryAddress,
-          TreasuryJSON.abi,
+        const rouletteContract = new ethers.Contract(
+          process.env.REACT_APP_ROULETTE_ADDRESS,
+          RouletteABI.abi,
           signer
         );
 
-        const roulette = new ethers.Contract(
-          rouletteAddress,
-          RouletteJSON.abi,
+        const treasuryContract = new ethers.Contract(
+          process.env.REACT_APP_TREASURY_ADDRESS,
+          TreasuryABI.abi,
           signer
         );
 
-        const poker = new ethers.Contract(
-          pokerAddress,
-          PokerJSON.abi,
+        const pokerTableContract = new ethers.Contract(
+          process.env.REACT_APP_POKER_TABLE_ADDRESS,
+          PokerTableABI.abi,
+          signer
+        );
+
+        const pokerBettingContract = new ethers.Contract(
+          process.env.REACT_APP_POKER_BETTING_ADDRESS,
+          PokerBettingABI.abi,
+          signer
+        );
+
+        const pokerPlayerManagerContract = new ethers.Contract(
+          process.env.REACT_APP_POKER_PLAYER_MANAGER_ADDRESS,
+          PokerPlayerManagerABI.abi,
+          signer
+        );
+
+        const pokerGameStateContract = new ethers.Contract(
+          process.env.REACT_APP_POKER_GAME_STATE_ADDRESS,
+          PokerGameStateABI.abi,
+          signer
+        );
+
+        const pokerTreasuryContract = new ethers.Contract(
+          process.env.REACT_APP_POKER_TREASURY_ADDRESS,
+          PokerTreasuryABI.abi,
           signer
         );
 
         setProvider(provider);
         setSigner(signer);
-        setBlackjackContract(blackjack);
-        setTreasuryContract(treasury);
-        setRouletteContract(roulette);
-        setPokerContract(poker);
-        setError(null);
+        setAccount(account);
+        setBlackjackContract(blackjackContract);
+        setRouletteContract(rouletteContract);
+        setTreasuryContract(treasuryContract);
+        setPokerTableContract(pokerTableContract);
+        setPokerBettingContract(pokerBettingContract);
+        setPokerPlayerManagerContract(pokerPlayerManagerContract);
+        setPokerGameStateContract(pokerGameStateContract);
+        setPokerTreasuryContract(pokerTreasuryContract);
+        setIsLoading(false);
 
-      } catch (requestError) {
-        if (requestError.code === -32002) {
-          setError('Please open MetaMask and accept the connection request');
-          return;
-        }
-        throw requestError;
+        // Listen for account changes
+        window.ethereum.on('accountsChanged', (accounts) => {
+          window.location.reload();
+        });
+
+        // Listen for chain changes
+        window.ethereum.on('chainChanged', (chainId) => {
+          window.location.reload();
+        });
+
+      } catch (error) {
+        console.error('Error initializing Web3:', error);
+        setError(error.message);
+        setIsLoading(false);
       }
-      
-    } catch (err) {
-      console.error('Connection error:', err);
-      setError(err.message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    };
 
-  const disconnectWallet = () => {
-    setAccount(null);
-    setSigner(null);
-    setBlackjackContract(null);
-    setTreasuryContract(null);
-    setRouletteContract(null);
-    setPokerContract(null);
-    setError(null);
-  };
-
-  useEffect(() => {
-    // Initial connection attempt
-    connectWallet();
-
-    // Listen for account changes
-    if (window.ethereum) {
-      window.ethereum.on('accountsChanged', (accounts) => {
-        if (accounts.length > 0) {
-          connectWallet(); // Reconnect with new account
-        } else {
-          setAccount(null);
-          setBlackjackContract(null);
-          setTreasuryContract(null);
-          setRouletteContract(null);
-          setPokerContract(null);
-        }
-      });
-
-      window.ethereum.on('chainChanged', () => {
-        window.location.reload();
-      });
-    }
+    init();
 
     return () => {
-      if (window.ethereum) {
-        window.ethereum.removeAllListeners();
-      }
+      window.ethereum?.removeAllListeners('accountsChanged');
+      window.ethereum?.removeAllListeners('chainChanged');
     };
   }, []);
 
-  const value = {
-    provider,
-    signer,
-    blackjackContract,
-    treasuryContract,
-    rouletteContract,
-    pokerContract,
-    account,
-    error,
-    isLoading,
-    connectWallet,
-    disconnectWallet
+  const connectWallet = async () => {
+    try {
+      console.log('Attempting to connect wallet...');
+      if (typeof window.ethereum === 'undefined') {
+        throw new Error('MetaMask is not installed');
+      }
+      console.log('MetaMask is installed, requesting accounts...');
+      await window.ethereum.request({ method: 'eth_requestAccounts' });
+      console.log('Accounts requested successfully, reloading...');
+      window.location.reload();
+    } catch (error) {
+      console.error('Detailed error connecting wallet:', error);
+      setError(error.message);
+    }
   };
 
   return (
-    <Web3Context.Provider value={value}>
+    <Web3Context.Provider
+      value={{
+        account,
+        signer,
+        provider,
+        blackjackContract,
+        rouletteContract,
+        treasuryContract,
+        pokerTableContract,
+        pokerBettingContract,
+        pokerPlayerManagerContract,
+        pokerGameStateContract,
+        pokerTreasuryContract,
+        isLoading,
+        error,
+        connectWallet
+      }}
+    >
       {children}
     </Web3Context.Provider>
   );
 }
 
 export function useWeb3() {
-  const context = useContext(Web3Context);
-  if (context === undefined) {
-    throw new Error('useWeb3 must be used within a Web3Provider');
-  }
-  return context;
+  return useContext(Web3Context);
 }
