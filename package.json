@@ -4,11 +4,14 @@
   "private": true,
   "dependencies": {
     "@metamask/providers": "^18.2.0",
+    "@tensorflow/tfjs": "^4.22.0",
+    "@tensorflow/tfjs-vis": "^1.5.1",
     "@testing-library/jest-dom": "^5.17.0",
     "@testing-library/react": "^13.4.0",
     "@testing-library/user-event": "^13.5.0",
     "ethers": "^6.13.4",
     "firebase": "^11.1.0",
+    "poker-evaluator": "^2.1.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-loading-icons": "^1.1.0",
@@ -21,6 +24,8 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
+    "test:ai": "vite-node src/ai/test.js",
+    "test:ai-data": "vite-node src/ai/test/dataTest.js",
     "eject": "react-scripts eject"
   },
   "eslintConfig": {
@@ -42,6 +47,8 @@
     ]
   },
   "devDependencies": {
-    "@babel/plugin-proposal-private-property-in-object": "^7.21.11"
-  }
+    "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
+    "vite-node": "^2.1.8"
+  },
+  "type": "module"
 }

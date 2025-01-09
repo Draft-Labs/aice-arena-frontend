@@ -2,6 +2,105 @@
 
 A React-based frontend application for the decentralized betting platform. This application provides user interfaces for various betting games and casino features.
 
+## AI Poker Agent
+
+The project includes a TensorFlow.js-based AI agent for poker gameplay. The AI implementation uses real poker hand data from the IRC Poker Database for training.
+
+### Current Progress
+
+#### ✅ Phase 1: Environment Setup (Completed)
+- TensorFlow.js integration
+- Directory structure for AI components
+- Basic utilities implemented
+- Test environment working
+
+#### ✅ Phase 2: Data Processing (Completed)
+- Card conversion utilities (`src/ai/utils/cardConverter.js`)
+  - Converts between poker notation and numeric representations (1-52)
+  - Handles hand string parsing ("Ah Kd" → [1, 26])
+  - Supports debugging with human-readable formats
+
+- Data fetching system (`src/ai/data/dataFetcher.js`)
+  - Parses IRC poker hand histories
+  - Tracks player positions and actions
+  - Maintains stack sizes and pot size
+  - Records betting rounds (preflop/flop/turn/river)
+
+- Position tracking
+  - Maps players to table positions (BTN/SB/BB/EARLY/MIDDLE/LATE)
+  - Tracks relative positions for each action
+  - Supports different table sizes (6-max implemented)
+
+- Action history
+  - Records all player actions with amounts
+  - Maintains pot size after each action
+  - Tracks stack sizes throughout the hand
+  - Links actions to positions and betting rounds
+
+### Project Structure
+
+```
+src/ai/
+├── data/
+│   └── dataFetcher.js       # Poker hand parsing and processing
+├── models/
+│   └── ...                  # Will contain neural network models
+├── training/
+│   └── ...                  # Will contain training scripts
+├── utils/
+│   ├── constants.js         # Configuration and constants
+│   ├── cardConverter.js     # Card notation utilities
+│   └── testEnvironment.js   # Testing setup
+└── test/
+    ├── test.js             # Main test suite
+    └── dataTest.js         # Data processing tests
+```
+
+### Data Format
+
+The AI processes poker hands in the following structured format:
+```javascript
+{
+  id: "gameId",
+  players: [{
+    name: "playerName",
+    cards: [card1, card2],     // 1-52 representation
+    position: "SB",            // Table position
+    relativePosition: "SB",    // Relative to button
+    stack: 1000               // Current stack size
+  }],
+  communityCards: [card1, card2, card3, card4, card5],
+  actions: [{
+    player: "playerName",
+    action: "RAISE",          // FOLD/CHECK/CALL/RAISE
+    amount: 20,
+    position: "SB",
+    relativePosition: "SB",
+    potAfterAction: 40,
+    stackAfterAction: 980
+  }],
+  currentRound: "flop",       // preflop/flop/turn/river
+  buttonPosition: 0,          // Button position
+  potSize: 100               // Current pot size
+}
+```
+
+### Running Tests
+
+```bash
+# Test environment setup
+npm run test:ai
+
+# Test data processing
+npm run test:ai-data
+```
+
+### Next Steps
+1. Data transformation for neural network input
+2. Model architecture design
+3. Training pipeline implementation
+4. Integration with game interface
+
 # Getting Started with Create React App
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
