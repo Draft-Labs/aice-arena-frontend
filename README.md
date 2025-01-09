@@ -355,3 +355,96 @@ const action = await model.getBestAction(input);
   - Dense1 → Dense2: 131,328
   - Dense2 → Dense3: 32,896
   - Dense3 → Output: 516
+
+# Poker AI Training Pipeline
+
+## Overview
+A TensorFlow.js-based training pipeline for a poker AI agent.
+
+## Project Structure
+```
+betting-dapp-frontend/
+├── src/
+│   ├── ai/
+│   │   ├── models/
+│   │   │   └── pokerModel.js
+│   │   ├── training/
+│   │   │   ├── trainingPipeline.js
+│   │   │   ├── trainer.js
+│   │   │   └── dataLoader.js
+│   │   ├── utils/
+│   │   │   ├── constants.js
+│   │   │   ├── metrics.js
+│   │   │   └── callbacks.js
+│   │   └── test/
+│   │       └── trainingPipeline.test.js
+```
+
+## Development Phases
+
+### Phase 1: ✅ Basic Infrastructure
+- [x] Project structure setup
+- [x] Basic model architecture
+- [x] Data loading pipeline
+
+### Phase 2: ✅ Training Pipeline Core
+- [x] Training loop implementation
+- [x] Batch processing
+- [x] Basic metrics tracking
+
+### Phase 3: ✅ Model Architecture
+- [x] Input layer design
+- [x] Hidden layers configuration
+- [x] Output layer setup
+
+### Phase 4: ✅ Data Management
+- [x] Data preprocessing
+- [x] Batch generation
+- [x] Memory management
+
+### Phase 5: ✅ Training Metrics & Validation
+- [x] Loss calculation
+- [x] Accuracy metrics
+- [x] Validation pipeline
+- [x] Checkpoint management
+- [x] Memory leak prevention
+
+### Phase 6: 🚧 Training Optimization
+- [ ] Gradient updates for faster training
+- [ ] Expanded test dataset
+- [ ] Early stopping implementation
+- [ ] Learning rate scheduling
+- [ ] Batch size optimization
+- [ ] Model architecture tuning
+
+### Phase 7: Model Deployment
+- [ ] Model serialization
+- [ ] Loading/saving functionality
+- [ ] Browser integration
+- [ ] Performance optimization
+
+## Current Status
+- Training pipeline operational
+- Basic metrics tracking implemented
+- Memory management optimized
+- Validation pipeline working
+- Current accuracy: ~36%
+- Loss trending downward
+
+## Next Steps
+1. Implement gradient updates
+2. Expand test dataset
+3. Add early stopping
+4. Optimize hyperparameters
+5. Improve model architecture
+
+## Usage
+```javascript
+const pipeline = new TrainingPipeline({
+  learningRate: 0.0002,
+  batchSize: 32,
+  maxEpochs: 100
+});
+
+await pipeline.train();
+```

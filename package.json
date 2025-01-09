@@ -5,6 +5,7 @@
   "dependencies": {
     "@metamask/providers": "^18.2.0",
     "@tensorflow/tfjs": "^4.22.0",
+    "@tensorflow/tfjs-node": "^4.22.0",
     "@tensorflow/tfjs-vis": "^1.5.1",
     "@testing-library/jest-dom": "^5.17.0",
     "@testing-library/react": "^13.4.0",
@@ -29,6 +30,9 @@
     "test:ai-hand": "vite-node src/ai/test/handEvaluator.test.js",
     "test:ai-input": "vite-node src/ai/test/inputTransformer.test.js",
     "test:ai-model": "vite-node src/ai/test/modelTest.js",
+    "test:ai-data-loader": "vite-node src/ai/test/dataLoader.test.js",
+    "test:ai-trainer": "vite-node src/ai/test/trainer.test.js",
+    "test:ai-pipeline": "vite-node src/ai/test/trainingPipeline.test.js",
     "eject": "react-scripts eject"
   },
   "eslintConfig": {

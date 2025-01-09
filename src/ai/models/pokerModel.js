@@ -89,17 +89,10 @@ class PokerModel {
   }
 
   // Get action probabilities
-  async predict(input) {
-    if (!this.model) throw new Error('Model not built');
-    
-    const tensor = tf.tensor2d([input]);
-    const prediction = this.model.predict(tensor);
-    const probabilities = await prediction.data();
-    
-    tensor.dispose();
-    prediction.dispose();
-    
-    return probabilities;
+  predict(input) {
+    // Ensure input is a tensor with correct shape
+    const inputTensor = tf.tensor2d(input.arraySync(), [input.shape[0], 373]);
+    return this.model.predict(inputTensor);
   }
 
   // Get best action
