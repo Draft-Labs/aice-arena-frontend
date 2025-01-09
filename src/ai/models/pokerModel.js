@@ -1,11 +1,20 @@
 import * as tf from '@tensorflow/tfjs';
 import { INPUT_SIZE, OUTPUT_SIZE } from '../utils/constants';
+import ModelMetrics from '../utils/metrics';
+import EarlyStopping from '../utils/callbacks';
 
 class PokerModel {
   constructor() {
     this.model = null;
     this.inputShape = [INPUT_SIZE];
     this.outputShape = OUTPUT_SIZE;
+    this.metrics = new ModelMetrics();
+    this.earlyStopping = new EarlyStopping({
+      patience: 5,
+      minDelta: 0.001,
+      monitor: 'val_loss',
+      verbose: true
+    });
   }
 
   // Create the model architecture
@@ -92,6 +101,38 @@ class PokerModel {
   async getBestAction(input) {
     const probs = await this.predict(input);
     return probs.indexOf(Math.max(...probs));
+  }
+
+  // Update training method
+  async train(xs, ys, options = {}) {
+    if (!this.model) this.buildModel();
+    
+    this.metrics.reset();
+    this.earlyStopping.reset();
+    
+    const history = await this.model.fit(xs, ys, {
+      epochs: options.epochs || 100,
+      batchSize: options.batchSize || 32,
+      validationSplit: options.validationSplit || 0.2,
+      callbacks: {
+        onBatchEnd: async (batch, logs) => {
+          const predictions = this.model.predict(xs);
+          this.metrics.update(predictions, ys);
+          predictions.dispose();
+        },
+        onEpochEnd: async (epoch, logs) => {
+          const shouldStop = this.earlyStopping.onEpochEnd(epoch, logs, this.model);
+          if (shouldStop) {
+            console.log('Early stopping triggered');
+          }
+        }
+      }
+    });
+
+    return {
+      history,
+      metrics: this.metrics.getMetrics()
+    };
   }
 }
 

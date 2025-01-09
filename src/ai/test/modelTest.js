@@ -1,6 +1,6 @@
 import PokerModel from '../models/pokerModel';
 import * as tf from '@tensorflow/tfjs';
-import { INPUT_SIZE, OUTPUT_SIZE } from '../utils/constants';
+import { INPUT_SIZE, OUTPUT_SIZE, ACTIONS } from '../utils/constants';
 
 async function testModel() {
   console.log('Testing poker model...');
@@ -22,18 +22,44 @@ async function testModel() {
     console.log('Output shape:', prediction.shape);
     console.log('Output:', await prediction.data());
 
-    // Test training step
-    console.log('\nTesting training step...');
-    const xs = tf.randomNormal([32, INPUT_SIZE]);
-    const ys = tf.randomUniform([32, OUTPUT_SIZE]);
+    // Test training with metrics and early stopping
+    console.log('\nTesting training step with metrics...');
     
-    const history = await net.fit(xs, ys, {
-      epochs: 1,
-      batchSize: 32,
+    // Create synthetic training data
+    const batchSize = 32;
+    const xs = tf.randomNormal([batchSize, INPUT_SIZE]);
+    
+    // Create balanced labels (8 samples per action)
+    const ys = tf.buffer([batchSize, OUTPUT_SIZE]);
+    Object.values(ACTIONS).forEach((actionIndex, i) => {
+      for (let j = 0; j < batchSize/4; j++) {
+        ys.set(1, i * (batchSize/4) + j, actionIndex);
+      }
+    });
+
+    const result = await model.train(xs, ys.toTensor(), {
+      epochs: 5,
+      batchSize: 8,
       validationSplit: 0.2
     });
 
-    console.log('Training metrics:', history.history);
+    console.log('\nTraining history:', result.history);
+    console.log('\nDetailed metrics:', {
+      loss: result.metrics.loss.toFixed(4),
+      accuracy: result.metrics.accuracy.toFixed(4),
+      precision: Object.entries(result.metrics.precision)
+        .map(([k,v]) => `${k}: ${v.toFixed(4)}`),
+      recall: Object.entries(result.metrics.recall)
+        .map(([k,v]) => `${k}: ${v.toFixed(4)}`),
+      f1: Object.entries(result.metrics.f1)
+        .map(([k,v]) => `${k}: ${v.toFixed(4)}`)
+    });
+
+    // Clean up tensors
+    testInput.dispose();
+    prediction.dispose();
+    xs.dispose();
+    ys.toTensor().dispose();
 
     return {
       success: true,

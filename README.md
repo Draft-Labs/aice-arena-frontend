@@ -75,21 +75,48 @@ The project includes a TensorFlow.js-based AI agent for poker gameplay. The AI i
   - Edge case validation
   - Normalization verification
 
-#### 🔄 Phase 5: Model Architecture (In Progress)
+#### ✅ Phase 5: Model Architecture (Completed)
 - ✅ Network design
   - Input layer (373 dimensions)
   - Hidden layers with batch normalization
+  - Dropout layers for regularization
   - Output layer (4 actions)
 - ✅ Training configuration
   - Loss function: Categorical Crossentropy
   - Optimizer: Adam with learning rate decay
-  - Metrics: Accuracy, validation loss
-- ⏳ Model validation
-  - Cross-validation setup
-  - Performance metrics
-  - Overfitting prevention
+  - Metrics: Accuracy, precision, recall, F1
+- ✅ Model validation
+  - Early stopping implementation
+  - Comprehensive metrics tracking
+  - Performance monitoring
+  - Memory management
 
-#### ⏳ Phase 6: Training Pipeline (Not Started)
+Current Model Performance:
+```
+Overall Metrics:
+- Loss: 1.2130
+- Accuracy: 65.31%
+
+Per-Action Performance (F1 Scores):
+- FOLD:  0.8702 (Precision: 0.9920, Recall: 0.7750)
+- CHECK: 0.6652 (Precision: 0.5193, Recall: 0.9250)
+- CALL:  0.7529 (Precision: 0.7111, Recall: 0.8000)
+- RAISE: 0.1714 (Precision: 0.3600, Recall: 0.1125)
+```
+
+#### 🔄 Phase 6: Training Pipeline (In Progress)
+- ⏳ Data loading system
+  - Batch processing
+  - Shuffling mechanism
+  - Memory management
+- ⏳ Training loop
+  - Epoch management
+  - Checkpoint saving
+  - Progress monitoring
+- ⏳ Validation process
+  - Performance tracking
+  - Early stopping
+  - Model selection
 
 #### ⏳ Phase 7: Game Integration (Not Started)
 
@@ -107,6 +134,8 @@ src/ai/
 │   ├── constants.js         # Configuration and constants
 │   ├── cardConverter.js     # Card notation utilities
 │   ├── inputTransformer.js  # State to tensor conversion
+│   ├── metrics.js          # Model performance metrics
+│   ├── callbacks.js        # Training callbacks (early stopping)
 │   └── testEnvironment.js   # Testing setup
 └── test/
     ├── test.js             # Main test suite
@@ -165,10 +194,11 @@ npm run test:ai-model
 
 ### Next Steps
 
-1. Complete Model Validation
-   - Implement cross-validation
-   - Add performance metrics
-   - Test overfitting prevention
+1. Improve Model Performance
+   - Add class weights for RAISE action
+   - Increase validation set size
+   - Adjust early stopping parameters
+   - Implement learning rate reduction
 
 2. Begin Training Pipeline
    - Set up data loading system
