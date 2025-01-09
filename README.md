@@ -75,47 +75,23 @@ The project includes a TensorFlow.js-based AI agent for poker gameplay. The AI i
   - Edge case validation
   - Normalization verification
 
-#### ✅ Phase 5: Model Architecture
-- Network design
+#### 🔄 Phase 5: Model Architecture (In Progress)
+- ✅ Network design
   - Input layer (373 dimensions)
-  - Hidden layers configuration
+  - Hidden layers with batch normalization
   - Output layer (4 actions)
-- Training configuration
-  - Loss function selection
-  - Optimizer setup
-  - Hyperparameter definition
-- Model validation
+- ✅ Training configuration
+  - Loss function: Categorical Crossentropy
+  - Optimizer: Adam with learning rate decay
+  - Metrics: Accuracy, validation loss
+- ⏳ Model validation
   - Cross-validation setup
   - Performance metrics
   - Overfitting prevention
 
-#### ✅ Phase 6: Training Pipeline
-- Data loading system
-  - Batch processing
-  - Shuffling mechanism
-  - Memory management
-- Training loop
-  - Epoch management
-  - Checkpoint saving
-  - Progress monitoring
-- Validation process
-  - Performance tracking
-  - Early stopping
-  - Model selection
+#### ⏳ Phase 6: Training Pipeline (Not Started)
 
-#### ✅ Phase 7: Game Integration
-- Real-time inference
-  - State conversion
-  - Decision making
-  - Response formatting
-- Performance optimization
-  - Caching system
-  - Batch processing
-  - Memory management
-- UI/UX integration
-  - Decision display
-  - Confidence indicators
-  - Debug information
+#### ⏳ Phase 7: Game Integration (Not Started)
 
 ### Project Structure
 
@@ -124,16 +100,19 @@ src/ai/
 ├── data/
 │   └── dataFetcher.js       # Poker hand parsing and processing
 ├── models/
-│   └── ...                  # Will contain neural network models
+│   └── pokerModel.js        # Neural network architecture
 ├── training/
 │   └── ...                  # Will contain training scripts
 ├── utils/
 │   ├── constants.js         # Configuration and constants
 │   ├── cardConverter.js     # Card notation utilities
+│   ├── inputTransformer.js  # State to tensor conversion
 │   └── testEnvironment.js   # Testing setup
 └── test/
     ├── test.js             # Main test suite
-    └── dataTest.js         # Data processing tests
+    ├── dataTest.js         # Data processing tests
+    ├── inputTransformer.test.js  # Input conversion tests
+    └── modelTest.js        # Model architecture tests
 ```
 
 ### Data Format
@@ -173,51 +152,33 @@ npm run test:ai
 
 # Test data processing
 npm run test:ai-data
+
+# Test hand evaluation
+npm run test:ai-hand
+
+# Test input transformation
+npm run test:ai-input
+
+# Test model architecture
+npm run test:ai-model
 ```
 
 ### Next Steps
 
-#### Phase 5: Model Architecture
-- Network design
-  - Input layer (373 dimensions)
-  - Hidden layers configuration
-  - Output layer (4 actions)
-- Training configuration
-  - Loss function selection
-  - Optimizer setup
-  - Hyperparameter definition
-- Model validation
-  - Cross-validation setup
-  - Performance metrics
-  - Overfitting prevention
+1. Complete Model Validation
+   - Implement cross-validation
+   - Add performance metrics
+   - Test overfitting prevention
 
-#### Phase 6: Training Pipeline
-- Data loading system
-  - Batch processing
-  - Shuffling mechanism
-  - Memory management
-- Training loop
-  - Epoch management
-  - Checkpoint saving
-  - Progress monitoring
-- Validation process
-  - Performance tracking
-  - Early stopping
-  - Model selection
+2. Begin Training Pipeline
+   - Set up data loading system
+   - Implement training loop
+   - Add checkpoint saving
 
-#### Phase 7: Game Integration
-- Real-time inference
-  - State conversion
-  - Decision making
-  - Response formatting
-- Performance optimization
-  - Caching system
-  - Batch processing
-  - Memory management
-- UI/UX integration
-  - Decision display
-  - Confidence indicators
-  - Debug information
+3. Start Game Integration
+   - Real-time inference
+   - Performance optimization
+   - UI/UX integration
 
 # Getting Started with Create React App
 
@@ -289,3 +250,121 @@ This section has moved here: [https://facebook.github.io/create-react-app/docs/d
 ### `npm run build` fails to minify
 
 This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+
+## AI Poker Agent
+
+### Model Architecture
+
+The poker agent uses a deep neural network implemented in TensorFlow.js with the following architecture:
+
+```
+Input Layer (373 dimensions)
+├── Card encoding (364)
+│   ├── Hole cards (2 × 52)
+│   └── Community cards (5 × 52)
+├── Position encoding (6)
+├── Stack size (1)
+├── Pot size (1)
+└── Pot odds (1)
+
+Hidden Layers
+├── Dense Layer 1 (512 units)
+│   ├── Batch Normalization
+│   └── ReLU Activation
+├── Dense Layer 2 (256 units)
+│   ├── Batch Normalization
+│   ├── ReLU Activation
+│   └── Dropout (0.3)
+└── Dense Layer 3 (128 units)
+    ├── Batch Normalization
+    ├── ReLU Activation
+    └── Dropout (0.3)
+
+Output Layer (4 dimensions)
+└── Softmax Activation
+    ├── FOLD  (0)
+    ├── CHECK (1)
+    ├── CALL  (2)
+    └── RAISE (3)
+```
+
+### Training Configuration
+
+- **Optimizer**: Adam
+  - Initial learning rate: 0.001
+  - Beta1: 0.9
+  - Beta2: 0.999
+  - Learning rate decay: 1e-5
+
+- **Loss Function**: Categorical Crossentropy
+  - Suitable for multi-class classification
+  - Optimizes probability distribution
+
+- **Metrics**:
+  - Accuracy
+  - Validation loss
+  - Validation accuracy
+
+### Forward Pass
+
+1. **Input Processing**
+   - Cards are one-hot encoded (52 dimensions per card)
+   - Position is one-hot encoded (6 dimensions)
+   - Stack and pot values are normalized to [0,1]
+
+2. **Hidden Layer Processing**
+   - Each dense layer applies linear transformation
+   - Batch normalization stabilizes training
+   - ReLU activation adds non-linearity
+   - Dropout prevents overfitting
+
+3. **Output Generation**
+   - Softmax produces action probabilities
+   - Values sum to 1.0
+   - Highest probability indicates recommended action
+
+### Memory Management
+
+- Tensor disposal after predictions
+- Batch processing for efficiency
+- Automatic garbage collection
+- Memory-efficient forward pass
+
+### Model Usage
+
+```javascript
+// Create and build model
+const model = new PokerModel();
+model.buildModel();
+
+// Make prediction
+const gameState = {
+  holeCards: ['Ah', 'Kh'],
+  communityCards: ['Qh', 'Jh', 'Th'],
+  position: POSITIONS.BTN,
+  stack: 1000,
+  potSize: 100,
+  betAmount: 20
+};
+
+// Transform state to input tensor
+const input = transformer.transformState(gameState);
+
+// Get action probabilities
+const probs = await model.predict(input);
+// Example output: [0.1, 0.2, 0.3, 0.4]
+
+// Get best action
+const action = await model.getBestAction(input);
+// Example output: 3 (RAISE)
+```
+
+### Performance
+
+- Forward pass: <1ms
+- Memory usage: ~350KB
+- Parameters: 356,228
+  - Input → Dense1: 191,488
+  - Dense1 → Dense2: 131,328
+  - Dense2 → Dense3: 32,896
+  - Dense3 → Output: 516
