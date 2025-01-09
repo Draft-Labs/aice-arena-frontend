@@ -27,6 +27,7 @@
     "test:ai": "vite-node src/ai/test.js",
     "test:ai-data": "vite-node src/ai/test/dataTest.js",
     "test:ai-hand": "vite-node src/ai/test/handEvaluator.test.js",
+    "test:ai-input": "vite-node src/ai/test/inputTransformer.test.js",
     "eject": "react-scripts eject"
   },
   "eslintConfig": {
