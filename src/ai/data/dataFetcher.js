@@ -1,5 +1,6 @@
 import { INPUT_SIZE, OUTPUT_SIZE, ACTIONS, POSITIONS, POSITION_MAPPING } from '../utils/constants';
 import { convertHand, convertCard } from '../utils/cardConverter';
+import HandEvaluator from '../utils/handEvaluator';
 
 class PokerDataFetcher {
   constructor() {
@@ -23,6 +24,7 @@ Player2: checks
 `;
     this.batchSize = 1000;
     this.defaultStackSize = 1000;
+    this.evaluator = new HandEvaluator();
   }
 
   async fetchData() {
@@ -80,6 +82,16 @@ Player2: checks
 
     // Helper function to create an action with relative position
     const createAction = (player, actionType, amount, position) => {
+      const playerEntry = currentHand.players.find(p => p.name === player);
+      const handStrength = this.evaluator.evaluateHand(
+        playerEntry.cards,
+        currentHand.communityCards
+      );
+      const equity = this.evaluator.calculateEquity(
+        playerEntry.cards,
+        currentHand.communityCards
+      );
+
       return {
         player,
         action: actionType,
@@ -87,7 +99,10 @@ Player2: checks
         position,
         relativePosition: currentHand.relativePositions[position],
         potAfterAction: currentHand.potSize,
-        stackAfterAction: currentHand.stacks[player]
+        stackAfterAction: currentHand.stacks[player],
+        handStrength: handStrength.handRank,
+        handType: handStrength.handType,
+        equity: equity
       };
     };
 
