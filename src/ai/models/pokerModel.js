@@ -1,5 +1,5 @@
 import * as tf from '@tensorflow/tfjs';
-import { INPUT_SIZE, OUTPUT_SIZE } from '../utils/constants';
+import { INPUT_SIZE, OUTPUT_SIZE, ACTIONS } from '../utils/constants';
 import ModelMetrics from '../utils/metrics';
 import EarlyStopping from '../utils/callbacks';
 
@@ -19,41 +19,46 @@ class PokerModel {
 
   // Create the model architecture
   buildModel() {
-    this.model = tf.sequential({
-      layers: [
-        // Input layer
-        tf.layers.dense({
-          inputShape: this.inputShape,
-          units: 512,
-          kernelInitializer: 'glorotNormal'
-        }),
-        tf.layers.batchNormalization(),
-        tf.layers.activation({ activation: 'relu' }),
-        
-        // Hidden layers
-        tf.layers.dense({ units: 256 }),
-        tf.layers.batchNormalization(),
-        tf.layers.activation({ activation: 'relu' }),
-        tf.layers.dropout({ rate: 0.3 }),
-        
-        tf.layers.dense({ units: 128 }),
-        tf.layers.batchNormalization(),
-        tf.layers.activation({ activation: 'relu' }),
-        tf.layers.dropout({ rate: 0.3 }),
-        
-        // Output layer
-        tf.layers.dense({
-          units: this.outputShape,
-          activation: 'softmax'
-        })
-      ]
+    // Add residual connections
+    const input = tf.input({shape: this.inputShape});
+    
+    // First block
+    let x = tf.layers.dense({
+      units: 256,
+      kernelInitializer: 'heNormal'
+    }).apply(input);
+    x = tf.layers.batchNormalization().apply(x);
+    x = tf.layers.activation({activation: 'relu'}).apply(x);
+    
+    // Residual block 1
+    const shortcut1 = x;
+    x = tf.layers.dense({units: 256}).apply(x);
+    x = tf.layers.batchNormalization().apply(x);
+    x = tf.layers.activation({activation: 'relu'}).apply(x);
+    x = tf.layers.dropout({rate: 0.1}).apply(x);
+    x = tf.layers.add().apply([x, shortcut1]);
+    
+    // Residual block 2
+    const shortcut2 = x;
+    x = tf.layers.dense({units: 256}).apply(x);
+    x = tf.layers.batchNormalization().apply(x);
+    x = tf.layers.activation({activation: 'relu'}).apply(x);
+    x = tf.layers.dropout({rate: 0.1}).apply(x);
+    x = tf.layers.add().apply([x, shortcut2]);
+    
+    // Output
+    x = tf.layers.dense({
+      units: this.outputShape,
+      activation: 'softmax'
+    }).apply(x);
+    
+    this.model = tf.model({inputs: input, outputs: x});
+    
+    const optimizer = tf.train.adam(0.0002, 0.9, 0.999, 1e-7, {
+      clipNorm: 1.0,
+      clipValue: 0.5
     });
-
-    // Configure training with learning rate schedule
-    const initialLearningRate = 0.001;
-    const decay = initialLearningRate / 100;
-    const optimizer = tf.train.adam(initialLearningRate, 0.9, 0.999, undefined, decay);
-
+    
     this.model.compile({
       optimizer,
       loss: 'categoricalCrossentropy',
@@ -113,7 +118,8 @@ class PokerModel {
     const history = await this.model.fit(xs, ys, {
       epochs: options.epochs || 100,
       batchSize: options.batchSize || 32,
-      validationSplit: options.validationSplit || 0.2,
+      validationSplit: options.validationSplit || 0.3,
+      classWeight: options.classWeights,
       callbacks: {
         onBatchEnd: async (batch, logs) => {
           const predictions = this.model.predict(xs);

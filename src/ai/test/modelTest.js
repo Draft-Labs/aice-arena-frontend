@@ -29,19 +29,29 @@ async function testModel() {
     const batchSize = 32;
     const xs = tf.randomNormal([batchSize, INPUT_SIZE]);
     
-    // Create balanced labels (8 samples per action)
-    const ys = tf.buffer([batchSize, OUTPUT_SIZE]);
-    Object.values(ACTIONS).forEach((actionIndex, i) => {
-      for (let j = 0; j < batchSize/4; j++) {
-        ys.set(1, i * (batchSize/4) + j, actionIndex);
-      }
-    });
+    // Create balanced one-hot encoded labels
+    const labels = [];
+    for (let i = 0; i < batchSize; i++) {
+      const oneHot = new Array(OUTPUT_SIZE).fill(0);
+      oneHot[i % OUTPUT_SIZE] = 1;  // Ensure valid one-hot encoding
+      labels.push(oneHot);
+    }
+    const ys = tf.tensor2d(labels);
 
-    const result = await model.train(xs, ys.toTensor(), {
+    // Training options
+    const options = {
       epochs: 5,
-      batchSize: 8,
-      validationSplit: 0.2
-    });
+      batchSize: 16,
+      validationSplit: 0.3,
+      classWeights: {
+        [ACTIONS.FOLD]: 1.0,    // Neutral
+        [ACTIONS.CHECK]: 1.0,   // Neutral
+        [ACTIONS.CALL]: 1.5,    // Slight boost
+        [ACTIONS.RAISE]: 2.0    // Moderate boost
+      }
+    };
+
+    const result = await model.train(xs, ys, options);
 
     console.log('\nTraining history:', result.history);
     console.log('\nDetailed metrics:', {
@@ -59,7 +69,7 @@ async function testModel() {
     testInput.dispose();
     prediction.dispose();
     xs.dispose();
-    ys.toTensor().dispose();
+    ys.dispose();
 
     return {
       success: true,

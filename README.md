@@ -76,139 +76,96 @@ The project includes a TensorFlow.js-based AI agent for poker gameplay. The AI i
   - Normalization verification
 
 #### ✅ Phase 5: Model Architecture (Completed)
-- ✅ Network design
+- ✅ Network Architecture
   - Input layer (373 dimensions)
-  - Hidden layers with batch normalization
-  - Dropout layers for regularization
+  - Residual Network with Skip Connections
+    - First Block: Dense(256) → BatchNorm → ReLU
+    - ResBlock1: Dense(256) → BatchNorm → ReLU → Dropout(0.1)
+    - ResBlock2: Dense(256) → BatchNorm → ReLU → Dropout(0.1)
   - Output layer (4 actions)
-- ✅ Training configuration
-  - Loss function: Categorical Crossentropy
-  - Optimizer: Adam with learning rate decay
-  - Metrics: Accuracy, precision, recall, F1
-- ✅ Model validation
-  - Early stopping implementation
-  - Comprehensive metrics tracking
-  - Performance monitoring
-  - Memory management
+  - Total Parameters: 231,428
 
-Current Model Performance:
-```
-Overall Metrics:
-- Loss: 1.2130
-- Accuracy: 65.31%
+- ✅ Training Configuration
+  - Optimizer: Adam with gradient clipping
+    - Learning rate: 0.0002
+    - Beta1: 0.9, Beta2: 0.999
+    - Gradient clipnorm: 1.0
+    - Value clipvalue: 0.5
+  - Loss: Categorical Crossentropy
+  - Metrics: Accuracy, Precision, Recall, F1
 
-Per-Action Performance (F1 Scores):
-- FOLD:  0.8702 (Precision: 0.9920, Recall: 0.7750)
-- CHECK: 0.6652 (Precision: 0.5193, Recall: 0.9250)
-- CALL:  0.7529 (Precision: 0.7111, Recall: 0.8000)
-- RAISE: 0.1714 (Precision: 0.3600, Recall: 0.1125)
-```
+- ✅ Model Performance
+  ```
+  Overall Metrics:
+  - Loss: 1.3019
+  - Accuracy: 43.75%
+
+  Per-Action Performance:
+  FOLD:  F1: 0.6846 (Precision: 0.7391, Recall: 0.6375)
+  CHECK: F1: 0.2989 (Precision: 0.2766, Recall: 0.3250)
+  CALL:  F1: 0.2174 (Precision: 0.8333, Recall: 0.1250)
+  RAISE: F1: 0.4711 (Precision: 0.3655, Recall: 0.6625)
+  ```
 
 #### 🔄 Phase 6: Training Pipeline (In Progress)
-- ⏳ Data loading system
+- ⏳ Data Loading System
   - Batch processing
-  - Shuffling mechanism
   - Memory management
-- ⏳ Training loop
-  - Epoch management
-  - Checkpoint saving
-  - Progress monitoring
-- ⏳ Validation process
-  - Performance tracking
+  - Data augmentation
+- ⏳ Training Loop
   - Early stopping
-  - Model selection
+  - Model checkpointing
+  - Validation monitoring
+- ⏳ Performance Optimization
+  - TensorFlow.js Node backend
+  - GPU acceleration
+  - Memory optimization
 
 #### ⏳ Phase 7: Game Integration (Not Started)
+- Model Serving
+  - Real-time inference
+  - State management
+  - Action validation
+- Performance Optimization
+  - Batch prediction
+  - Caching strategies
+  - Load balancing
+- UI/UX Integration
+  - Action visualization
+  - Confidence display
+  - Decision explanation
 
 ### Project Structure
-
 ```
 src/ai/
-├── data/
-│   └── dataFetcher.js       # Poker hand parsing and processing
 ├── models/
-│   └── pokerModel.js        # Neural network architecture
-├── training/
-│   └── ...                  # Will contain training scripts
+│   └── pokerModel.js        # Neural network with residual connections
 ├── utils/
-│   ├── constants.js         # Configuration and constants
-│   ├── cardConverter.js     # Card notation utilities
-│   ├── inputTransformer.js  # State to tensor conversion
-│   ├── metrics.js          # Model performance metrics
-│   ├── callbacks.js        # Training callbacks (early stopping)
-│   └── testEnvironment.js   # Testing setup
-└── test/
-    ├── test.js             # Main test suite
-    ├── dataTest.js         # Data processing tests
-    ├── inputTransformer.test.js  # Input conversion tests
-    └── modelTest.js        # Model architecture tests
-```
-
-### Data Format
-
-The AI processes poker hands in the following structured format:
-```javascript
-{
-  id: "gameId",
-  players: [{
-    name: "playerName",
-    cards: [card1, card2],     // 1-52 representation
-    position: "SB",            // Table position
-    relativePosition: "SB",    // Relative to button
-    stack: 1000               // Current stack size
-  }],
-  communityCards: [card1, card2, card3, card4, card5],
-  actions: [{
-    player: "playerName",
-    action: "RAISE",          // FOLD/CHECK/CALL/RAISE
-    amount: 20,
-    position: "SB",
-    relativePosition: "SB",
-    potAfterAction: 40,
-    stackAfterAction: 980
-  }],
-  currentRound: "flop",       // preflop/flop/turn/river
-  buttonPosition: 0,          // Button position
-  potSize: 100               // Current pot size
-}
-```
-
-### Running Tests
-
-```bash
-# Test environment setup
-npm run test:ai
-
-# Test data processing
-npm run test:ai-data
-
-# Test hand evaluation
-npm run test:ai-hand
-
-# Test input transformation
-npm run test:ai-input
-
-# Test model architecture
-npm run test:ai-model
+│   ├── constants.js         # Model configuration
+│   ├── metrics.js          # Performance tracking
+│   ├── callbacks.js        # Training callbacks
+│   └── inputTransformer.js  # State preprocessing
+├── test/
+│   ├── modelTest.js        # Architecture testing
+│   └── inputTransformer.test.js  # Input validation
+└── training/               # Training pipeline (WIP)
 ```
 
 ### Next Steps
+1. Training Pipeline Development
+   - Implement data loading system
+   - Add model checkpointing
+   - Optimize memory usage
 
-1. Improve Model Performance
-   - Add class weights for RAISE action
-   - Increase validation set size
-   - Adjust early stopping parameters
-   - Implement learning rate reduction
+2. Performance Optimization
+   - Install TensorFlow.js Node backend
+   - Enable GPU acceleration
+   - Implement batch processing
 
-2. Begin Training Pipeline
-   - Set up data loading system
-   - Implement training loop
-   - Add checkpoint saving
-
-3. Start Game Integration
-   - Real-time inference
-   - Performance optimization
-   - UI/UX integration
+3. Game Integration
+   - Design inference API
+   - Add state management
+   - Implement action validation
 
 # Getting Started with Create React App
 
