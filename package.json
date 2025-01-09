@@ -33,6 +33,7 @@
     "test:ai-trainer": "vite-node src/ai/test/trainer.test.js",
     "test:ai-pipeline": "vite-node src/ai/test/trainingPipeline.test.js",
     "test:ai-optimization": "vite-node src/ai/test/trainingOptimization.test.js",
+    "test:ai-scheduler": "vite-node src/ai/test/lrScheduler.test.js",
     "test:ai": "vite-node src/ai/test.js",
     "eject": "react-scripts eject"
   },

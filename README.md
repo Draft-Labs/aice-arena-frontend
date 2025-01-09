@@ -413,7 +413,11 @@ betting-dapp-frontend/
 - [x] Gradient updates for faster training
 - [ ] Expanded test dataset
 - [x] Early stopping implementation
-- [ ] Learning rate scheduling
+- [x] Learning rate scheduling
+  - Step decay implementation
+  - Exponential decay implementation
+  - Minimum learning rate protection
+  - Warmup period support
 - [x] Batch size optimization
 - [ ] Model architecture tuning
 
@@ -473,3 +477,27 @@ Recent updates:
 - Added memory leak detection
 - Fixed tensor cleanup
 - Improved training pipeline validation
+
+## Learning Rate Scheduling
+
+The training pipeline now includes dynamic learning rate scheduling:
+
+```javascript
+const scheduler = new LRScheduler(0.1, {
+  schedule: 'exponential',  // or 'step'
+  decayRate: 0.1,
+  minLR: 1e-7,
+  warmupSteps: 1000
+});
+```
+
+### Available Schedules
+- **Step Decay**: Reduces learning rate by a factor after N epochs
+- **Exponential Decay**: Smoothly decreases learning rate over time
+- **Warmup Period**: Gradually increases learning rate at start
+
+### Features
+- Configurable decay rates
+- Minimum learning rate protection
+- Warmup period support
+- Automatic schedule selection
