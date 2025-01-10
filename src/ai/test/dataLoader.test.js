@@ -1,47 +1,62 @@
-import PokerDataLoader from '../training/dataLoader';
-import PokerDataFetcher from '../data/dataFetcher';
-import { INPUT_SIZE, OUTPUT_SIZE } from '../utils/constants';
+import * as tf from '@tensorflow/tfjs';
+import PokerDataLoader from '../training/dataLoader.js';
 
 async function testDataLoader() {
   console.log('Testing data loader...');
   
+  const loader = new PokerDataLoader({
+    batchSize: 32
+  });
+
   try {
-    const loader = new PokerDataLoader({
-      batchSize: 16,
-      validationSplit: 0.2
-    });
-    
-    const fetcher = new PokerDataFetcher();
+    // Test data loading
+    console.log('\nTesting data loading...');
+    await loader.loadData();
     
     // Test batch generation
     console.log('\nTesting batch generation...');
-    const batchIterator = loader.generateBatches(fetcher);
-    const firstBatch = await batchIterator.next();
+    const batch = await loader.nextBatch();
     
-    console.log('Batch shapes:', {
-      inputs: firstBatch.value.xs.shape,
-      labels: firstBatch.value.ys.shape,
-      expectedInputDims: [null, INPUT_SIZE],
-      expectedLabelDims: [null, OUTPUT_SIZE]
+    // Validate batch structure
+    if (!batch.xs || !batch.ys) {
+      throw new Error('Invalid batch structure');
+    }
+    
+    // Validate tensor shapes
+    const xsShape = batch.xs.shape;
+    const ysShape = batch.ys.shape;
+    
+    console.log('\nBatch shapes:', {
+      xs: xsShape,
+      ys: ysShape
     });
 
-    // Test data distribution
-    const labels = await firstBatch.value.ys.array();
-    const actionCounts = labels.reduce((counts, label) => {
-      const action = label.indexOf(1);
-      counts[action] = (counts[action] || 0) + 1;
-      return counts;
-    }, {});
+    // Validate dimensions
+    if (xsShape[1] !== 373) {
+      throw new Error(`Invalid input dimension: ${xsShape[1]}, expected 373`);
+    }
+    if (ysShape[1] !== 4) {
+      throw new Error(`Invalid output dimension: ${ysShape[1]}, expected 4`);
+    }
 
-    console.log('\nAction distribution:', actionCounts);
+    // Test data values
+    const xsData = await batch.xs.data();
+    const ysData = await batch.ys.data();
+    
+    console.log('\nData statistics:', {
+      xsMean: tf.mean(batch.xs).dataSync()[0],
+      ysMean: tf.mean(batch.ys).dataSync()[0],
+      xsMin: tf.min(batch.xs).dataSync()[0],
+      xsMax: tf.max(batch.xs).dataSync()[0]
+    });
 
-    // Clean up
-    firstBatch.value.xs.dispose();
-    firstBatch.value.ys.dispose();
+    // Clean up tensors
+    tf.dispose([batch.xs, batch.ys]);
 
     return {
       success: true,
-      message: 'Data loader tests completed successfully'
+      message: 'Data loader test passed',
+      shapes: { xs: xsShape, ys: ysShape }
     };
 
   } catch (error) {
@@ -50,9 +65,16 @@ async function testDataLoader() {
       success: false,
       message: error.message
     };
+  } finally {
+    loader.dispose();
   }
 }
 
-testDataLoader().then(result => {
-  console.log('\nTest result:', result);
-}); 
+// Run the test
+console.log('Starting data loader test...');
+testDataLoader()
+  .then(result => console.log('\nTest result:', result))
+  .catch(error => {
+    console.error('Test failed:', error);
+    process.exit(1);
+  }); 

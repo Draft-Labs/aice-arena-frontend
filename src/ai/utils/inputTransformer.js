@@ -1,103 +1,81 @@
-import { INPUT_SIZE, POSITIONS } from './constants';
+import CardConverter from './cardConverter.js';
 
 class InputTransformer {
   constructor() {
-    // Input dimensions
-    this.cardDims = 52;      // One-hot encoding for each card
-    this.positionDims = 6;   // BTN, SB, BB, EARLY, MIDDLE, LATE
-    this.stackDims = 1;      // Normalized stack size
-    this.potDims = 1;        // Normalized pot size
-    this.oddsDims = 1;       // Pot odds
+    // 52 cards * 2 (hole cards) + 52 cards * 5 (community cards) + 6 (position) + 3 (stack, pot, bet)
+    this.inputDimension = 373;
+    
+    // Individual dimensions for validation
+    this.cardEncodingSize = 52;
+    this.holeCardsSize = this.cardEncodingSize * 2;     // 104
+    this.communityCardsSize = this.cardEncodingSize * 5; // 260
+    this.positionSize = 6;
+    this.numericFeatures = 3; // stack, pot, bet
   }
 
-  // Fix card encoding to handle array indices correctly
-  encodeCard(cardNumber, slotIndex) {
-    const encoding = new Array(this.cardDims).fill(0);
-    if (cardNumber > 0 && cardNumber <= 52) {
-      // Calculate the correct position in the input vector
-      const cardPosition = (slotIndex * this.cardDims) + (cardNumber - 1);
-      encoding[cardNumber - 1] = 1;
+  transformCards(cards, maxCards) {
+    // Initialize array of 52 zeros for each possible card slot
+    const encoding = new Array(this.cardEncodingSize * maxCards).fill(0);
+    
+    cards.forEach((card, cardIndex) => {
+      const cardObj = typeof card === 'string' ? CardConverter.stringToCard(card) : card;
+      const index = (cardIndex * this.cardEncodingSize) + cardObj.rank + (cardObj.suit * 13);
+      encoding[index] = 1;
+    });
+    
+    return encoding;
+  }
+
+  transformPosition(position) {
+    const positions = ['BTN', 'SB', 'BB', 'UTG', 'MP', 'CO'];
+    const encoding = new Array(this.positionSize).fill(0);
+    const index = positions.indexOf(position);
+    if (index !== -1) {
+      encoding[index] = 1;
     }
     return encoding;
   }
 
-  // Convert position to one-hot encoding
-  encodePosition(position) {
-    const encoding = new Array(this.positionDims).fill(0);
-    if (position >= 0 && position < this.positionDims) {
-      encoding[position] = 1;
-    }
-    return encoding;
+  normalizeValue(value, maxValue) {
+    return Math.min(1, Math.max(0, value / maxValue));
   }
 
-  // Transform a poker hand state into neural network input
-  transformState(state) {
-    const input = new Array(INPUT_SIZE).fill(0);
-    let offset = 0;
-
-    // Encode hole cards (2 * 52 dimensions)
-    for (let i = 0; i < Math.min(2, state.holeCards.length); i++) {
-      const cardNumber = state.holeCards[i];
-      // Place each card in its own 52-card slot
-      const startPos = i * this.cardDims;
-      if (cardNumber > 0 && cardNumber <= 52) {
-        input[startPos + (cardNumber - 1)] = 1;
+  transformState(gameState) {
+    try {
+      // Transform hole cards (2 cards)
+      const holeCardsEncoding = this.transformCards(gameState.holeCards, 2);
+      
+      // Transform community cards (up to 5 cards)
+      const communityCardsEncoding = this.transformCards(gameState.communityCards || [], 5);
+      
+      // Transform position
+      const positionEncoding = this.transformPosition(gameState.position);
+      
+      // Normalize stack and pot values
+      const stackNorm = this.normalizeValue(gameState.stack, 20000);
+      const potNorm = this.normalizeValue(gameState.potSize, 40000);
+      const betNorm = this.normalizeValue(gameState.betAmount || 0, 20000);
+      
+      // Combine all features
+      const encoding = [
+        ...holeCardsEncoding,        // 104 values
+        ...communityCardsEncoding,   // 260 values
+        ...positionEncoding,         // 6 values
+        stackNorm,                   // 1 value
+        potNorm,                     // 1 value
+        betNorm                      // 1 value
+      ];
+      
+      // Validate encoding length
+      if (encoding.length !== this.inputDimension) {
+        throw new Error(`Invalid encoding length: ${encoding.length}, expected ${this.inputDimension}`);
       }
-      offset += this.cardDims;
+      
+      return encoding;
+    } catch (error) {
+      console.error('Error transforming state:', error);
+      throw error;
     }
-
-    // Encode community cards (5 * 52 dimensions)
-    for (let i = 0; i < Math.min(5, state.communityCards.length); i++) {
-      const cardNumber = state.communityCards[i];
-      // Place each card in its own 52-card slot, after hole cards
-      const startPos = (i + 2) * this.cardDims;
-      if (cardNumber > 0 && cardNumber <= 52) {
-        input[startPos + (cardNumber - 1)] = 1;
-      }
-      offset += this.cardDims;
-    }
-
-    // Skip to end of card section
-    offset = 7 * this.cardDims;
-
-    // Encode position (6 dimensions)
-    const positionEncoding = this.encodePosition(state.position);
-    input.splice(offset, this.positionDims, ...positionEncoding);
-    offset += this.positionDims;
-
-    // Add normalized values
-    input[offset] = this.normalizeStack(state.stack);
-    input[offset + 1] = this.normalizePot(state.potSize);
-    input[offset + 2] = this.calculatePotOdds(state.betAmount, state.potSize);
-
-    return input;
-  }
-
-  // Normalize stack size (0-1 range)
-  normalizeStack(stack, maxStack = 1000) {
-    return Math.min(1, Math.max(0, stack / maxStack));
-  }
-
-  // Normalize pot size relative to starting stack
-  normalizePot(pot, startingStack = 1000) {
-    return Math.min(1, Math.max(0, pot / (startingStack * 4))); // Max 4x starting stack
-  }
-
-  // Calculate pot odds
-  calculatePotOdds(betAmount, potSize) {
-    if (!betAmount || !potSize) return 0;
-    return betAmount / (potSize + betAmount);
-  }
-
-  // Validate input dimensions and values
-  validateInput(input) {
-    if (input.length !== INPUT_SIZE) {
-      throw new Error(`Invalid input size: ${input.length}, expected ${INPUT_SIZE}`);
-    }
-    if (!input.every(val => val >= 0 && val <= 1)) {
-      throw new Error('Input values must be normalized between 0 and 1');
-    }
-    return true;
   }
 }
 

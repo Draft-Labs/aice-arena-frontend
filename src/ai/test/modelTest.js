@@ -1,81 +1,67 @@
-import PokerModel from '../models/pokerModel';
 import * as tf from '@tensorflow/tfjs';
-import { INPUT_SIZE, OUTPUT_SIZE, ACTIONS } from '../utils/constants';
+import PokerModel from '../models/pokerModel.js';
+import InputTransformer from '../utils/inputTransformer.js';
 
 async function testModel() {
   console.log('Testing poker model...');
   
   try {
+    // Force CPU backend for testing
+    await tf.setBackend('cpu');
+    console.log('\nBuilding model...\n');
+    
+    // Initialize and build model
     const model = new PokerModel();
+    await model.buildModel();
     
-    // Test model building
-    console.log('\nBuilding model...');
-    const net = model.buildModel();
-    model.summary();
-
-    // Test forward pass
+    // Print model summary
+    model.model.summary();
+    
     console.log('\nTesting forward pass...');
-    const testInput = tf.randomNormal([1, INPUT_SIZE]);
-    const prediction = net.predict(testInput);
     
-    console.log('Input shape:', testInput.shape);
-    console.log('Output shape:', prediction.shape);
-    console.log('Output:', await prediction.data());
-
-    // Test training with metrics and early stopping
-    console.log('\nTesting training step with metrics...');
-    
-    // Create synthetic training data
-    const batchSize = 32;
-    const xs = tf.randomNormal([batchSize, INPUT_SIZE]);
-    
-    // Create balanced one-hot encoded labels
-    const labels = [];
-    for (let i = 0; i < batchSize; i++) {
-      const oneHot = new Array(OUTPUT_SIZE).fill(0);
-      oneHot[i % OUTPUT_SIZE] = 1;  // Ensure valid one-hot encoding
-      labels.push(oneHot);
-    }
-    const ys = tf.tensor2d(labels);
-
-    // Training options
-    const options = {
-      epochs: 5,
-      batchSize: 16,
-      validationSplit: 0.3,
-      classWeights: {
-        [ACTIONS.FOLD]: 1.0,    // Neutral
-        [ACTIONS.CHECK]: 1.0,   // Neutral
-        [ACTIONS.CALL]: 1.5,    // Slight boost
-        [ACTIONS.RAISE]: 2.0    // Moderate boost
-      }
+    // Create dummy input
+    const transformer = new InputTransformer();
+    const dummyState = {
+      holeCards: [
+        { rank: 12, suit: 0 }, // Ah
+        { rank: 11, suit: 0 }  // Kh
+      ],
+      communityCards: [
+        { rank: 10, suit: 0 }, // Qh
+        { rank: 9, suit: 0 },  // Jh
+        { rank: 8, suit: 0 }   // Th
+      ],
+      position: 'BTN',
+      stack: 1000,
+      potSize: 100,
+      betAmount: 20
     };
-
-    const result = await model.train(xs, ys, options);
-
-    console.log('\nTraining history:', result.history);
-    console.log('\nDetailed metrics:', {
-      loss: result.metrics.loss.toFixed(4),
-      accuracy: result.metrics.accuracy.toFixed(4),
-      precision: Object.entries(result.metrics.precision)
-        .map(([k,v]) => `${k}: ${v.toFixed(4)}`),
-      recall: Object.entries(result.metrics.recall)
-        .map(([k,v]) => `${k}: ${v.toFixed(4)}`),
-      f1: Object.entries(result.metrics.f1)
-        .map(([k,v]) => `${k}: ${v.toFixed(4)}`)
-    });
-
+    
+    // Transform state to input tensor
+    const inputArray = transformer.transformState(dummyState);
+    const inputTensor = tf.tensor2d([inputArray]);
+    
+    // Make prediction
+    const prediction = model.predict(inputTensor);
+    
+    // Get action probabilities
+    const probs = await prediction.data();
+    
+    console.log('\nPrediction shape:', prediction.shape);
+    console.log('Action probabilities:', 
+      Array.from(probs).map(p => p.toFixed(4))
+    );
+    
     // Clean up tensors
-    testInput.dispose();
-    prediction.dispose();
-    xs.dispose();
-    ys.dispose();
-
+    tf.dispose([inputTensor, prediction]);
+    
     return {
       success: true,
-      message: 'Model tests completed successfully'
+      message: 'Model test passed',
+      shape: prediction.shape,
+      outputSize: probs.length
     };
-
+    
   } catch (error) {
     console.error('Test error:', error);
     return {
@@ -85,6 +71,11 @@ async function testModel() {
   }
 }
 
-testModel().then(result => {
-  console.log('\nTest result:', result);
-}); 
+// Run the test
+console.log('Starting model test...');
+testModel()
+  .then(result => console.log('\nTest result:', result))
+  .catch(error => {
+    console.error('Test failed:', error);
+    process.exit(1);
+  }); 

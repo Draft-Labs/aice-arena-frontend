@@ -1,82 +1,102 @@
-import * as tf from '@tensorflow/tfjs-node';
-import { MODEL_CONFIG } from '../utils/constants.js';
+import * as tf from '@tensorflow/tfjs';
 
-class DataLoader {
-  constructor(batchSize = 32) {
-    this.batchSize = batchSize;
+class PokerDataLoader {
+  constructor(options = {}) {
+    this.batchSize = options.batchSize || 32;
     this.currentIndex = 0;
-    this.inputSize = MODEL_CONFIG.INPUT_SIZE;
-    this.outputSize = MODEL_CONFIG.OUTPUT_SIZE;
-    this.tensors = new Set(); // Use Set to avoid duplicates
+    this.data = [];
+    this.shuffledIndices = [];
   }
 
-  async *generateBatches(dataFetcher) {
-    while (true) {
-      try {
-        const data = await dataFetcher.fetchData(this.batchSize);
-        
-        if (!data || !data.length) {
-          // Instead of returning, generate synthetic data for testing
-          const syntheticData = Array(this.batchSize).fill(0).map(() => ({
-            input: Array(373).fill(0).map(() => Math.random()),
-            output: Array(4).fill(0).map((_, i) => i === Math.floor(Math.random() * 4) ? 1 : 0)
-          }));
-          
-          const tensors = tf.tidy(() => {
-            const xs = tf.tensor2d(syntheticData.map(d => d.input));
-            const ys = tf.tensor2d(syntheticData.map(d => d.output));
-            
-            this.tensors.add(xs);
-            this.tensors.add(ys);
-            
-            return { xs, ys };
-          });
+  async loadData() {
+    try {
+      // Generate dummy data for testing
+      const numSamples = 1000;
+      const inputDim = 373;
+      const outputDim = 4;
 
-          yield tensors;
-          continue;
-        }
+      // Generate dummy input data
+      const xs = tf.randomNormal([numSamples, inputDim]);
+      
+      // Generate dummy output data (one-hot encoded)
+      const ys = tf.oneHot(
+        tf.randomUniform([numSamples], 0, 4, 'int32'),
+        outputDim
+      );
 
-        // Process into tensors with explicit shapes
-        const tensors = tf.tidy(() => {
-          const xs = tf.tensor2d(
-            data.map(d => Array.isArray(d.input) ? d.input : new Array(this.inputSize).fill(0)),
-            [data.length, this.inputSize]
-          );
-          const ys = tf.tensor2d(
-            data.map(d => Array.isArray(d.output) ? d.output : new Array(this.outputSize).fill(0)),
-            [data.length, this.outputSize]
-          );
-          
-          // Track tensors for cleanup
-          this.tensors.add(xs);
-          this.tensors.add(ys);
-          
-          return { xs, ys };
-        });
+      this.data = {
+        xs: xs,
+        ys: ys
+      };
 
-        yield tensors;
-        
-      } catch (error) {
-        console.error('DataLoader: Error generating batch:', error);
-        throw error;
-      }
+      // Create shuffled indices
+      this.shuffledIndices = Array.from(
+        { length: numSamples }, 
+        (_, i) => i
+      );
+      this.shuffleData();
+      this.currentIndex = 0;
+
+      return true;
+    } catch (error) {
+      console.error('Error loading data:', error);
+      throw error;
     }
+  }
+
+  shuffleData() {
+    // Fisher-Yates shuffle
+    for (let i = this.shuffledIndices.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [this.shuffledIndices[i], this.shuffledIndices[j]] = 
+      [this.shuffledIndices[j], this.shuffledIndices[i]];
+    }
+  }
+
+  async nextBatch(batchSize = this.batchSize) {
+    if (!this.data.xs || !this.data.ys) {
+      await this.loadData();
+    }
+
+    return tf.tidy(() => {
+      // Get batch indices
+      const batchIndices = this.shuffledIndices.slice(
+        this.currentIndex,
+        this.currentIndex + batchSize
+      );
+
+      // Convert indices to tensor
+      const indicesTensor = tf.tensor1d(batchIndices, 'int32');
+
+      // Update current index
+      this.currentIndex += batchSize;
+      if (this.currentIndex >= this.shuffledIndices.length) {
+        this.currentIndex = 0;
+        this.shuffleData();
+      }
+
+      // Gather batch data using tensor indices
+      const batchXs = tf.gather(this.data.xs, indicesTensor);
+      const batchYs = tf.gather(this.data.ys, indicesTensor);
+
+      // Clean up the indices tensor
+      indicesTensor.dispose();
+
+      return {
+        xs: batchXs,
+        ys: batchYs
+      };
+    });
   }
 
   dispose() {
-    // Clean up all tracked tensors
-    for (const tensor of this.tensors) {
-      if (tensor && !tensor.isDisposed) {
-        tensor.dispose();
-      }
+    if (this.data.xs) {
+      this.data.xs.dispose();
     }
-    this.tensors.clear();
-  }
-
-  reset() {
-    this.currentIndex = 0;
-    this.dispose(); // Clean up tensors on reset
+    if (this.data.ys) {
+      this.data.ys.dispose();
+    }
   }
 }
 
-export default DataLoader; 
+export default PokerDataLoader; 

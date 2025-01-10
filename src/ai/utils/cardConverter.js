@@ -139,4 +139,52 @@ export function convertCardIndex(index) {
     const suitIndex = Math.floor(index / 13);
     
     return ranks[rankIndex] + suits[suitIndex];
-} 
+}
+
+class CardConverter {
+  static cardToString(card) {
+    if (typeof card === 'string') return card;
+    
+    const ranks = '23456789TJQKA';
+    const suits = 'hdcs';
+    
+    return `${ranks[card.rank]}${suits[card.suit]}`;
+  }
+
+  static stringToCard(cardStr) {
+    const ranks = '23456789TJQKA';
+    const suits = 'hdcs';
+    
+    const rank = ranks.indexOf(cardStr[0].toUpperCase());
+    const suit = suits.indexOf(cardStr[1].toLowerCase());
+    
+    if (rank === -1 || suit === -1) {
+      throw new Error(`Invalid card string: ${cardStr}`);
+    }
+    
+    return { rank, suit };
+  }
+
+  static convertHand(cards) {
+    if (!Array.isArray(cards)) {
+      throw new Error('Cards must be an array');
+    }
+    
+    return cards.map(card => {
+      if (typeof card === 'string') {
+        return this.stringToCard(card);
+      }
+      return card;
+    });
+  }
+
+  static convertToStrings(cards) {
+    if (!Array.isArray(cards)) {
+      throw new Error('Cards must be an array');
+    }
+    
+    return cards.map(card => this.cardToString(card));
+  }
+}
+
+export default CardConverter; 

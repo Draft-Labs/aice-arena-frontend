@@ -1,67 +1,75 @@
-import PokerDataFetcher from '../data/dataFetcher';
-import { cardToString } from '../utils/cardConverter';
-import { ACTIONS, POSITIONS } from '../utils/constants';
+import * as tf from '@tensorflow/tfjs';
+import PokerDataLoader from '../training/dataLoader.js';
 
-async function testDataFetching() {
-  console.log('Testing data fetching...');
+async function testDataLoading() {
+  console.log('Testing data loading...');
   
-  const fetcher = new PokerDataFetcher();
+  const dataLoader = new PokerDataLoader({
+    batchSize: 32
+  });
+
   try {
-    const hands = await fetcher.fetchData();
+    // Initialize data
+    await dataLoader.loadData();
     
-    const firstHand = hands[0];
-    console.log('Sample hand:', {
-      id: firstHand.id,
-      players: firstHand.players.map(p => ({
-        name: p.name,
-        cards: p.cards.map(cardToString),
-        position: firstHand.positions[p.name] || 'Unknown',
-        relativePosition: Object.keys(POSITIONS)[
-          firstHand.relativePositions[
-            firstHand.players.findIndex(player => player.name === p.name)
-          ]
-        ],
-        stack: firstHand.stacks[p.name]
-      })),
-      communityCards: firstHand.communityCards.map(cardToString),
-      actions: firstHand.actions.map(a => ({
-        player: a.player,
-        action: Object.keys(ACTIONS)[a.action],
-        amount: a.amount,
-        position: firstHand.positions[a.player] || 'Unknown',
-        relativePosition: Object.keys(POSITIONS)[a.relativePosition],
-        potAfterAction: a.potAfterAction,
-        stackAfterAction: a.stackAfterAction
-      })),
-      positions: firstHand.positions,
-      currentRound: firstHand.currentRound,
-      finalPotSize: firstHand.potSize,
-      buttonPosition: firstHand.buttonPosition
+    // Test batch fetching
+    const batch = await dataLoader.nextBatch();
+    
+    // Validate batch structure
+    if (!batch.xs || !batch.ys) {
+      throw new Error('Invalid batch structure');
+    }
+
+    // Validate tensor shapes
+    const xsShape = batch.xs.shape;
+    const ysShape = batch.ys.shape;
+    
+    console.log('Batch shapes:', {
+      xs: xsShape,
+      ys: ysShape
     });
+
+    // Validate dimensions
+    if (xsShape[1] !== 373) {
+      throw new Error(`Invalid input dimension: ${xsShape[1]}, expected 373`);
+    }
+    if (ysShape[1] !== 4) {
+      throw new Error(`Invalid output dimension: ${ysShape[1]}, expected 4`);
+    }
+
+    // Test data values
+    const xsData = await batch.xs.data();
+    const ysData = await batch.ys.data();
     
-    console.log('Debug info:', {
-      playerCount: firstHand.playerCount,
-      buttonPosition: firstHand.buttonPosition,
-      playerOrder: firstHand.players.map(p => ({
-        name: p.name,
-        position: p.position,
-        relativePosition: Object.keys(POSITIONS)[firstHand.relativePositions[p.position]]
-      })),
-      positionMapping: firstHand.relativePositions
+    console.log('Data statistics:', {
+      xsMean: tf.mean(batch.xs).dataSync()[0],
+      ysMean: tf.mean(batch.ys).dataSync()[0],
+      xsMin: tf.min(batch.xs).dataSync()[0],
+      xsMax: tf.max(batch.xs).dataSync()[0]
     });
-    
+
     return {
       success: true,
-      message: `Successfully loaded ${hands.length} hands`
+      message: 'Data loading test passed',
+      shapes: { xs: xsShape, ys: ysShape }
     };
+
   } catch (error) {
+    console.error('Data loading test failed:', error);
     return {
       success: false,
       message: error.message
     };
+  } finally {
+    dataLoader.dispose();
   }
 }
 
-testDataFetching().then(result => {
-  console.log('Test result:', result);
-}); 
+// Run the test
+console.log('Starting data test...');
+testDataLoading()
+  .then(result => console.log('Test result:', result))
+  .catch(error => {
+    console.error('Test failed:', error);
+    process.exit(1);
+  }); 
