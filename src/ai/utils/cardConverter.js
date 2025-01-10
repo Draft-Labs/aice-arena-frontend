@@ -109,27 +109,21 @@ export function convertIndicesToCards(indices) {
 export function convertHand(handInput) {
     if (!handInput) return [];
     
-    // If input is already an array, join it
-    const handString = Array.isArray(handInput) ? handInput.join(' ') : handInput;
+    // If input is already an array of card objects, return it
+    if (Array.isArray(handInput) && typeof handInput[0] === 'object') {
+        return handInput;
+    }
+    
+    // If input is a string, split it
+    const handString = typeof handInput === 'string' ? handInput : handInput.join(' ');
     
     // Split the hand string into individual cards
-    const cards = handString.split(' ');
+    const cards = handString.split(' ').map(card => ({
+        rank: card[0].toUpperCase(),
+        suit: card[1].toLowerCase()
+    }));
     
-    // Convert each card to its one-hot encoded representation
-    return cards.map(card => {
-        // Parse rank and suit
-        const rank = card[0].toUpperCase();
-        const suit = card[1].toLowerCase();
-        
-        // Convert rank to index (2-10, J, Q, K, A)
-        const rankIndex = '23456789TJQKA'.indexOf(rank);
-        
-        // Convert suit to index (h, d, c, s)
-        const suitIndex = 'hdcs'.indexOf(suit);
-        
-        // Return the card index (0-51)
-        return rankIndex + (suitIndex * 13);
-    });
+    return cards;
 }
 
 /**
