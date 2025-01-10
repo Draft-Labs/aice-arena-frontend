@@ -5,6 +5,7 @@ import { ACTIONS } from '../utils/constants';
 import LRScheduler from '../utils/lrScheduler';
 import BatchSizeScheduler from '../utils/batchSizeScheduler';
 import ArchitectureSearch from '../utils/architectureSearch';
+import ModelMetrics from '../utils/metrics';
 
 class TrainingPipeline {
   constructor(options = {}) {
@@ -69,6 +70,8 @@ class TrainingPipeline {
     });
 
     this.architectureSearch = options.architectureSearch || false;
+
+    this.metrics = new ModelMetrics();
   }
 
   async train() {
@@ -317,25 +320,24 @@ class TrainingPipeline {
 
   async validate() {
     try {
-      // Get a validation batch
-      const batch = await this.trainer.dataLoader.generateBatches(this.trainer.dataFetcher).next();
-      const { xs, ys } = batch.value;
+      // Get validation data
+      const validationData = await this.trainer.getValidationData();
       
-      if (!xs || !ys) {
-        console.error('Invalid validation batch:', { xs, ys });
-        return { loss: NaN, accuracy: NaN };
+      if (!validationData || !validationData.inputs || !validationData.labels || 
+          validationData.inputs.shape[0] === 0 || validationData.labels.shape[0] === 0) {
+        throw new Error('No validation data available');
       }
 
       // Calculate metrics using tf.tidy
       const metrics = tf.tidy(() => {
-        const predictions = this.model.predict(xs);
+        const predictions = this.model.predict(validationData.inputs);
         
         // Calculate loss
-        const loss = tf.losses.softmaxCrossEntropy(ys, predictions).asScalar();
+        const loss = tf.losses.softmaxCrossEntropy(validationData.labels, predictions).asScalar();
         
         // Calculate accuracy
         const predIndices = predictions.argMax(-1);
-        const labelIndices = ys.argMax(-1);
+        const labelIndices = validationData.labels.argMax(-1);
         const correctPredictions = predIndices.equal(labelIndices);
         const accuracy = correctPredictions.mean();
         
@@ -345,15 +347,15 @@ class TrainingPipeline {
         };
       });
 
-      // Clean up
-      xs.dispose();
-      ys.dispose();
+      // Clean up validation data tensors
+      validationData.inputs.dispose();
+      validationData.labels.dispose();
       
       return metrics;
 
     } catch (error) {
       console.error('Validation error:', error);
-      return { loss: NaN, accuracy: NaN };
+      throw error; // Re-throw to be handled by caller
     }
   }
 
@@ -371,109 +373,37 @@ class TrainingPipeline {
   }
 
   async trainStep(batch) {
-    try {
-      // Update learning rate each step
-      console.log('\nTraining step:', {
-        currentEpoch: this.state.currentEpoch,
-        currentLR: this.state.learningRate
-      });
+    const { xs, ys } = batch;
+    
+    const metrics = await tf.tidy(() => {
+      const predictions = this.model.predict(xs);
+      const loss = this.calculateLoss(predictions, ys);
       
-      // Use a step counter instead of epoch
-      if (!this.state.step) {
-        this.state.step = 0;
-      }
-      this.state.step++;
+      // Update all metrics
+      this.metrics.update(predictions, ys);
       
-      const newLR = this.scheduler.update(this.state.step);
-      console.log('LR Update:', {
-        previous: this.state.learningRate,
-        new: newLR,
-        step: this.state.step
-      });
-
-      try {
-        if (this.model.model && this.model.model.optimizer) {
-          // Update optimizer's learning rate directly if setLearningRate fails
-          if (!(await this.model.setLearningRate(newLR))) {
-            this.model.model.optimizer.learningRate = newLR;
-          }
-          // Update state
-          this.state.learningRate = newLR;
-          console.log('Optimizer updated:', {
-            optimizerLR: this.model.model.optimizer.learningRate,
-            stateLR: this.state.learningRate
-          });
-        }
-      } catch (error) {
-        console.warn('Failed to update learning rate:', error);
-      }
+      // Update street-specific metrics
+      const street = batch.metadata.street;
+      const position = batch.metadata.position;
+      const potSize = batch.metadata.potSize;
+      const handStrength = batch.metadata.handStrength;
       
-      // Ensure model is built
-      if (!this.model.model) {
-        await this.model.buildModel();
-      }
+      this.metrics.updateStreetAccuracy(street, predictions, ys);
+      this.metrics.updatePositionMetrics(position, predictions, ys);
+      this.metrics.updateBetSizing(
+        this.getBetSize(predictions),
+        this.getBetSize(ys),
+        potSize
+      );
+      this.metrics.updateHandStrength(handStrength, predictions);
       
-      const { xs, ys } = batch;
-      let metrics;
-      
-      // Ensure tensors are on the correct backend
-      const xsTensor = tf.tensor(await xs.array(), xs.shape);
-      const ysTensor = tf.tensor(await ys.array(), ys.shape);
-      
-      try {
-        metrics = tf.tidy(() => {
-          // Forward pass needs to be inside the gradient tape
-          const f = () => {
-            const predictions = this.model.predict(xsTensor);
-            return tf.losses.softmaxCrossEntropy(ysTensor, predictions);
-          };
-          
-          // Calculate gradients with respect to model variables
-          const { value, grads } = tf.variableGrads(f);
-          
-          // Calculate accuracy (outside gradient calculation)
-          const predictions = this.model.predict(xsTensor);
-          const predIndices = predictions.argMax(-1);
-          const labelIndices = ysTensor.argMax(-1);
-          const correctPredictions = predIndices.equal(labelIndices);
-          const accuracy = correctPredictions.mean();
-          
-          // Apply gradients with optimizer
-          const optimizer = this.model.model.optimizer;
-          const vars = this.model.model.trainableWeights;
-          
-          // Apply gradients with momentum
-          const gradAndVars = vars.map(v => ({
-            name: v.name,
-            tensor: grads[v.val.id] || null
-          })).filter(g => g.tensor !== null);
-
-          optimizer.applyGradients(gradAndVars);
-          
-          return {
-            loss: value.dataSync()[0],
-            accuracy: accuracy.dataSync()[0]
-          };
-        });
-      } finally {
-        // Clean up tensors
-        tf.dispose([xsTensor, ysTensor]);
-      }
-      
-      // Update batch size based on metrics
-      const newBatchSize = this.batchScheduler.update({
-        loss: metrics.loss,
-        memoryUsage: tf.memory()
-      });
-      
-      this.state.currentBatchSize = newBatchSize;
-      this.state.history.batchSizes.push(newBatchSize);
-
-      return metrics;
-    } catch (error) {
-      console.error('Training step failed:', error);
-      throw error;
-    }
+      return {
+        loss: loss.dataSync()[0],
+        metrics: this.metrics.getMetrics()
+      };
+    });
+    
+    return metrics;
   }
 
   // Add gradient accumulation for larger effective batch size

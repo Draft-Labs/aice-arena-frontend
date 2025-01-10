@@ -1,124 +1,152 @@
 import * as tf from '@tensorflow/tfjs';
-import { ACTIONS } from './constants';
+import { ACTIONS } from './constants.js';
 
 class ModelMetrics {
   constructor() {
     this.reset();
   }
 
-  // Reset all metrics
   reset() {
     this.predictions = [];
     this.trueLabels = [];
     this.losses = [];
     this.accuracies = [];
+    this.streetMetrics = {
+      preflop: { correct: 0, total: 0 },
+      flop: { correct: 0, total: 0 },
+      turn: { correct: 0, total: 0 },
+      river: { correct: 0, total: 0 }
+    };
+    this.positionMetrics = {};
+    this.betSizingErrors = [];
+    this.handStrengthCorrelation = [];
   }
 
-  // Update metrics with new batch
   update(predictions, labels) {
-    // Convert tensors to arrays
-    const preds = Array.from(predictions.dataSync());
-    const trues = Array.from(labels.dataSync());
-    
-    // Reshape arrays to match batch size
-    const batchSize = predictions.shape[0];
-    const predArray = [];
-    const trueArray = [];
-    
-    // Reshape flat arrays into batches
-    for (let i = 0; i < batchSize; i++) {
-      predArray.push(preds.slice(i * 4, (i + 1) * 4));
-      trueArray.push(trues.slice(i * 4, (i + 1) * 4));
-    }
+    // Convert tensors to arrays for storage
+    const predArray = predictions.arraySync();
+    const labelArray = labels.arraySync();
     
     this.predictions.push(...predArray);
-    this.trueLabels.push(...trueArray);
+    this.trueLabels.push(...labelArray);
     
-    // Calculate batch metrics
-    const loss = tf.losses.softmaxCrossEntropy(labels, predictions).dataSync()[0];
-    const accuracy = this.calculateAccuracy(predArray, trueArray);
-    
-    this.losses.push(loss);
+    // Calculate accuracy
+    const accuracy = this.calculateAccuracy(predArray, labelArray);
     this.accuracies.push(accuracy);
   }
 
-  // Calculate accuracy
   calculateAccuracy(predictions, labels) {
     let correct = 0;
-    for (let i = 0; i < predictions.length; i++) {
-      const predIndex = predictions[i].indexOf(Math.max(...predictions[i]));
-      const trueIndex = labels[i].indexOf(Math.max(...labels[i]));
-      if (predIndex === trueIndex) correct++;
-    }
+    predictions.forEach((pred, i) => {
+      const predAction = pred.indexOf(Math.max(...pred));
+      const trueAction = labels[i].indexOf(Math.max(...labels[i]));
+      if (predAction === trueAction) correct++;
+    });
     return correct / predictions.length;
   }
 
-  // Calculate precision for each action
-  calculatePrecision() {
-    const precision = {};
-    Object.keys(ACTIONS).forEach(action => {
-      const actionIndex = ACTIONS[action];
-      let tp = 0, fp = 0;
-      
-      this.predictions.forEach((pred, i) => {
-        const predAction = pred.indexOf(Math.max(...pred));
-        const trueAction = this.trueLabels[i].indexOf(Math.max(...this.trueLabels[i]));
-        
-        if (predAction === actionIndex) {
-          if (trueAction === actionIndex) tp++;
-          else fp++;
-        }
-      });
-      
-      precision[action] = tp / (tp + fp) || 0;
-    });
-    return precision;
+  updateStreetAccuracy(street, predicted, actual) {
+    if (!this.streetMetrics[street]) return;
+    this.streetMetrics[street].total++;
+    if (predicted === actual) {
+      this.streetMetrics[street].correct++;
+    }
   }
 
-  // Calculate recall for each action
-  calculateRecall() {
-    const recall = {};
-    Object.keys(ACTIONS).forEach(action => {
-      const actionIndex = ACTIONS[action];
-      let tp = 0, fn = 0;
-      
-      this.trueLabels.forEach((label, i) => {
-        const predAction = this.predictions[i].indexOf(Math.max(...this.predictions[i]));
-        const trueAction = label.indexOf(Math.max(...label));
-        
-        if (trueAction === actionIndex) {
-          if (predAction === actionIndex) tp++;
-          else fn++;
-        }
-      });
-      
-      recall[action] = tp / (tp + fn) || 0;
-    });
-    return recall;
+  updatePositionMetrics(position, predicted, actual) {
+    if (!this.positionMetrics[position]) {
+      this.positionMetrics[position] = { correct: 0, total: 0 };
+    }
+    this.positionMetrics[position].total++;
+    if (predicted === actual) {
+      this.positionMetrics[position].correct++;
+    }
   }
 
-  // Calculate F1 score
-  calculateF1() {
-    const precision = this.calculatePrecision();
-    const recall = this.calculateRecall();
-    
-    const f1 = {};
-    Object.keys(ACTIONS).forEach(action => {
-      const p = precision[action];
-      const r = recall[action];
-      f1[action] = 2 * (p * r) / (p + r) || 0;
-    });
-    return f1;
+  updateBetSizing(predictedSize, actualSize, potSize) {
+    const relativeError = Math.abs(predictedSize - actualSize) / potSize;
+    this.betSizingErrors.push(relativeError);
   }
 
-  // Get all metrics
+  updateHandStrength(handStrength, action) {
+    this.handStrengthCorrelation.push({
+      strength: handStrength,
+      action: action
+    });
+  }
+
+  getStreetAccuracies() {
+    const accuracies = {};
+    for (const [street, data] of Object.entries(this.streetMetrics)) {
+      accuracies[street] = data.total > 0 ? 
+        data.correct / data.total : 0;
+    }
+    return accuracies;
+  }
+
+  getPositionAccuracies() {
+    const accuracies = {};
+    for (const [position, data] of Object.entries(this.positionMetrics)) {
+      accuracies[position] = data.total > 0 ? 
+        data.correct / data.total : 0;
+    }
+    return accuracies;
+  }
+
+  getBetSizingMetrics() {
+    if (this.betSizingErrors.length === 0) {
+      return { meanError: 0, maxError: 0, minError: 0 };
+    }
+    return {
+      meanError: this.betSizingErrors.reduce((a, b) => a + b, 0) / this.betSizingErrors.length,
+      maxError: Math.max(...this.betSizingErrors),
+      minError: Math.min(...this.betSizingErrors)
+    };
+  }
+
+  getHandStrengthCorrelation() {
+    if (this.handStrengthCorrelation.length === 0) {
+      return 0;
+    }
+
+    const actionValues = {
+      [ACTIONS.FOLD]: 0,
+      [ACTIONS.CHECK]: 1,
+      [ACTIONS.CALL]: 2,
+      [ACTIONS.RAISE]: 3
+    };
+
+    const strengths = this.handStrengthCorrelation.map(entry => entry.strength);
+    const actions = this.handStrengthCorrelation.map(entry => actionValues[entry.action]);
+
+    const strengthMean = strengths.reduce((a, b) => a + b, 0) / strengths.length;
+    const actionMean = actions.reduce((a, b) => a + b, 0) / actions.length;
+
+    let numerator = 0;
+    let strengthDenominator = 0;
+    let actionDenominator = 0;
+
+    for (let i = 0; i < strengths.length; i++) {
+      const strengthDiff = strengths[i] - strengthMean;
+      const actionDiff = actions[i] - actionMean;
+      
+      numerator += strengthDiff * actionDiff;
+      strengthDenominator += strengthDiff * strengthDiff;
+      actionDenominator += actionDiff * actionDiff;
+    }
+
+    const correlation = numerator / Math.sqrt(strengthDenominator * actionDenominator);
+    return isNaN(correlation) ? 0 : correlation;
+  }
+
   getMetrics() {
     return {
-      loss: this.losses.reduce((a, b) => a + b, 0) / this.losses.length,
-      accuracy: this.accuracies.reduce((a, b) => a + b, 0) / this.accuracies.length,
-      precision: this.calculatePrecision(),
-      recall: this.calculateRecall(),
-      f1: this.calculateF1()
+      accuracy: this.accuracies.length > 0 ? 
+        this.accuracies[this.accuracies.length - 1] : 0,
+      streetAccuracies: this.getStreetAccuracies(),
+      positionAccuracies: this.getPositionAccuracies(),
+      betSizing: this.getBetSizingMetrics(),
+      handStrengthCorrelation: this.getHandStrengthCorrelation()
     };
   }
 }
