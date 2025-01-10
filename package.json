@@ -37,6 +37,7 @@
     "test:ai-augmentation": "vite-node src/ai/test/dataAugmentation.test.js",
     "test:ai-cv": "vite-node src/ai/test/crossValidator.test.js",
     "test:ai-arch": "vite-node src/ai/test/architectureSearch.test.js",
+    "test:ai-collector": "vite-node src/ai/test/handCollector.test.js",
     "test:ai-scheduler": "vite-node src/ai/test/lrScheduler.test.js",
     "test:ai": "vite-node src/ai/test.js",
     "eject": "react-scripts eject"
