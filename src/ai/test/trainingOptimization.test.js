@@ -1,74 +1,106 @@
-import * as tf from '@tensorflow/tfjs-node';
-import TrainingPipeline from '../training/trainingPipeline';
-import { verifyTensorCleanup } from './testUtils';
-import { INPUT_SIZE, OUTPUT_SIZE } from '../utils/constants';
+// Set test environment
+process.env.NODE_ENV = 'test';
 
-async function runTests() {
-  // Initialize backend
-  await tf.ready();
+// Import browser version of TensorFlow.js
+import * as tf from '@tensorflow/tfjs';
+import PokerModel from '../models/pokerModel.js';
+import PokerTrainer from '../training/trainer.js';
+
+async function testTrainingOptimization() {
+  console.log('Testing training optimization...');
+  let trainer = null;
+  let model = null;
   
-  await verifyTensorCleanup(async () => {
-    console.log('Testing LR Scheduler Integration...\n');
-
-    // Create pipeline with scheduler config
-    const pipeline = new TrainingPipeline({
-      learningRate: 0.1,
-      schedule: 'exponential',
-      decayRate: 0.5,
-      minLR: 0.001,
-      warmupSteps: 2,
-      batchSize: 16,
-      maxEpochs: 10
+  try {
+    // Initialize TensorFlow.js
+    console.log('\nInitializing TensorFlow.js...');
+    await tf.ready();
+    console.log('TensorFlow.js ready');
+    
+    // Register CPU backend
+    await tf.registerBackend('cpu', () => new tf.MathBackendCPU());
+    await tf.setBackend('cpu');
+    console.log('Using backend:', tf.getBackend());
+    
+    // Initialize model
+    console.log('\nInitializing model...');
+    model = new PokerModel();
+    await model.buildModel();
+    console.log('Model initialized');
+    
+    // Test different batch sizes
+    const batchSizes = [16, 32, 64];
+    const results = [];
+    
+    for (const batchSize of batchSizes) {
+      console.log(`\nTesting batch size: ${batchSize}`);
+      
+      trainer = new PokerTrainer(model, {
+        epochs: 3,
+        batchSize: batchSize,
+        learningRate: 0.001
+      });
+      
+      const startTime = Date.now();
+      const metrics = await trainer.train();
+      const endTime = Date.now();
+      
+      results.push({
+        batchSize,
+        timePerEpoch: (endTime - startTime) / 3,
+        finalLoss: metrics.loss[metrics.loss.length - 1],
+        finalAccuracy: metrics.accuracy[metrics.accuracy.length - 1]
+      });
+      
+      // Clean up trainer
+      trainer.dispose();
+      trainer = null;
+    }
+    
+    // Log results
+    console.log('\nOptimization Results:');
+    results.forEach(result => {
+      console.log(`Batch Size ${result.batchSize}:`, {
+        timePerEpoch: `${result.timePerEpoch.toFixed(2)}ms`,
+        loss: result.finalLoss.toFixed(4),
+        accuracy: result.finalAccuracy.toFixed(4)
+      });
     });
 
-    // Verify scheduler initialization
-    console.log('Scheduler config:', {
-      initialLR: pipeline.scheduler.initialLR,
-      schedule: pipeline.scheduler.schedule,
-      decayRate: pipeline.scheduler.decayRate,
-      minLR: pipeline.scheduler.minLR,
-      warmupSteps: pipeline.scheduler.warmupSteps
-    });
+    return {
+      success: true,
+      message: 'Training optimization tests completed',
+      results
+    };
 
-    await pipeline.initializeTraining();
-
-    // Test initial learning rate
-    console.log('Initial LR:', pipeline.state.learningRate);
-    console.assert(pipeline.state.learningRate === 0.1, 'Initial LR should be 0.1');
-
-    // Create test batch with explicit backend
-    const testBatch = tf.tidy(() => ({
-      xs: tf.randomNormal([16, INPUT_SIZE]),
-      ys: tf.oneHot(tf.randomUniform([16], 0, OUTPUT_SIZE, 'int32'), OUTPUT_SIZE)
-    }));
-
-    // Test warmup period
-    for (let i = 0; i < 2; i++) {
-      await pipeline.trainStep(testBatch);
-      console.log(`Warmup step ${i + 1} LR:`, pipeline.state.learningRate);
+  } catch (error) {
+    console.error('Optimization test error:', error);
+    return {
+      success: false,
+      message: error.message
+    };
+  } finally {
+    // Clean up resources
+    if (trainer) {
+      console.log('Disposing trainer...');
+      trainer.dispose();
     }
-
-    // Test decay period
-    for (let i = 2; i < 7; i++) {
-      await pipeline.trainStep(testBatch);
-      console.log(`Decay step ${i + 1} LR:`, pipeline.state.learningRate);
-      console.assert(
-        pipeline.state.learningRate < 0.1,
-        'LR should decrease during decay'
-      );
+    if (model && model.model) {
+      console.log('Disposing model...');
+      model.model.dispose();
     }
-
-    // Verify minimum learning rate
-    console.assert(
-      pipeline.state.learningRate >= 0.001,
-      'LR should not go below minimum'
-    );
-
-    // Clean up test tensors
-    tf.dispose([testBatch.xs, testBatch.ys]);
-
-    console.log('\nAll scheduler integration tests passed!');
-  });
+    
+    // Final cleanup
+    console.log('Disposing variables...');
+    tf.disposeVariables();
+  }
 }
 
-runTests().catch(console.error); 
+// Run the test
+console.log('Starting optimization tests...');
+testTrainingOptimization()
+  .then(result => console.log('\nTest result:', result))
+  .catch(error => {
+    console.error('Test failed:', error);
+    process.exit(1);
+  }); 

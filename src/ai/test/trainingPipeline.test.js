@@ -1,6 +1,7 @@
 // Set test environment
 process.env.NODE_ENV = 'test';
 
+// Import browser version of TensorFlow.js
 import * as tf from '@tensorflow/tfjs';
 import PokerModel from '../models/pokerModel.js';
 import PokerTrainer from '../training/trainer.js';
@@ -10,29 +11,26 @@ async function testTrainingPipeline() {
   console.log('Testing training pipeline...');
   let dataLoader = null;
   let trainer = null;
+  let model = null;
   
   try {
-    // Debug TensorFlow.js initialization
+    // Initialize TensorFlow.js
     console.log('\nInitializing TensorFlow.js...');
     await tf.ready();
     console.log('TensorFlow.js ready');
     
-    // Force CPU backend for testing
-    console.log('\nSetting backend...');
-    console.log('Current backend:', tf.getBackend());
+    // Register CPU backend
+    await tf.registerBackend('cpu', () => new tf.MathBackendCPU());
     await tf.setBackend('cpu');
-    console.log('Backend set to:', tf.getBackend());
+    console.log('Using backend:', tf.getBackend());
     
-    // Debug memory state
-    console.log('\nInitial memory state:');
-    console.log(tf.memory());
-    
-    // Initialize components
+    // Initialize model with explicit backend
     console.log('\nInitializing model...');
-    const model = new PokerModel();
+    model = new PokerModel();
     await model.buildModel();
     console.log('Model initialized');
     
+    // Create trainer with explicit backend reference
     trainer = new PokerTrainer(model, {
       epochs: 5,
       batchSize: 32,
@@ -40,8 +38,12 @@ async function testTrainingPipeline() {
     });
     console.log('Trainer initialized');
 
-    // Test training
+    // Test training with backend check
     console.log('\nStarting training...');
+    if (!tf.getBackend()) {
+      throw new Error('Backend not available before training');
+    }
+    
     const metrics = await trainer.train();
     
     console.log('\nTraining completed');
@@ -50,35 +52,23 @@ async function testTrainingPipeline() {
       accuracy: metrics.accuracy[metrics.accuracy.length - 1].toFixed(4)
     });
     
-    // Debug memory state before prediction
-    console.log('\nMemory state before prediction:');
-    console.log(tf.memory());
+    // Ensure backend is still available
+    await tf.setBackend('cpu');
     
-    // Test prediction using simple tensor
-    console.log('\nCreating input tensor...');
-    const dummyInput = tf.zeros([1, 373]);
-    console.log('Input tensor shape:', dummyInput.shape);
+    // Create a simple prediction input
+    const input = tf.zeros([1, 373]);
+    console.log('\nInput tensor created with shape:', input.shape);
     
-    console.log('Making prediction...');
-    const prediction = model.predict(dummyInput);
-    console.log('Prediction tensor shape:', prediction.shape);
+    // Make prediction
+    const prediction = model.predict(input);
+    console.log('Prediction tensor created with shape:', prediction.shape);
     
-    const result = {
-      shape: prediction.shape,
-      values: Array.from(prediction.dataSync()).map(v => v.toFixed(4))
-    };
-
-    // Clean up tensors immediately
-    console.log('\nCleaning up tensors...');
-    tf.dispose([dummyInput, prediction]);
-    console.log('Tensors disposed');
-
-    console.log('\nPrediction shape:', result.shape);
-    console.log('Prediction values:', result.values);
-
-    // Final memory state
-    console.log('\nFinal memory state:');
-    console.log(tf.memory());
+    // Get prediction values
+    const values = Array.from(prediction.dataSync()).map(v => v.toFixed(4));
+    console.log('Prediction values:', values);
+    
+    // Clean up tensors
+    tf.dispose([input, prediction]);
 
     return {
       success: true,
@@ -91,30 +81,28 @@ async function testTrainingPipeline() {
 
   } catch (error) {
     console.error('Pipeline test error:', error);
-    console.error('Error stack:', error.stack);
-    console.error('Current backend:', tf.getBackend());
-    console.error('Memory state at error:');
-    console.error(tf.memory());
     return {
       success: false,
       message: error.message
     };
   } finally {
-    // Clean up resources
-    console.log('\nFinal cleanup...');
+    // Clean up resources in reverse order
     if (trainer) {
       console.log('Disposing trainer...');
       trainer.dispose();
+    }
+    if (model && model.model) {
+      console.log('Disposing model...');
+      model.model.dispose();
     }
     if (dataLoader) {
       console.log('Disposing dataLoader...');
       dataLoader.dispose();
     }
     
-    // Clean up any remaining tensors
+    // Final cleanup
     console.log('Disposing variables...');
     tf.disposeVariables();
-    console.log('Cleanup complete');
   }
 }
 

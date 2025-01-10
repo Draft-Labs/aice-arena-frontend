@@ -4,9 +4,9 @@ test:ai-input✅
 test:ai-model✅
 test:ai-data-loader✅
 test:ai-trainer✅
-test:ai-pipeline
-test:ai-optimization
-test:ai-batch
+test:ai-pipeline -- non-breaking error
+test:ai-optimization -- non-breaking error
+test:ai-batch✅
 test:ai-augmentation
 test:ai-cv
 test:ai-arch

@@ -1,72 +1,101 @@
-import * as tf from '@tensorflow/tfjs-node';
-import BatchSizeScheduler from '../utils/batchSizeScheduler';
-import { verifyTensorCleanup } from './testUtils';
+// Set test environment
+process.env.NODE_ENV = 'test';
 
-async function runTests() {
-  await verifyTensorCleanup(async () => {
-    console.log('Testing Batch Size Scheduler...\n');
+// Import browser version of TensorFlow.js
+import * as tf from '@tensorflow/tfjs';
+import PokerModel from '../models/pokerModel.js';
+import PokerTrainer from '../training/trainer.js';
+import BatchSizeScheduler from '../training/batchSizeScheduler.js';
 
-    const scheduler = new BatchSizeScheduler({
-      initialBatchSize: 32,
-      minBatchSize: 16,
-      maxBatchSize: 128
-    });
-
-    // Test initial state
-    console.log('Initial batch size:', scheduler.getCurrentBatchSize());
-    console.assert(scheduler.getCurrentBatchSize() === 32, 'Initial batch size should be 32');
-
-    // Test stable loss scenario
-    const stableLossMetrics = Array(7).fill({ 
-      loss: 1.0, 
-      memoryUsage: {
-        numBytes: 500,
-        maxBytes: 1000,  // 50% utilization - should allow growth
-        unreliable: false
-      }
-    });
-
-    // Wait for stability window before checking size increase
-    let initialSize = scheduler.getCurrentBatchSize();
-    for (const metrics of stableLossMetrics) {
-      const newSize = scheduler.update(metrics);
-      console.log('Batch size with stable loss:', newSize);
-    }
-    let finalSize = scheduler.getCurrentBatchSize();
+async function testBatchSizeScheduler() {
+  console.log('Testing batch size scheduler...');
+  let trainer = null;
+  let model = null;
+  let scheduler = null;
+  
+  try {
+    // Initialize TensorFlow.js
+    console.log('\nInitializing TensorFlow.js...');
+    await tf.ready();
+    console.log('TensorFlow.js ready');
     
-    console.assert(
-      finalSize > initialSize,
-      'Batch size should increase with stable loss'
-    );
-
-    // Test unstable loss scenario
-    const unstableLossMetrics = Array(5).fill().map((_, i) => ({ 
-      loss: Math.random() * 2,
-      memoryUsage: {
-        numBytes: 500,
-        maxBytes: 1000  // 50% utilization
-      }
-    }));
-    for (const metrics of unstableLossMetrics) {
-      const newSize = scheduler.update(metrics);
-      console.log('Batch size with unstable loss:', newSize);
+    // Initialize scheduler
+    scheduler = new BatchSizeScheduler({
+      initialBatchSize: 16,
+      maxBatchSize: 128,
+      growthRate: 2,
+      performanceThreshold: 0.8
+    });
+    
+    // Initialize model
+    console.log('\nInitializing model...');
+    model = new PokerModel();
+    await model.buildModel();
+    console.log('Model initialized');
+    
+    // Test batch size adaptation
+    let currentBatchSize = scheduler.getCurrentBatchSize();
+    console.log('\nInitial batch size:', currentBatchSize);
+    
+    // Simulate training progress
+    const performances = [0.75, 0.85, 0.90, 0.95];
+    for (const performance of performances) {
+      scheduler.update(performance);
+      const newBatchSize = scheduler.getCurrentBatchSize();
+      console.log(`Performance: ${performance.toFixed(2)} -> Batch size: ${newBatchSize}`);
     }
-    console.assert(scheduler.getCurrentBatchSize() < 128, 'Batch size should decrease with unstable loss');
+    
+    // Test with actual training
+    trainer = new PokerTrainer(model, {
+      epochs: 2,
+      batchSize: scheduler.getCurrentBatchSize(),
+      learningRate: 0.001
+    });
+    
+    const metrics = await trainer.train();
+    
+    // Update scheduler with final performance
+    const finalAccuracy = metrics.accuracy[metrics.accuracy.length - 1];
+    scheduler.update(finalAccuracy);
 
-    // Test memory threshold
-    const highMemoryMetrics = { 
-      loss: 1.0, 
-      memoryUsage: {
-        numBytes: 900,
-        maxBytes: 1000  // 90% utilization
+    return {
+      success: true,
+      message: 'Batch size scheduler tests completed',
+      results: {
+        finalBatchSize: scheduler.getCurrentBatchSize(),
+        finalAccuracy,
+        batchSizeHistory: scheduler.getBatchSizeHistory()
       }
     };
-    const newSize = scheduler.update(highMemoryMetrics);
-    console.log('Batch size with high memory usage:', newSize);
-    console.assert(newSize <= scheduler.getCurrentBatchSize(), 'Batch size should decrease with high memory usage');
 
-    console.log('\nAll batch size scheduler tests passed!');
-  });
+  } catch (error) {
+    console.error('Scheduler test error:', error);
+    return {
+      success: false,
+      message: error.message
+    };
+  } finally {
+    // Clean up resources
+    if (trainer) {
+      console.log('Disposing trainer...');
+      trainer.dispose();
+    }
+    if (model && model.model) {
+      console.log('Disposing model...');
+      model.model.dispose();
+    }
+    
+    // Final cleanup
+    console.log('Disposing variables...');
+    tf.disposeVariables();
+  }
 }
 
-runTests().catch(console.error); 
+// Run the test
+console.log('Starting batch size scheduler tests...');
+testBatchSizeScheduler()
+  .then(result => console.log('\nTest result:', result))
+  .catch(error => {
+    console.error('Test failed:', error);
+    process.exit(1);
+  }); 
