@@ -4,58 +4,72 @@ class LRScheduler {
   constructor(initialLR, options = {}) {
     this.initialLR = initialLR;
     this.currentLR = initialLR;
-    this.minLR = options.minLR || 1e-7;
-    this.scheduleType = options.schedule || 'exponential';
+    this.schedule = options.schedule || 'exponential';
     this.decayRate = options.decayRate || 0.1;
-    this.decaySteps = options.decaySteps || 1000;
-    this.warmupSteps = options.warmupSteps || 0;
+    this.minLR = options.minLR || 1e-7;
+    this.warmupSteps = options.warmupSteps || 1000;
   }
 
-  // Step decay schedule
-  stepDecay(epoch) {
-    const decay = Math.pow(this.decayRate, Math.floor(epoch / this.decaySteps));
-    return Math.max(this.initialLR * decay, this.minLR);
-  }
+  update(step) {
+    console.log('\nLR Scheduler Update:', {
+      step,
+      warmupSteps: this.warmupSteps,
+      initialLR: this.initialLR,
+      currentLR: this.currentLR,
+      schedule: this.schedule,
+      decayRate: this.decayRate,
+      minLR: this.minLR
+    });
 
-  // Exponential decay schedule
-  exponentialDecay(epoch) {
-    const decay = Math.exp(-this.decayRate * epoch);
-    return Math.max(this.initialLR * decay, this.minLR);
-  }
-
-  // Update learning rate based on current epoch
-  update(epoch, metrics = {}) {
-    let newLR;
-
-    // Handle warmup period
-    if (epoch < this.warmupSteps) {
-      newLR = this.initialLR * (epoch + 1) / this.warmupSteps;
-    } else {
-      // Apply selected schedule
-      switch (this.scheduleType) {
-        case 'step':
-          newLR = this.stepDecay(epoch - this.warmupSteps);
-          break;
-        case 'exponential':
-          newLR = this.exponentialDecay(epoch - this.warmupSteps);
-          break;
-        default:
-          newLR = this.currentLR;
-      }
+    // Warmup period - linear increase
+    if (step < this.warmupSteps) {
+      // Linear warmup from 1% to 100% of initial LR
+      const startLR = this.initialLR * 0.01;
+      const warmupProgress = Math.min(1, step / this.warmupSteps);
+      this.currentLR = startLR + (this.initialLR - startLR) * warmupProgress;
+      console.log('Warmup calculation:', {
+        startLR,
+        warmupProgress,
+        newLR: this.currentLR
+      });
+      return this.currentLR;
     }
 
-    this.currentLR = newLR;
-    return newLR;
-  }
+    // After warmup - apply decay
+    switch (this.schedule) {
+      case 'exponential':
+        const stepsAfterWarmup = step - this.warmupSteps;
+        const decayFactor = Math.pow(1 - this.decayRate, stepsAfterWarmup);
+        const beforeClip = this.initialLR * decayFactor;
+        this.currentLR = Math.max(
+          beforeClip,
+          this.minLR
+        );
+        console.log('Exponential decay calculation:', {
+          stepsAfterWarmup,
+          decayFactor,
+          beforeClip,
+          afterClip: this.currentLR
+        });
+        break;
 
-  // Get current learning rate
-  getLearningRate() {
+      case 'step':
+        const decaySteps = Math.floor((step - this.warmupSteps) / 2) + 1;
+        const stepBeforeClip = this.initialLR * Math.pow(0.5, decaySteps);
+        this.currentLR = Math.max(
+          stepBeforeClip,
+          this.minLR
+        );
+        console.log('Step decay calculation:', {
+          decaySteps,
+          beforeClip: stepBeforeClip,
+          afterClip: this.currentLR
+        });
+        break;
+    }
+
+    console.log('Final LR:', this.currentLR);
     return this.currentLR;
-  }
-
-  // Reset scheduler state
-  reset() {
-    this.currentLR = this.initialLR;
   }
 }
 

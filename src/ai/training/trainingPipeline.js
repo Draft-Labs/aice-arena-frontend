@@ -2,9 +2,12 @@ import * as tf from '@tensorflow/tfjs-node';
 import PokerTrainer from './trainer';
 import PokerModel from '../models/pokerModel';
 import { ACTIONS } from '../utils/constants';
+import LRScheduler from '../utils/lrScheduler';
 
 class TrainingPipeline {
   constructor(options = {}) {
+    // Ensure backend is initialized
+    tf.engine().startScope();
     this.model = new PokerModel();
     this.trainer = new PokerTrainer(this.model, options);
     
@@ -31,7 +34,7 @@ class TrainingPipeline {
       currentEpoch: 0,
       bestLoss: Infinity,
       bestMetrics: null,
-      learningRate: this.config.initialLearningRate,
+      learningRate: options.learningRate || 0.0002,
       stepsWithoutImprovement: 0,
       checkpoints: [],
       history: {
@@ -43,6 +46,14 @@ class TrainingPipeline {
         memoryUsage: []
       }
     };
+
+    // Add scheduler initialization
+    this.scheduler = new LRScheduler(options.learningRate || 0.0002, {
+      schedule: options.schedule,
+      decayRate: options.decayRate,
+      minLR: options.minLR,
+      warmupSteps: options.warmupSteps
+    });
   }
 
   async train() {
@@ -325,55 +336,100 @@ class TrainingPipeline {
   }
 
   async trainStep(batch) {
-    const { xs, ys } = batch;
-    let metrics;
-    
-    // Use tf.tidy for memory management during gradient calculation
     try {
-      metrics = tf.tidy(() => {
-        // Forward pass needs to be inside the gradient tape
-        const f = () => {
-          const predictions = this.model.predict(xs);
-          return tf.losses.softmaxCrossEntropy(ys, predictions);
-        };
-        
-        // Calculate gradients with respect to model variables
-        const { value, grads } = tf.variableGrads(f);
-        
-        // Calculate accuracy (outside gradient calculation)
-        const predictions = this.model.predict(xs);
-        const predIndices = predictions.argMax(-1);
-        const labelIndices = ys.argMax(-1);
-        const correctPredictions = predIndices.equal(labelIndices);
-        const accuracy = correctPredictions.mean();
-        
-        // Apply gradients with optimizer
-        const optimizer = this.model.model.optimizer;
-        const vars = this.model.model.trainableWeights;
-        
-        // Apply gradients with momentum
-        const gradAndVars = vars.map(v => ({
-          name: v.name,
-          tensor: grads[v.val.id] || null
-        })).filter(g => g.tensor !== null);
-
-        optimizer.applyGradients(gradAndVars);
-        
-        // Ensure non-zero loss and non-perfect accuracy for testing
-        const loss = value.add(tf.scalar(1e-7));
-        const adjustedAccuracy = accuracy.mul(tf.scalar(0.99));
-        
-        return {
-          loss: loss.dataSync()[0],
-          accuracy: adjustedAccuracy.dataSync()[0]
-        };
+      // Update learning rate each step
+      console.log('\nTraining step:', {
+        currentEpoch: this.state.currentEpoch,
+        currentLR: this.state.learningRate
       });
-    } finally {
-      // Clean up input tensors
-      tf.dispose([xs, ys]);
+      
+      // Use a step counter instead of epoch
+      if (!this.state.step) {
+        this.state.step = 0;
+      }
+      this.state.step++;
+      
+      const newLR = this.scheduler.update(this.state.step);
+      console.log('LR Update:', {
+        previous: this.state.learningRate,
+        new: newLR,
+        step: this.state.step
+      });
+
+      try {
+        if (this.model.model && this.model.model.optimizer) {
+          // Update optimizer's learning rate directly if setLearningRate fails
+          if (!(await this.model.setLearningRate(newLR))) {
+            this.model.model.optimizer.learningRate = newLR;
+          }
+          // Update state
+          this.state.learningRate = newLR;
+          console.log('Optimizer updated:', {
+            optimizerLR: this.model.model.optimizer.learningRate,
+            stateLR: this.state.learningRate
+          });
+        }
+      } catch (error) {
+        console.warn('Failed to update learning rate:', error);
+      }
+      
+      // Ensure model is built
+      if (!this.model.model) {
+        await this.model.buildModel();
+      }
+      
+      const { xs, ys } = batch;
+      let metrics;
+      
+      // Ensure tensors are on the correct backend
+      const xsTensor = tf.tensor(await xs.array(), xs.shape);
+      const ysTensor = tf.tensor(await ys.array(), ys.shape);
+      
+      try {
+        metrics = tf.tidy(() => {
+          // Forward pass needs to be inside the gradient tape
+          const f = () => {
+            const predictions = this.model.predict(xsTensor);
+            return tf.losses.softmaxCrossEntropy(ysTensor, predictions);
+          };
+          
+          // Calculate gradients with respect to model variables
+          const { value, grads } = tf.variableGrads(f);
+          
+          // Calculate accuracy (outside gradient calculation)
+          const predictions = this.model.predict(xsTensor);
+          const predIndices = predictions.argMax(-1);
+          const labelIndices = ysTensor.argMax(-1);
+          const correctPredictions = predIndices.equal(labelIndices);
+          const accuracy = correctPredictions.mean();
+          
+          // Apply gradients with optimizer
+          const optimizer = this.model.model.optimizer;
+          const vars = this.model.model.trainableWeights;
+          
+          // Apply gradients with momentum
+          const gradAndVars = vars.map(v => ({
+            name: v.name,
+            tensor: grads[v.val.id] || null
+          })).filter(g => g.tensor !== null);
+
+          optimizer.applyGradients(gradAndVars);
+          
+          return {
+            loss: value.dataSync()[0],
+            accuracy: accuracy.dataSync()[0]
+          };
+        });
+      } finally {
+        // Clean up tensors
+        tf.dispose([xsTensor, ysTensor]);
+      }
+      
+      return metrics;
+    } catch (error) {
+      console.error('Training step failed:', error);
+      throw error;
     }
-    
-    return metrics;
   }
 
   // Add gradient accumulation for larger effective batch size

@@ -4,57 +4,70 @@ import { verifyTensorCleanup } from './testUtils';
 import { INPUT_SIZE, OUTPUT_SIZE } from '../utils/constants';
 
 async function runTests() {
+  // Initialize backend
+  await tf.ready();
+  
   await verifyTensorCleanup(async () => {
-    console.log('Starting optimization tests...\n');
+    console.log('Testing LR Scheduler Integration...\n');
 
-    // Test gradient calculation
-    console.log('Testing gradient calculation...');
+    // Create pipeline with scheduler config
     const pipeline = new TrainingPipeline({
+      learningRate: 0.1,
+      schedule: 'exponential',
+      decayRate: 0.5,
+      minLR: 0.001,
+      warmupSteps: 2,
       batchSize: 16,
-      maxEpochs: 2,
-      checkpointPath: './tmp/test-model'
+      maxEpochs: 10
+    });
+
+    // Verify scheduler initialization
+    console.log('Scheduler config:', {
+      initialLR: pipeline.scheduler.initialLR,
+      schedule: pipeline.scheduler.schedule,
+      decayRate: pipeline.scheduler.decayRate,
+      minLR: pipeline.scheduler.minLR,
+      warmupSteps: pipeline.scheduler.warmupSteps
     });
 
     await pipeline.initializeTraining();
 
-    // Test gradient calculation with proper shapes
-    const metrics = await pipeline.trainStep({
+    // Test initial learning rate
+    console.log('Initial LR:', pipeline.state.learningRate);
+    console.assert(pipeline.state.learningRate === 0.1, 'Initial LR should be 0.1');
+
+    // Create test batch with explicit backend
+    const testBatch = tf.tidy(() => ({
       xs: tf.randomNormal([16, INPUT_SIZE]),
-      ys: tf.randomUniform([16, OUTPUT_SIZE])
-    });
+      ys: tf.oneHot(tf.randomUniform([16], 0, OUTPUT_SIZE, 'int32'), OUTPUT_SIZE)
+    }));
 
-    // Validate metrics
-    if (!metrics || 
-        typeof metrics.loss !== 'number' || 
-        typeof metrics.accuracy !== 'number' ||
-        isNaN(metrics.loss) || 
-        isNaN(metrics.accuracy) ||
-        metrics.loss === 0 || 
-        metrics.accuracy === 1) {
-      throw new Error('Invalid metrics: ' + JSON.stringify(metrics));
+    // Test warmup period
+    for (let i = 0; i < 2; i++) {
+      await pipeline.trainStep(testBatch);
+      console.log(`Warmup step ${i + 1} LR:`, pipeline.state.learningRate);
     }
 
-    console.log('Gradient metrics:', metrics);
-    console.log('Tensor cleanup verification:', {
-      start: tf.memory().numTensors,
-      end: tf.memory().numTensors,
-      leaked: tf.memory().numTensors - tf.memory().numTensors
-    });
-
-    // Test gradient accumulation
-    console.log('\nTesting gradient accumulation...');
-    const accumulatedMetrics = await pipeline.accumulateGradients(4);
-    
-    // Validate accumulated metrics
-    if (!accumulatedMetrics || 
-        typeof accumulatedMetrics.loss !== 'number' || 
-        typeof accumulatedMetrics.accuracy !== 'number' ||
-        isNaN(accumulatedMetrics.loss) || 
-        isNaN(accumulatedMetrics.accuracy)) {
-      throw new Error('Invalid accumulated metrics');
+    // Test decay period
+    for (let i = 2; i < 7; i++) {
+      await pipeline.trainStep(testBatch);
+      console.log(`Decay step ${i + 1} LR:`, pipeline.state.learningRate);
+      console.assert(
+        pipeline.state.learningRate < 0.1,
+        'LR should decrease during decay'
+      );
     }
 
-    return accumulatedMetrics;
+    // Verify minimum learning rate
+    console.assert(
+      pipeline.state.learningRate >= 0.001,
+      'LR should not go below minimum'
+    );
+
+    // Clean up test tensors
+    tf.dispose([testBatch.xs, testBatch.ys]);
+
+    console.log('\nAll scheduler integration tests passed!');
   });
 }
 

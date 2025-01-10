@@ -165,6 +165,24 @@ class PokerModel {
       metrics: this.metrics.getMetrics()
     };
   }
+
+  // Add method to set learning rate
+  async setLearningRate(newLR) {
+    if (this.model && this.model.optimizer) {
+      const optimizer = this.model.optimizer;
+      
+      // Handle different optimizer types
+      if (typeof optimizer.setLearningRate === 'function') {
+        optimizer.setLearningRate(newLR);
+      } else {
+        // For optimizers that store LR directly
+        optimizer.learningRate = newLR;
+      }
+      
+      return true;
+    }
+    return false;
+  }
 }
 
 export default PokerModel; 
