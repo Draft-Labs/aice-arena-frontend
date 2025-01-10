@@ -1,10 +1,5 @@
 // Neural Network Input/Output dimensions
-export const INPUT_SIZE = 373;  // Total input dimensions:
-                               // - Cards: (52 * 7) = 364  [2 hole + 5 community]
-                               // - Position: 6            [BTN/SB/BB/EARLY/MIDDLE/LATE]
-                               // - Stack: 1              [Normalized stack size]
-                               // - Pot: 1                [Normalized pot size]
-                               // - Pot odds: 1           [Current bet / (pot + bet)]
+export const INPUT_SIZE = 1024;  // Total size of input feature vector
 
 export const OUTPUT_SIZE = 4;   // Action space:
                                // - FOLD
@@ -14,10 +9,11 @@ export const OUTPUT_SIZE = 4;   // Action space:
 
 // Action encoding
 export const ACTIONS = {
-  FOLD: 0,    // Give up hand
-  CHECK: 1,   // Pass action when no bet to call
-  CALL: 2,    // Match the current bet
-  RAISE: 3    // Increase the current bet
+  FOLD: 'fold',
+  CHECK: 'check',
+  CALL: 'call',
+  BET: 'bet',
+  RAISE: 'raise'
 };
 
 // Table positions (6-max)
