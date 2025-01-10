@@ -52,9 +52,65 @@ export const HAND_TYPES = {
 };
 
 export const MODEL_CONFIG = {
-  INPUT_SIZE: 373,  // Match the input shape from pokerModel.js
-  OUTPUT_SIZE: 4,   // Match the output shape (4 possible actions)
+  // Input size breakdown:
+  // - Hole cards: 52 * 2 = 104 (two cards, each using 52-bit one-hot encoding)
+  // - Community cards: 52 * 5 = 260 (five cards max)
+  // - Position: 6 (one-hot encoding for 6 possible positions)
+  // - Pot size: 1 (normalized value)
+  // - Previous action: 2 (encoding of last action)
+  INPUT_SIZE: 373,
+  
+  // Output size: 4 possible actions
+  OUTPUT_SIZE: 4,
+  
+  // Action mapping
+  ACTION_MAP: {
+    'fold': 0,
+    'check': 1,
+    'call': 2,
+    'raise': 3,
+    'sb': 1,    // Small blind counts as check
+    'bb': 2     // Big blind counts as call
+  },
+
+  // Maximum pot size for normalization
+  MAX_POT_SIZE: 1000,
+
+  // Position mapping
+  POSITION_MAP: {
+    'BTN': 0,
+    'SB': 1,
+    'BB': 2,
+    'UTG': 3,
+    'MP': 4,
+    'CO': 5
+  },
+
+  // Training parameters
+  LEARNING_RATE: 0.0002,
+  BATCH_SIZE: 32,
+  EPOCHS: 100,
+  
+  // Architecture
   HIDDEN_LAYERS: [512, 256, 128],
   DROPOUT_RATE: 0.3,
-  LEARNING_RATE: 0.0002
+  
+  // Early stopping
+  PATIENCE: 5,
+  MIN_DELTA: 0.001
+};
+
+// Card constants
+export const CARD_CONSTANTS = {
+  NUM_RANKS: 13,
+  NUM_SUITS: 4,
+  DECK_SIZE: 52
+};
+
+// Training constants
+export const TRAINING_CONSTANTS = {
+  VALIDATION_SPLIT: 0.2,
+  MIN_SAMPLES: 1000,
+  MAX_SAMPLES: 1000000,
+  CHECKPOINT_FREQUENCY: 1000
 }; 

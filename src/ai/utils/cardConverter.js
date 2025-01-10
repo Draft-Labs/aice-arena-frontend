@@ -1,54 +1,102 @@
-// Convert IRC poker notation to our card numbers (1-52)
-const RANKS = {
-  'A': 0,
-  '2': 1,
-  '3': 2,
-  '4': 3,
-  '5': 4,
-  '6': 5,
-  '7': 6,
-  '8': 7,
-  '9': 8,
-  'T': 9,
-  'J': 10,
-  'Q': 11,
-  'K': 12
-};
+/**
+ * Card conversion utilities for poker hand processing
+ */
 
-const SUITS = {'h':0, 'd':1, 'c':2, 's':3};
+// Card ranks and suits in order
+const RANKS = '23456789TJQKA';  // Ace is highest (index 12)
+const SUITS = 'hdcs';           // hearts, diamonds, clubs, spades
 
-export function convertCard(cardString) {
-  if (!cardString || cardString.length !== 2) {
-    return 0;
+/**
+ * Convert a card string (e.g., 'Ah') to a 0-51 index
+ * @param {string} card - Card in format like 'Ah' for Ace of hearts
+ * @returns {number} Index 0-51 representing the card
+ */
+export function convertCardToIndex(card) {
+  if (!card || card.length !== 2) {
+    throw new Error(`Invalid card format: ${card}`);
+  }
+
+  const rank = card[0].toUpperCase();
+  const suit = card[1].toLowerCase();
+
+  const rankIndex = RANKS.indexOf(rank);
+  const suitIndex = SUITS.indexOf(suit);
+
+  if (rankIndex === -1 || suitIndex === -1) {
+    throw new Error(`Invalid card: ${card}`);
+  }
+
+  // Calculate index: (rank * 4) + suit
+  // This gives us:
+  // 2h = 0, 2d = 1, 2c = 2, 2s = 3
+  // 3h = 4, 3d = 5, 3c = 6, 3s = 7
+  // ...
+  // Kh = 44, Kd = 45, Kc = 46, Ks = 47
+  // Ah = 48, Ad = 49, Ac = 50, As = 51
+  const index = (rankIndex * 4) + suitIndex;
+  
+  // Debug log
+  console.log(`Converting ${card}: rank=${rank}(${rankIndex}), suit=${suit}(${suitIndex}) -> index=${index}`);
+  
+  // Verify index is correct
+  const expectedRank = Math.floor(index / 4);
+  const expectedSuit = index % 4;
+  if (expectedRank !== rankIndex || expectedSuit !== suitIndex) {
+    console.error('Card conversion error:', {
+      card,
+      rank: { value: rank, index: rankIndex, expected: expectedRank },
+      suit: { value: suit, index: suitIndex, expected: expectedSuit },
+      index
+    });
   }
   
-  const rank = RANKS[cardString[0].toUpperCase()];
-  const suit = SUITS[cardString[1].toLowerCase()];
-  
-  if (rank === undefined || suit === undefined) {
-    return 0;
+  return index;
+}
+
+/**
+ * Convert a 0-51 index back to a card string
+ * @param {number} index - Index 0-51 representing a card
+ * @returns {string} Card in format like 'Ah' for Ace of hearts
+ */
+export function convertIndexToCard(index) {
+  if (index < 0 || index > 51) {
+    throw new Error(`Invalid card index: ${index}`);
   }
-  
-  // Convert to 1-52 format
-  return (suit * 13) + rank + 1;
+
+  const rankIndex = Math.floor(index / 4);
+  const suitIndex = index % 4;
+
+  return RANKS[rankIndex] + SUITS[suitIndex];
 }
 
-// Convert a hand string like "Ah Kd" to card numbers
-export function convertHand(handString) {
-  const cards = handString.trim().split(' ');
-  return cards.map(card => convertCard(card));
+/**
+ * Check if a card string is valid
+ * @param {string} card - Card in format like 'Ah' for Ace of hearts
+ * @returns {boolean} True if card format is valid
+ */
+export function isValidCard(card) {
+  if (!card || card.length !== 2) return false;
+  
+  const rank = card[0].toUpperCase();
+  const suit = card[1].toLowerCase();
+  
+  return RANKS.includes(rank) && SUITS.includes(suit);
 }
 
-// For debugging
-export function cardToString(cardNumber) {
-  if (cardNumber < 1 || cardNumber > 52) return null;
-  
-  const ranks = ['A', '2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K'];
-  const suits = ['h', 'd', 'c', 's'];
-  
-  // Convert 1-52 to rank and suit
-  const rank = ranks[(cardNumber - 1) % 13];
-  const suit = suits[Math.floor((cardNumber - 1) / 13)];
-  
-  return rank + suit;
+/**
+ * Convert an array of card strings to indices
+ * @param {string[]} cards - Array of cards in format like ['Ah', 'Kd']
+ * @returns {number[]} Array of indices 0-51
+ */
+export function convertCardsToIndices(cards) {
+  return cards.map(convertCardToIndex);
+}
+
+/**
+ * Convert an array of indices to card strings
+ * @param {number[]} indices - Array of indices 0-51
+ * @returns {string[]} Array of cards in format like ['Ah', 'Kd']
+ */
+export function convertIndicesToCards(indices) {
+  return indices.map(convertIndexToCard);
 } 

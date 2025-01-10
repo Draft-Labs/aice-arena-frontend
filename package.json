@@ -41,7 +41,9 @@
     "test:ai-processor": "vite-node src/ai/test/dataProcessor.test.js",
     "test:ai-scheduler": "vite-node src/ai/test/lrScheduler.test.js",
     "test:ai": "vite-node src/ai/test.js",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "test:parser": "vite-node src/ai/test/handHistoryParser.test.js",
+    "test:cards": "vite-node src/ai/test/cardConverter.test.js"
   },
   "eslintConfig": {
     "extends": [

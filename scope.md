@@ -1,170 +1,106 @@
-# AI Poker Training System - Development Scope
+# AI Poker Training System Scope
 
-## Phase 1: Training Pipeline Enhancement (Current Priority)
+## Overview
+A machine learning system for training an AI poker agent using hand history data. The system processes poker hand histories, converts them into a neural network-friendly format, and trains a model to predict optimal actions.
 
-### 1. Training Data Quality
-- [ ] Implement real poker hand data integration
-  - [ ] Build IRC hand history parser
-  - [ ] Add data validation and cleaning
-  - [ ] Create data transformation pipeline
-  - [ ] Add data quality metrics
+## Core Components
 
-### 2. Model Performance Optimization
-- [ ] Enhance training metrics
-  - [ ] Add per-action precision/recall
-  - [ ] Implement poker-specific metrics (EV, ROI)
-  - [ ] Add confidence calibration metrics
-  - [ ] Create visualization tools
+### Data Processing
+- [x] Hand History Parser
+  - [x] IRC format support
+  - [x] Card encoding (52-bit one-hot)
+  - [x] Action encoding
+  - [x] Position encoding
+  - [x] Pot size normalization
+  - [x] Error handling for malformed hands
 
-### 3. Memory Management
-- [ ] Optimize tensor usage
-  - [ ] Reduce persistent tensor count
-  - [ ] Implement aggressive garbage collection
-  - [ ] Add memory profiling tools
-  - [ ] Create memory usage alerts
+### Data Representation
+- [x] Input Vector Format
+  - [x] First 52 bits: Hole cards
+  - [x] Next 260 bits (5 x 52): Community cards
+  - [x] Next 6 bits: Position
+  - [x] Next 1 bit: Normalized pot size
+  - [x] Final 2 bits: Last action type
 
-### 4. Training Infrastructure
-- [ ] Add early stopping mechanism
-  - [ ] Implement validation loss monitoring
-  - [ ] Add patience configuration
-  - [ ] Create model checkpointing
-  - [ ] Add training resumption capability
+- [x] Output Vector Format
+  - [x] 4 possible actions (fold, check/call, raise, all-in)
+  - [x] One-hot encoded
 
-## Phase 2: Model Architecture Improvements
+### Model Architecture
+- [ ] Neural Network Structure
+  - [ ] Input layer (373 neurons)
+  - [ ] Hidden layers (to be optimized)
+  - [ ] Output layer (4 neurons)
+  - [ ] Activation functions
+  - [ ] Dropout layers
 
-### 1. Network Architecture
-- [ ] Optimize layer configuration
-  - [ ] Test different layer sizes
-  - [ ] Experiment with residual connections
-  - [ ] Try attention mechanisms
-  - [ ] Evaluate different activation functions
+### Training Pipeline
+- [ ] Data Loading
+  - [ ] Batch processing
+  - [ ] Data augmentation
+  - [ ] Train/validation split
 
-### 2. Feature Engineering
-- [ ] Enhance input representation
-  - [ ] Add hand strength features
-  - [ ] Include position-based features
-  - [ ] Add stack size considerations
-  - [ ] Implement opponent modeling features
+- [ ] Training Loop
+  - [ ] Loss function
+  - [ ] Optimizer selection
+  - [ ] Learning rate scheduling
+  - [ ] Early stopping
+  - [ ] Model checkpointing
 
-### 3. Output Layer
-- [ ] Improve action space
-  - [ ] Add bet sizing predictions
-  - [ ] Implement value estimation
-  - [ ] Add action confidence scores
-  - [ ] Create action masking
+### Testing & Evaluation
+- [x] Unit Tests
+  - [x] Hand history parser
+  - [x] Card conversion
+  - [ ] Model architecture
+  - [ ] Training pipeline
 
-## Phase 3: Production Readiness
+- [ ] Performance Metrics
+  - [ ] Accuracy
+  - [ ] Loss curves
+  - [ ] Action distribution
+  - [ ] Bankroll simulation
 
-### 1. Performance Optimization
-- [ ] Inference optimization
-  - [ ] Model quantization
-  - [ ] Batch prediction support
-  - [ ] WebGL acceleration
-  - [ ] Model pruning
+### Utilities
+- [x] Card Converter
+  - [x] String to index conversion
+  - [x] Index to string conversion
+  - [x] Validation functions
 
-### 2. Integration
-- [ ] API development
-  - [ ] RESTful endpoints
-  - [ ] WebSocket support
-  - [ ] Authentication
-  - [ ] Rate limiting
+- [ ] Hand Evaluator
+  - [ ] Hand strength calculation
+  - [ ] Equity estimation
+  - [ ] Position evaluation
 
-### 3. Monitoring
-- [ ] Production metrics
-  - [ ] Performance monitoring
-  - [ ] Error tracking
-  - [ ] Usage analytics
-  - [ ] Cost monitoring
+### Integration
+- [ ] Web Interface
+  - [ ] Model inference API
+  - [ ] Real-time predictions
+  - [ ] Visualization tools
 
-## Technical Debt Resolution
+## Technical Requirements
+- TensorFlow.js for model implementation
+- Node.js environment
+- Jest for testing
+- React for frontend components
 
-### 1. Code Quality
-- [ ] Improve error handling
-  - [ ] Add comprehensive error types
-  - [ ] Implement recovery strategies
-  - [ ] Add logging
-  - [ ] Create error reporting
+## Future Enhancements
+- Multi-table support
+- Tournament play optimization
+- Opponent modeling
+- Real-time learning
+- Bankroll management
 
-### 2. Testing
-- [ ] Enhance test coverage
-  - [ ] Add integration tests
-  - [ ] Create stress tests
-  - [ ] Add performance benchmarks
-  - [ ] Implement CI/CD pipeline
+## Current Status
+- Data processing pipeline complete
+- Card encoding system implemented and tested
+- Basic model architecture defined
+- Training pipeline in development
+- Testing framework established
 
-### 3. Documentation
-- [ ] Improve documentation
-  - [ ] API documentation
-  - [ ] Architecture diagrams
-  - [ ] Setup guides
-  - [ ] Contribution guidelines
-
-## Timeline Estimates
-
-### Short-term (2-4 weeks)
-- Training pipeline enhancement
-- Memory optimization
-- Basic monitoring implementation
-
-### Medium-term (1-2 months)
-- Model architecture improvements
-- Feature engineering
-- Initial production readiness
-
-### Long-term (2-3 months)
-- Full production deployment
-- Advanced monitoring
-- Performance optimization
-- Technical debt resolution
-
-## Success Metrics
-
-### Training Performance
-- Loss < 1.0
-- Accuracy > 60%
-- Memory usage < 100MB
-- Training time < 24 hours
-
-### Production Performance
-- Inference time < 100ms
-- 99.9% uptime
-- < 1% error rate
-- < 50MB memory per instance
-
-## Risk Assessment
-
-### High Priority
-- Data quality issues
-- Memory leaks
-- Training stability
-- Production performance
-
-### Medium Priority
-- Feature engineering effectiveness
-- Integration challenges
-- Scaling issues
-
-### Low Priority
-- Documentation completeness
-- Test coverage
-- Code organization
-
-## Resource Requirements
-
-### Development
-- 2-3 developers
-- 1 ML engineer
-- 1 DevOps engineer
-
-### Infrastructure
-- Training servers
-- Production servers
-- Monitoring infrastructure
-- Development environment
-
-## Regular Review Points
-
-- Weekly code reviews
-- Bi-weekly progress assessment
-- Monthly architecture review
-- Quarterly roadmap adjustment
+## Next Steps
+1. Complete model architecture implementation
+2. Implement training pipeline
+3. Add performance metrics
+4. Develop evaluation framework
+5. Create web interface
+6. Add real-time inference capabilities
