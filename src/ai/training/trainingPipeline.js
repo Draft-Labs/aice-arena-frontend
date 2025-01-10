@@ -4,6 +4,7 @@ import PokerModel from '../models/pokerModel';
 import { ACTIONS } from '../utils/constants';
 import LRScheduler from '../utils/lrScheduler';
 import BatchSizeScheduler from '../utils/batchSizeScheduler';
+import ArchitectureSearch from '../utils/architectureSearch';
 
 class TrainingPipeline {
   constructor(options = {}) {
@@ -66,6 +67,8 @@ class TrainingPipeline {
       minLR: options.minLR,
       warmupSteps: options.warmupSteps
     });
+
+    this.architectureSearch = options.architectureSearch || false;
   }
 
   async train() {
@@ -73,6 +76,26 @@ class TrainingPipeline {
     await this.initializeTraining();
 
     try {
+      // Optionally run architecture search
+      if (this.architectureSearch) {
+        console.log('Running architecture search...');
+        const searcher = new ArchitectureSearch({
+          maxLayers: 4,
+          populationSize: 8,
+          generations: 3
+        });
+
+        const bestConfig = await searcher.search(
+          this.trainer.getTrainData(),
+          this.trainer.getValidationData()
+        );
+
+        console.log('Best architecture found:', bestConfig);
+        this.model = searcher.createModel(bestConfig);
+        this.config.learningRate = bestConfig.learningRate;
+        this.config.batchSize = bestConfig.batchSize;
+      }
+
       while (this.shouldContinueTraining()) {
         await this.runEpoch();
         await this.validateAndSave();

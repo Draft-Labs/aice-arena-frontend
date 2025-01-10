@@ -140,6 +140,17 @@ The project includes a TensorFlow.js-based AI agent for poker gameplay. The AI i
   - Position rotation with strategic equivalence
   - Gaussian noise injection for continuous values
   - Edge case handling and validation
+- ✅ Added k-fold cross validation:
+  - Configurable number of folds
+  - Stratified splitting
+  - Memory-efficient implementation
+  - Proper tensor cleanup
+- ✅ Added architecture search:
+  - Genetic algorithm optimization
+  - Layer configuration search
+  - Hyperparameter tuning
+  - Performance-based selection
+  - Memory-efficient evaluation
 
 ### Testing
 - ✅ Added unit tests for data loading
@@ -157,10 +168,6 @@ The project includes a TensorFlow.js-based AI agent for poker gameplay. The AI i
 - ✅ Added validation metrics tracking
 - ✅ Added learning rate progression monitoring
 - ✅ Added optimizer state verification
-
-### Next Steps
-- [ ] Implement cross-validation
-- [ ] Add model architecture search
 
 #### ⏳ Phase 7: Game Integration (Not Started)
 - Model Serving
