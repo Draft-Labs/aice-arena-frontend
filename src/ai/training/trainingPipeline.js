@@ -3,6 +3,7 @@ import PokerTrainer from './trainer';
 import PokerModel from '../models/pokerModel';
 import { ACTIONS } from '../utils/constants';
 import LRScheduler from '../utils/lrScheduler';
+import BatchSizeScheduler from '../utils/batchSizeScheduler';
 
 class TrainingPipeline {
   constructor(options = {}) {
@@ -29,12 +30,22 @@ class TrainingPipeline {
       }
     };
 
+    // Add batch size scheduler
+    this.batchScheduler = new BatchSizeScheduler({
+      initialBatchSize: options.batchSize || 32,
+      minBatchSize: options.minBatchSize || 16,
+      maxBatchSize: options.maxBatchSize || 256,
+      growthFactor: options.batchGrowthFactor || 1.5,
+      memoryThreshold: options.memoryThreshold || 0.8
+    });
+
     // Training state
     this.state = {
       currentEpoch: 0,
       bestLoss: Infinity,
       bestMetrics: null,
       learningRate: options.learningRate || 0.0002,
+      currentBatchSize: options.batchSize || 32,
       stepsWithoutImprovement: 0,
       checkpoints: [],
       history: {
@@ -43,7 +54,8 @@ class TrainingPipeline {
         valLoss: [],
         valAccuracy: [],
         learningRates: [],
-        memoryUsage: []
+        memoryUsage: [],
+        batchSizes: []
       }
     };
 
@@ -425,6 +437,15 @@ class TrainingPipeline {
         tf.dispose([xsTensor, ysTensor]);
       }
       
+      // Update batch size based on metrics
+      const newBatchSize = this.batchScheduler.update({
+        loss: metrics.loss,
+        memoryUsage: tf.memory()
+      });
+      
+      this.state.currentBatchSize = newBatchSize;
+      this.state.history.batchSizes.push(newBatchSize);
+
       return metrics;
     } catch (error) {
       console.error('Training step failed:', error);

@@ -30,22 +30,15 @@ export const POSITIONS = {
   LATE: 5     // CO (Cut-off)
 };
 
-// Position mapping for different table sizes
+// Position type mapping for different table sizes
 export const POSITION_MAPPING = {
-  6: {  // 6 players (full ring)
-    0: POSITIONS.BTN,    // Last to act post-flop
-    1: POSITIONS.SB,     // First to act post-flop
-    2: POSITIONS.BB,     // Second to act post-flop
-    3: POSITIONS.EARLY,  // UTG
-    4: POSITIONS.MIDDLE, // MP
-    5: POSITIONS.LATE    // CO
-  },
-  5: {  // 5 players (short-handed)
-    0: POSITIONS.BTN,
-    1: POSITIONS.SB,
-    2: POSITIONS.BB,
-    3: POSITIONS.EARLY,
-    4: POSITIONS.MIDDLE
+  6: {  // 6-max table
+    0: 'BTN',   // Button is unique
+    1: 'SB',    // Small blind is unique
+    2: 'BB',    // Big blind is unique
+    3: 'EARLY', // UTG
+    4: 'EARLY', // UTG+1 (also early)
+    5: 'LATE'   // Cutoff
   }
 };
 
