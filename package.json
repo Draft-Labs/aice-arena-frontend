@@ -4,8 +4,6 @@
   "private": true,
   "dependencies": {
     "@metamask/providers": "^18.2.0",
-    "@tensorflow/tfjs": "^4.22.0",
-    "@tensorflow/tfjs-node": "^4.22.0",
     "@tensorflow/tfjs-vis": "^1.5.1",
     "@testing-library/jest-dom": "^5.17.0",
     "@testing-library/react": "^13.4.0",
@@ -41,6 +39,7 @@
     "test:ai-processor": "vite-node src/ai/test/dataProcessor.test.js",
     "test:ai-scheduler": "vite-node src/ai/test/lrScheduler.test.js",
     "test:ai-metrics": "vite-node src/ai/test/modelMetrics.test.js",
+    "test:ai-scenario": "cross-env NODE_ENV=test vite-node src/ai/test/scenarioTesting.test.js",
     "test:ai": "vite-node src/ai/test.js",
     "eject": "react-scripts eject",
     "test:parser": "vite-node src/ai/test/handHistoryParser.test.js",
@@ -66,6 +65,8 @@
   },
   "devDependencies": {
     "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
+    "@tensorflow/tfjs": "^4.22.0",
+    "cross-env": "^7.0.3",
     "vite-node": "^2.1.8"
   },
   "type": "module"

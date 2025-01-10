@@ -1,4 +1,4 @@
-import * as tf from '@tensorflow/tfjs-node';
+import * as tf from '@tensorflow/tfjs';
 import { MODEL_CONFIG } from '../utils/constants.js';
 import ModelMetrics from '../utils/metrics';
 import EarlyStopping from '../utils/callbacks';

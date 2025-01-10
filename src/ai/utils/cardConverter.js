@@ -99,4 +99,50 @@ export function convertCardsToIndices(cards) {
  */
 export function convertIndicesToCards(indices) {
   return indices.map(convertIndexToCard);
+}
+
+/**
+ * Export the function directly
+ * @param {string} handString - String representation of a poker hand
+ * @returns {number[]} Array of indices 0-51 representing the hand
+ */
+export function convertHand(handInput) {
+    if (!handInput) return [];
+    
+    // If input is already an array, join it
+    const handString = Array.isArray(handInput) ? handInput.join(' ') : handInput;
+    
+    // Split the hand string into individual cards
+    const cards = handString.split(' ');
+    
+    // Convert each card to its one-hot encoded representation
+    return cards.map(card => {
+        // Parse rank and suit
+        const rank = card[0].toUpperCase();
+        const suit = card[1].toLowerCase();
+        
+        // Convert rank to index (2-10, J, Q, K, A)
+        const rankIndex = '23456789TJQKA'.indexOf(rank);
+        
+        // Convert suit to index (h, d, c, s)
+        const suitIndex = 'hdcs'.indexOf(suit);
+        
+        // Return the card index (0-51)
+        return rankIndex + (suitIndex * 13);
+    });
+}
+
+/**
+ * Export other utility functions if needed
+ * @param {number} index - Index 0-51 representing a card
+ * @returns {string} Card in format like 'Ah' for Ace of hearts
+ */
+export function convertCardIndex(index) {
+    const ranks = '23456789TJQKA';
+    const suits = 'hdcs';
+    
+    const rankIndex = index % 13;
+    const suitIndex = Math.floor(index / 13);
+    
+    return ranks[rankIndex] + suits[suitIndex];
 } 
