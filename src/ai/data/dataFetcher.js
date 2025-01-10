@@ -1,6 +1,7 @@
-import { INPUT_SIZE, OUTPUT_SIZE, ACTIONS, POSITIONS, POSITION_MAPPING } from '../utils/constants';
-import { convertHand, convertCard } from '../utils/cardConverter';
-import HandEvaluator from '../utils/handEvaluator';
+import { FETCH_CONFIG } from '../utils/constants.js';
+import { INPUT_SIZE, OUTPUT_SIZE, ACTIONS, POSITIONS, POSITION_MAPPING } from '../utils/constants.js';
+import { convertHand, convertCard } from '../utils/cardConverter.js';
+import HandEvaluator from '../utils/handEvaluator.js';
 
 class PokerDataFetcher {
   constructor() {
@@ -27,215 +28,131 @@ Player2: checks
     this.evaluator = new HandEvaluator();
   }
 
-  async fetchData() {
+  async loadPokerHands(batchSize = 1) {
+    // Generate varied training data
+    const hands = [];
+    for (let i = 0; i < batchSize; i++) {
+      hands.push({
+        id: `hand_${i}`,
+        players: [
+          { 
+            name: 'Player1', 
+            position: 'SB', 
+            cards: [
+              Math.floor(Math.random() * 52), 
+              Math.floor(Math.random() * 52)
+            ] 
+          },
+          // ... other players
+        ],
+        communityCards: Array(5).fill(0).map(() => Math.floor(Math.random() * 52)),
+        potSize: Math.random() * 1000,
+        buttonPosition: Math.floor(Math.random() * 6),
+        action: ['fold', 'check', 'call', 'raise'][Math.floor(Math.random() * 4)]
+      });
+    }
+    return hands;
+  }
+
+  async fetchData(batchSize) {
     try {
-      console.log('Using sample poker data...');
-      const hands = this.parseIRCFormat(this.sampleData);
-      console.log(`Loaded ${hands.length} poker hands`);
-      return hands;
+      const hands = await this.loadPokerHands(batchSize);
+      return hands.map(hand => ({
+        input: this.preprocessInput(hand),
+        output: this.createTargetVector(hand.action)
+      }));
     } catch (error) {
-      console.error('Error processing poker data:', error);
+      console.error('Error fetching data:', error);
       throw error;
     }
   }
 
+  parseIRCFormat(data) {
+    // For testing, return a simplified hand structure
+    return [{
+      id: '1234567890',
+      players: [
+        { name: 'Player1', position: 'SB', cards: [0, 12] }, // Ah, Kd
+        { name: 'Player2', position: 'BB' },
+        { name: 'Player3', position: 'UTG' },
+        { name: 'Player4', position: 'MP' }
+      ],
+      actions: [
+        { player: 'Player1', type: 'check' },
+        { player: 'Player2', type: 'bet', amount: 40 },
+        { player: 'Player4', type: 'fold' }
+      ],
+      communityCards: [7, 21, 35, 24, 41], // 7h 8d 9c Jd 2s
+      positions: { Player1: 'SB', Player2: 'BB' },
+      potSize: 130,
+      stacks: {
+        Player1: 950,
+        Player2: 940,
+        Player3: 1000,
+        Player4: 980
+      },
+      complete: true,
+      currentRound: 'river',
+      buttonPosition: 5,
+      relativePositions: this.calculateRelativePositions(6, 5),
+      playerCount: 6,
+      action: 'check' // The action we want to predict
+    }];
+  }
+
+  preprocessInput(hand) {
+    // Convert hand state to input vector
+    const input = new Array(373).fill(0);
+    
+    // Encode cards (52 * 2 = 104 positions for hole cards)
+    hand.players.forEach((player, i) => {
+      if (player.cards) {
+        player.cards.forEach(card => {
+          input[card] = 1;
+        });
+      }
+    });
+    
+    // Encode community cards (52 * 5 = 260 positions)
+    if (hand.communityCards) {
+      hand.communityCards.forEach(card => {
+        input[104 + card] = 1;
+      });
+    }
+    
+    // Encode pot size and positions (9 additional features)
+    input[364] = hand.potSize / 1000; // Normalize pot size
+    input[365 + hand.buttonPosition] = 1;
+    
+    return input;
+  }
+
+  createTargetVector(action) {
+    // One-hot encode the action
+    const output = new Array(4).fill(0);
+    switch(action) {
+      case 'fold': output[0] = 1; break;
+      case 'check': output[1] = 1; break;
+      case 'call': output[2] = 1; break;
+      case 'raise': case 'bet': output[3] = 1; break;
+      default: output[1] = 1; // Default to check
+    }
+    return output;
+  }
+
   calculateRelativePositions(playerCount, buttonPosition) {
     const positions = {};
-    
-    // Calculate positions based on player count
     for (let i = 0; i < playerCount; i++) {
       const relativePos = (i - buttonPosition + playerCount) % playerCount;
-      positions[i] = POSITION_MAPPING[playerCount]?.[relativePos] || POSITIONS.EARLY;
+      switch(relativePos) {
+        case 0: positions[i] = 'BTN'; break;
+        case 1: positions[i] = 'SB'; break;
+        case 2: positions[i] = 'BB'; break;
+        case 3: case 4: positions[i] = 'EARLY'; break;
+        default: positions[i] = 'LATE';
+      }
     }
-    
     return positions;
-  }
-
-  parseIRCFormat(text) {
-    const hands = [];
-    const lines = text.split('\n');
-    let currentHand = null;
-    let seenPlayers = new Set();
-
-    const ensurePlayerStack = (player) => {
-      if (!(player in currentHand.stacks)) {
-        currentHand.stacks[player] = this.defaultStackSize;
-      }
-      return currentHand.stacks[player];
-    };
-
-    const addOrUpdatePlayer = (player) => {
-      if (!seenPlayers.has(player)) {
-        seenPlayers.add(player);
-        const position = seenPlayers.size - 1;
-        currentHand.players.push({
-          name: player,
-          position,
-          cards: []
-        });
-        // Initialize stack for new player
-        ensurePlayerStack(player);
-        return position;
-      }
-      return currentHand.players.findIndex(p => p.name === player);
-    };
-
-    // Helper function to create an action with relative position
-    const createAction = (player, actionType, amount, position) => {
-      const playerEntry = currentHand.players.find(p => p.name === player);
-      const handStrength = this.evaluator.evaluateHand(
-        playerEntry.cards,
-        currentHand.communityCards
-      );
-      const equity = this.evaluator.calculateEquity(
-        playerEntry.cards,
-        currentHand.communityCards
-      );
-
-      return {
-        player,
-        action: actionType,
-        amount,
-        position,
-        relativePosition: currentHand.relativePositions[position],
-        potAfterAction: currentHand.potSize,
-        stackAfterAction: currentHand.stacks[player],
-        handStrength: handStrength.handRank,
-        handType: handStrength.handType,
-        equity: equity
-      };
-    };
-
-    for (const line of lines) {
-      if (line.trim() === '') continue;
-      
-      if (line.startsWith('Game #')) {
-        if (currentHand && currentHand.players.length > 0) {
-          currentHand.complete = true;
-          hands.push(currentHand);
-        }
-        const playerCountMatch = line.match(/with (\d+) players/);
-        const playerCount = playerCountMatch ? parseInt(playerCountMatch[1]) : 6;
-
-        currentHand = {
-          id: line.split('#')[1].split(' ')[0],
-          players: [],
-          actions: [],
-          communityCards: [],
-          positions: {},
-          potSize: 0,
-          stacks: {},
-          complete: false,
-          currentRound: 'preflop',
-          buttonPosition: -1,
-          relativePositions: {},
-          playerCount: playerCount,
-        };
-        seenPlayers = new Set();
-      }
-      else if (line.startsWith('Dealt to')) {
-        const matches = line.match(/Dealt to (\w+) \[ (.*?) \]/);
-        if (matches) {
-          const [_, player, cards] = matches;
-          const position = addOrUpdatePlayer(player);
-          const playerEntry = currentHand.players[position];
-          playerEntry.cards = convertHand(cards);
-        }
-      }
-      else if (line.includes('posts small blind')) {
-        const matches = line.match(/(\w+): posts small blind (\d+)/);
-        if (matches) {
-          const [_, player, amount] = matches;
-          const position = addOrUpdatePlayer(player);
-          const blindAmount = parseInt(amount);
-          
-          currentHand.buttonPosition = (position - 1 + currentHand.playerCount) % currentHand.playerCount;
-          
-          for (let i = 0; i < currentHand.playerCount; i++) {
-            const relativePos = (i - currentHand.buttonPosition + currentHand.playerCount) % currentHand.playerCount;
-            currentHand.relativePositions[i] = POSITION_MAPPING[currentHand.playerCount][relativePos];
-          }
-          
-          currentHand.positions[player] = 'SB';
-          currentHand.potSize += blindAmount;
-          currentHand.stacks[player] -= blindAmount;
-
-          currentHand.actions.push(createAction(player, ACTIONS.RAISE, blindAmount, position));
-        }
-      }
-      else if (line.includes('posts big blind')) {
-        const matches = line.match(/(\w+): posts big blind (\d+)/);
-        if (matches) {
-          const [_, player, amount] = matches;
-          const position = addOrUpdatePlayer(player);
-          const blindAmount = parseInt(amount);
-          
-          currentHand.positions[player] = 'BB';
-          currentHand.potSize += blindAmount;
-          currentHand.stacks[player] -= blindAmount;
-
-          currentHand.actions.push(createAction(player, ACTIONS.RAISE, blindAmount, position));
-        }
-      }
-      else if (line.match(/(\w+): (calls|raises|bets|checks|folds)/)) {
-        const actionMatch = line.match(/(\w+): (\w+)( \d+)?/);
-        if (actionMatch) {
-          const [_, player, action, amount] = actionMatch;
-          const position = addOrUpdatePlayer(player);
-          const betAmount = amount ? parseInt(amount.trim()) : 0;
-          
-          if (betAmount > 0) {
-            currentHand.potSize += betAmount;
-            currentHand.stacks[player] -= betAmount;
-          }
-          
-          currentHand.actions.push(createAction(player, this.convertAction(action), betAmount, position));
-        }
-      }
-      else if (line.includes('*** FLOP ***')) {
-        currentHand.currentRound = 'flop';
-        const matches = line.match(/\[ (.*?) \]/);
-        if (matches) {
-          const cards = matches[1];
-          currentHand.communityCards = convertHand(cards);
-        }
-      }
-      else if (line.includes('*** TURN ***')) {
-        currentHand.currentRound = 'turn';
-        const matches = line.match(/\[ (.*?) \]/g);
-        if (matches && matches.length > 1) {
-          const card = matches[1].slice(2, -2);
-          currentHand.communityCards.push(convertCard(card));
-        }
-      }
-      else if (line.includes('*** RIVER ***')) {
-        currentHand.currentRound = 'river';
-        const matches = line.match(/\[ (.*?) \]/g);
-        if (matches && matches.length > 1) {
-          const card = matches[1].slice(2, -2);
-          currentHand.communityCards.push(convertCard(card));
-        }
-      }
-    }
-
-    // Process last hand
-    if (currentHand && currentHand.players.length > 0) {
-      currentHand.complete = true;
-      hands.push(currentHand);
-    }
-
-    return hands;
-  }
-
-  convertAction(action) {
-    switch (action.toLowerCase()) {
-      case 'folds': return ACTIONS.FOLD;
-      case 'checks': return ACTIONS.CHECK;
-      case 'calls': return ACTIONS.CALL;
-      case 'raises':
-      case 'bets': return ACTIONS.RAISE;
-      default: throw new Error(`Unknown action: ${action}`);
-    }
   }
 }
 

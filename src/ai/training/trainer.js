@@ -1,6 +1,6 @@
 import * as tf from '@tensorflow/tfjs-node';
-import PokerDataLoader from './dataLoader';
-import PokerDataFetcher from '../data/dataFetcher';
+import PokerDataLoader from './dataLoader.js';
+import PokerDataFetcher from '../data/dataFetcher.js';
 
 class PokerTrainer {
   constructor(model, options = {}) {
@@ -24,45 +24,117 @@ class PokerTrainer {
     console.log('Starting training...');
     console.log('Backend:', tf.getBackend());
     
-    const batchIterator = this.dataLoader.generateBatches(this.dataFetcher);
-    const { value: batch } = await batchIterator.next();
-    const metrics = await this.trainStep(batch);
-    
-    // Clean up tensors
-    batch.xs.dispose();
-    batch.ys.dispose();
-    
+    const metrics = {
+      loss: [],
+      accuracy: []
+    };
+
+    tf.engine().startScope(); // Start a new scope
+
+    try {
+      for (let epoch = 0; epoch < this.epochs; epoch++) {
+        const epochMetrics = {
+          loss: 0,
+          accuracy: 0
+        };
+
+        // Training loop
+        for (let step = 0; step < this.stepsPerEpoch; step++) {
+          const batchIterator = this.dataLoader.generateBatches(this.dataFetcher);
+          const { value: batch, done } = await batchIterator.next();
+          
+          if (done) break;
+
+          const stepMetrics = await this.trainStep(batch);
+          epochMetrics.loss += stepMetrics.loss;
+          epochMetrics.accuracy += stepMetrics.accuracy;
+
+          // Clean up tensors
+          batch.xs.dispose();
+          batch.ys.dispose();
+        }
+
+        // Average metrics for epoch
+        epochMetrics.loss /= this.stepsPerEpoch;
+        epochMetrics.accuracy /= this.stepsPerEpoch;
+        
+        metrics.loss.push(epochMetrics.loss);
+        metrics.accuracy.push(epochMetrics.accuracy);
+
+        console.log(
+          `Epoch ${epoch + 1}/${this.epochs}:`,
+          `loss = ${epochMetrics.loss.toFixed(4)},`,
+          `accuracy = ${epochMetrics.accuracy.toFixed(4)}`
+        );
+
+        // Save checkpoint
+        if (this.checkpointPath) {
+          await this.model.save(`file://${this.checkpointPath}-${epoch}`);
+        }
+      }
+    } finally {
+      tf.engine().endScope(); // End the scope in finally block
+    }
+
     return metrics;
   }
 
   async trainStep(batch) {
     const { xs, ys } = batch;
     
-    const metrics = tf.tidy(() => {
-      // Get predictions
-      const predictions = this.model.predict(xs);
+    return tf.tidy(() => {
+      // Get trainable variables - need to get them from the layers
+      const trainableVars = [];
+      this.model.model.layers.forEach(layer => {
+        const weights = layer.getWeights().filter(w => w.trainable);
+        trainableVars.push(...weights);
+      });
+
+      if (trainableVars.length === 0) {
+        throw new Error('No trainable variables found in model');
+      }
+
+      // Compute gradients and loss together
+      const { value: loss, grads } = tf.variableGrads(() => {
+        const predictions = this.model.model.predict(xs);
+        return tf.losses.softmaxCrossEntropy(ys, predictions);
+      }, trainableVars);
       
-      // Calculate loss
-      const loss = tf.losses.softmaxCrossEntropy(ys, predictions).asScalar();
+      // Apply gradients
+      this.model.model.optimizer.applyGradients(grads);
       
-      // Calculate accuracy using argMax comparison
-      const predIndices = predictions.argMax(-1);  // Changed to -1 for last dimension
+      // Calculate accuracy
+      const predictions = this.model.model.predict(xs);
+      const predIndices = predictions.argMax(-1);
       const labelIndices = ys.argMax(-1);
-      const correctPredictions = predIndices.equal(labelIndices);
-      const accuracy = correctPredictions.mean();
-      
-      // Get values synchronously
+      const accuracy = predIndices.equal(labelIndices).mean();
+
       return {
         loss: loss.dataSync()[0],
         accuracy: accuracy.dataSync()[0]
       };
     });
-    
-    return metrics;
   }
 
   dispose() {
-    this.dataLoader.dispose();
+    // Clean up dataLoader
+    if (this.dataLoader) {
+      this.dataLoader.dispose();
+    }
+    
+    // Clean up model
+    if (this.model && this.model.model) {
+      this.model.model.dispose();
+    }
+    
+    // Clean up any remaining variables
+    tf.disposeVariables();
+
+    // Clean up any remaining tensors
+    const backend = tf.getBackend();
+    if (backend === 'webgl') {
+      tf.webgl.forceRestoreContext();
+    }
   }
 }
 

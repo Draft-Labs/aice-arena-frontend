@@ -49,4 +49,12 @@ export const HAND_TYPES = {
   FULL_HOUSE: 7,       // Three of a kind + pair
   FOUR_OF_A_KIND: 8,   // Four cards of same rank
   STRAIGHT_FLUSH: 9    // Straight + flush (includes Royal Flush)
+};
+
+export const MODEL_CONFIG = {
+  INPUT_SIZE: 373,  // Match the input shape from pokerModel.js
+  OUTPUT_SIZE: 4,   // Match the output shape (4 possible actions)
+  HIDDEN_LAYERS: [512, 256, 128],
+  DROPOUT_RATE: 0.3,
+  LEARNING_RATE: 0.0002
 }; 

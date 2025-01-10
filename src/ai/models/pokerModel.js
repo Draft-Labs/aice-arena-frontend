@@ -1,13 +1,13 @@
-import * as tf from '@tensorflow/tfjs';
-import { INPUT_SIZE, OUTPUT_SIZE, ACTIONS } from '../utils/constants';
+import * as tf from '@tensorflow/tfjs-node';
+import { MODEL_CONFIG } from '../utils/constants.js';
 import ModelMetrics from '../utils/metrics';
 import EarlyStopping from '../utils/callbacks';
 
 class PokerModel {
   constructor() {
     this.model = null;
-    this.inputShape = [INPUT_SIZE];
-    this.outputShape = OUTPUT_SIZE;
+    this.inputShape = [MODEL_CONFIG.INPUT_SIZE];
+    this.outputShape = MODEL_CONFIG.OUTPUT_SIZE;
     this.metrics = new ModelMetrics();
     this.earlyStopping = new EarlyStopping({
       patience: 5,
@@ -23,44 +23,76 @@ class PokerModel {
     this.model = tf.sequential({
       layers: [
         tf.layers.dense({
-          inputShape: [373],  // Input features
+          inputShape: [373],
           units: 512,
           activation: 'relu',
-          kernelInitializer: 'glorotNormal'
+          kernelInitializer: 'glorotNormal',
+          useBias: true,
+          trainable: true
         }),
-        tf.layers.batchNormalization(),
+        tf.layers.batchNormalization({
+          trainable: true
+        }),
         tf.layers.dropout({ rate: 0.3 }),
         
         tf.layers.dense({
           units: 256,
           activation: 'relu',
-          kernelInitializer: 'glorotNormal'
+          kernelInitializer: 'glorotNormal',
+          useBias: true,
+          trainable: true
         }),
-        tf.layers.batchNormalization(),
+        tf.layers.batchNormalization({
+          trainable: true
+        }),
         tf.layers.dropout({ rate: 0.3 }),
         
         tf.layers.dense({
           units: 128,
           activation: 'relu',
-          kernelInitializer: 'glorotNormal'
+          kernelInitializer: 'glorotNormal',
+          useBias: true,
+          trainable: true
         }),
-        tf.layers.batchNormalization(),
+        tf.layers.batchNormalization({
+          trainable: true
+        }),
         tf.layers.dropout({ rate: 0.3 }),
         
         tf.layers.dense({
-          units: 4,  // Output classes
+          units: 4,
           activation: 'softmax',
-          kernelInitializer: 'glorotNormal'
+          kernelInitializer: 'glorotNormal',
+          useBias: true,
+          trainable: true
         })
       ]
     });
 
     // Compile model
     this.model.compile({
-      optimizer: tf.train.adam(0.0002),
+      optimizer: tf.train.adam(MODEL_CONFIG.LEARNING_RATE),
       loss: 'categoricalCrossentropy',
       metrics: ['accuracy']
     });
+
+    // Initialize variables by doing a forward pass
+    const dummyData = tf.zeros([1, 373]);
+    this.model.predict(dummyData);
+    dummyData.dispose();
+
+    // Verify trainable variables
+    const trainableVars = [];
+    this.model.layers.forEach(layer => {
+      const weights = layer.getWeights().filter(w => w.trainable);
+      trainableVars.push(...weights);
+    });
+    
+    if (trainableVars.length === 0) {
+      throw new Error('Model initialization failed - no trainable variables found');
+    }
+
+    return this.model;
   }
 
   // Get model summary
@@ -90,41 +122,7 @@ class PokerModel {
     if (!this.model) {
       throw new Error('Model not initialized. Call buildModel() first.');
     }
-    
-    // Ensure input is a tensor and has correct shape
-    const inputTensor = tf.tidy(() => {
-      // If input is already a tensor, use it directly
-      if (input instanceof tf.Tensor) {
-        return input;
-      }
-      
-      // Validate input
-      if (!input) {
-        throw new Error('Input cannot be null or undefined');
-      }
-      
-      // If input is an array or array-like object
-      if (Array.isArray(input) || ArrayBuffer.isView(input)) {
-        return tf.tensor2d(input, [-1, this.inputShape[0]]);
-      }
-      
-      // If input has arraySync method (e.g. another tensor-like object)
-      if (input.arraySync) {
-        return tf.tensor2d(input.arraySync(), [-1, this.inputShape[0]]);
-      }
-      
-      throw new Error('Invalid input type. Expected tensor, array, or tensor-like object');
-    });
-    
-    // Make prediction
-    try {
-      return this.model.predict(inputTensor);
-    } finally {
-      // Clean up if we created a new tensor
-      if (!(input instanceof tf.Tensor)) {
-        inputTensor.dispose();
-      }
-    }
+    return this.model.predict(input);
   }
 
   // Get best action
