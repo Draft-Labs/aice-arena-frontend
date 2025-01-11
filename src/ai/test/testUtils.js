@@ -1,13 +1,20 @@
 import * as tf from '@tensorflow/tfjs';
 
 export async function verifyTensorCleanup(testFn) {
+  // Force initial cleanup
+  tf.disposeVariables();
+  await tf.ready();
+  
   const startTensors = tf.memory().numTensors;
+  let result;
   
   try {
-    await testFn();
+    result = await testFn();
   } finally {
-    // Force garbage collection
-    tf.disposeVariables();
+    // Clean up any remaining tensors
+    tf.engine().disposeVariables();
+    tf.engine().reset(); // Reset the engine completely
+    await tf.ready(); // Ensure backend is ready after cleanup
   }
   
   const endTensors = tf.memory().numTensors;
@@ -22,6 +29,8 @@ export async function verifyTensorCleanup(testFn) {
   if (leaked !== 0) {
     throw new Error(`Memory leak detected: ${leaked} tensors leaked`);
   }
+  
+  return result;
 }
 
 // Add helper for calculating metrics

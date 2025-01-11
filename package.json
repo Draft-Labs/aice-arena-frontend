@@ -42,6 +42,7 @@
     "test:ai-metrics": "vite-node src/ai/test/modelMetrics.test.js",
     "test:ai-scenario": "cross-env NODE_ENV=test vite-node src/ai/test/scenarioTesting.test.js",
     "test:ai-strategy": "vite-node src/ai/test/strategyVerifier.test.js",
+    "test:ai-small-scale": "vite-node src/ai/test/smallScaleTraining.test.js",
     "test:ai": "vite-node src/ai/test.js",
     "eject": "react-scripts eject",
     "test:parser": "vite-node src/ai/test/handHistoryParser.test.js",
