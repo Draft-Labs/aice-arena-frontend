@@ -181,6 +181,14 @@ class PokerModel {
     }
     return false;
   }
+
+  // Add dispose method to clean up resources
+  dispose() {
+    if (this.model) {
+      this.model.dispose();
+      this.model = null;
+    }
+  }
 }
 
 export default PokerModel; 
