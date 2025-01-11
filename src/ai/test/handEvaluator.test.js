@@ -7,15 +7,15 @@ async function testHandEvaluation() {
   const evaluator = new HandEvaluator();
   
   try {
-    // Test basic hand evaluation
+    // Test basic hand evaluation with different suits
     const holeCards = [
       { rank: 12, suit: 0 }, // Ah
-      { rank: 11, suit: 0 }  // Kh
+      { rank: 11, suit: 1 }  // Kd
     ];
     
     const communityCards = [
-      { rank: 10, suit: 0 }, // Qh
-      { rank: 9, suit: 0 },  // Jh
+      { rank: 10, suit: 2 }, // Qc
+      { rank: 9, suit: 3 },  // Js
       { rank: 8, suit: 0 }   // Th
     ];
 

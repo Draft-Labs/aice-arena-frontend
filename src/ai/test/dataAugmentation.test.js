@@ -1,5 +1,5 @@
 import DataAugmenter from '../utils/dataAugmentation';
-import { convertHand } from '../utils/cardConverter';
+import CardConverter from '../utils/cardConverter';
 import { ACTIONS, POSITIONS, POSITION_MAPPING } from '../utils/constants';
 
 // Test edge cases and error conditions
@@ -13,7 +13,7 @@ async function testEdgeCases() {
     augmenter.permuteHoleCards([1]);  // Invalid number of hole cards
     console.assert(false, 'Should throw error for invalid hole cards');
   } catch (e) {
-    console.log('✅ Correctly handled invalid hole cards');
+    console.log('✓ Correctly handled invalid hole cards');
   }
 
   // Test with invalid card numbers
@@ -21,7 +21,7 @@ async function testEdgeCases() {
     augmenter.permuteHoleCards([53, 54]);
     console.assert(false, 'Should throw error for invalid card numbers');
   } catch (e) {
-    console.log('✅ Correctly handled invalid card numbers');
+    console.log('✓ Correctly handled invalid card numbers');
   }
 
   // 2. Action variation edge cases
@@ -80,7 +80,7 @@ async function testEdgeCases() {
     augmenter.augmentWithNoise(incompleteExample);
     console.assert(false, 'Should handle missing properties gracefully');
   } catch (e) {
-    console.log('✅ Correctly handled missing properties');
+    console.log('✓ Correctly handled missing properties');
   }
 
   console.log('\nAll edge cases handled correctly!');
@@ -96,14 +96,14 @@ async function testDataAugmentation() {
   const cardTestCases = [
     {
       name: 'Pocket pair',
-      holeCards: convertHand('Ah As'),
-      communityCards: convertHand('Kh Qd Js'),
+      holeCards: ['Ah', 'As'],  // Use string format directly
+      communityCards: ['Kh', 'Qd', 'Js'],
       expectedPermutations: 2  // Both orderings valid
     },
     {
       name: 'Suited connectors',
-      holeCards: convertHand('Ah Kh'),
-      communityCards: convertHand('Qh Jh Th'),
+      holeCards: ['Ah', 'Kh'],
+      communityCards: ['Qh', 'Jh', 'Th'],
       expectedPermutations: 2  // Both orderings valid
     }
   ];
@@ -163,8 +163,8 @@ async function testDataAugmentation() {
 
     // Test full example augmentation with actions
     const example = {
-      holeCards: convertHand('Ah Kh'),
-      communityCards: convertHand('Qh Jh Th'),
+      holeCards: ['Ah', 'Kh'],
+      communityCards: ['Qh', 'Jh', 'Th'],
       actions: test.actions,
       position: 0
     };
@@ -212,8 +212,8 @@ async function testDataAugmentation() {
     console.log(`\nTesting ${test.name}...`);
     
     const example = {
-      holeCards: convertHand('Ah Kh'),
-      communityCards: convertHand('Qh Jh Th'),
+      holeCards: ['Ah', 'Kh'],
+      communityCards: ['Qh', 'Jh', 'Th'],
       position: test.position,
       actions: [
         { type: ACTIONS.CALL, amount: 10, player: 'Player1', relativePosition: 1 },
@@ -245,8 +245,8 @@ async function testDataAugmentation() {
 
   console.log('\n4. Testing noise injection...');
   const noiseExample = {
-    holeCards: convertHand('Ah Kh'),
-    communityCards: convertHand('Qh Jh Th'),
+    holeCards: ['Ah', 'Kh'],
+    communityCards: ['Qh', 'Jh', 'Th'],
     stackSize: 1000,
     potSize: 100,
     actions: [

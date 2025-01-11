@@ -15,9 +15,6 @@ class DataAugmenter {
 
   /**
    * Add Gaussian noise to a numeric value
-   * @param {number} value - Original value
-   * @param {number} noiseFactor - Standard deviation as percentage of value
-   * @returns {number} Value with added noise
    */
   addNoise(value, noiseFactor) {
     if (!Number.isFinite(value) || !Number.isFinite(noiseFactor)) {
@@ -30,6 +27,7 @@ class DataAugmenter {
     const noise = Math.sqrt(-2.0 * Math.log(u1)) * 
                   Math.cos(2.0 * Math.PI * u2) * 
                   value * noiseFactor;
+    
     // Clamp noise to ±10% of original value
     const noiseValue = value + noise;
     const minValue = value * 0.9;
@@ -39,8 +37,6 @@ class DataAugmenter {
 
   /**
    * Generate variations with noise added to continuous values
-   * @param {Object} example - Training example
-   * @returns {Array<Object>} Array of examples with noise
    */
   generateNoiseVariations(example) {
     if (!example || typeof example !== 'object') {
@@ -81,17 +77,10 @@ class DataAugmenter {
 
   /**
    * Generate permutations of hole cards while preserving hand strength
-   * @param {Array<number>} holeCards - Array of 2 card numbers (1-52)
-   * @param {Array<number>} communityCards - Array of community cards
-   * @returns {Array<Array<number>>} Array of valid hole card permutations
    */
   permuteHoleCards(holeCards, communityCards = []) {
     if (!Array.isArray(holeCards) || holeCards.length !== 2) {
       throw new Error('Hole cards must be exactly 2 cards');
-    }
-    // Validate card numbers
-    if (holeCards.some(card => card < 1 || card > 52)) {
-      throw new Error('Invalid card numbers. Must be between 1 and 52');
     }
 
     // Get original hand strength
@@ -109,7 +98,7 @@ class DataAugmenter {
       const newStrength = this.evaluator.evaluateHand(candidate, communityCards);
       if (newStrength.handType === originalStrength.handType && 
           newStrength.handRank === originalStrength.handRank) {
-        permutations.push(candidate);
+        permutations.push([...candidate]); // Create a new array to avoid reference issues
       }
     }
 
@@ -118,26 +107,27 @@ class DataAugmenter {
 
   /**
    * Augment a single training example
-   * @param {Object} example - Training example with holeCards and communityCards
-   * @returns {Array<Object>} Array of augmented examples
    */
   augmentExample(example) {
-    const augmented = [];
-    
-    // Add original example
-    augmented.push(example);
+    if (!example.holeCards || !Array.isArray(example.holeCards)) {
+      throw new Error('Example must have hole cards array');
+    }
 
-    // Add permuted hole card examples
-    const holeCardPermutations = this.permuteHoleCards(
+    const augmented = [];
+    const permutations = this.permuteHoleCards(
       example.holeCards,
-      example.communityCards
+      example.communityCards || []
     );
 
-    for (const holeCards of holeCardPermutations) {
-      if (holeCards !== example.holeCards) {
+    // Add each unique permutation (including original)
+    const seen = new Set();
+    for (const cards of permutations) {
+      const key = cards.join(',');
+      if (!seen.has(key)) {
+        seen.add(key);
         augmented.push({
           ...example,
-          holeCards
+          holeCards: [...cards]
         });
       }
     }
@@ -147,8 +137,6 @@ class DataAugmenter {
 
   /**
    * Generate variations of action sequences
-   * @param {Array} actions - Array of poker actions
-   * @returns {Array} Array of valid action sequence variations
    */
   generateActionVariations(actions) {
     const variations = [];
@@ -190,9 +178,6 @@ class DataAugmenter {
 
   /**
    * Generate position rotations that preserve relative positions
-   * @param {number} position - Original position (0-5)
-   * @param {number} playerCount - Number of players (6-max supported)
-   * @returns {Array<number>} Array of equivalent positions
    */
   generatePositionRotations(position, playerCount = 6) {
     if (position < 0 || position >= 6 || !Number.isInteger(position)) {
@@ -217,8 +202,6 @@ class DataAugmenter {
 
   /**
    * Augment example with position rotations
-   * @param {Object} example - Training example with position
-   * @returns {Array<Object>} Array of position-rotated examples
    */
   augmentPositions(example) {
     const rotations = this.generatePositionRotations(example.position);
