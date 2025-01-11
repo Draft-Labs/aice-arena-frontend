@@ -10,6 +10,10 @@ class LRScheduler {
     this.warmupSteps = options.warmupSteps || 1000;
   }
 
+  getLearningRate() {
+    return this.currentLR;
+  }
+
   update(step) {
     console.log('\nLR Scheduler Update:', {
       step,

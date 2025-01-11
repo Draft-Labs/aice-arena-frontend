@@ -1,5 +1,5 @@
 // Neural Network Input/Output dimensions
-export const INPUT_SIZE = 1024;  // Total size of input feature vector
+export const INPUT_SIZE = 373;  // Total size of input feature vector
 
 export const OUTPUT_SIZE = 4;   // Action space:
                                // - FOLD
