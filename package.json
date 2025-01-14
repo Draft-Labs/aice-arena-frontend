@@ -46,7 +46,9 @@
     "test:ai": "vite-node src/ai/test.js",
     "eject": "react-scripts eject",
     "test:parser": "vite-node src/ai/test/handHistoryParser.test.js",
-    "test:cards": "vite-node src/ai/test/cardConverter.test.js"
+    "test:cards": "vite-node src/ai/test/cardConverter.test.js",
+    "test:integration": "jest src/ai/test/integration.test.js",
+    "test:verification": "jest src/ai/test/technicalVerification.js"
   },
   "eslintConfig": {
     "extends": [

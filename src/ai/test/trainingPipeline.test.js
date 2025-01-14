@@ -5,6 +5,7 @@ process.env.NODE_ENV = 'test';
 import * as tf from '@tensorflow/tfjs';
 import PokerModel from '../models/pokerModel.js';
 import PokerTrainer from '../training/trainer.js';
+import PerformanceMetrics from '../utils/performanceMetrics.js';
 
 async function testTrainingPipeline() {
   console.log('Starting pipeline test...');
@@ -89,4 +90,6 @@ testTrainingPipeline()
     console.error('\nTest error:', error);
     tf.disposeVariables();
     process.exit(1);
-  }); 
+  });
+
+export default testTrainingPipeline; 

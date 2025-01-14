@@ -6,6 +6,9 @@ import LRScheduler from '../utils/lrScheduler';
 import BatchSizeScheduler from '../utils/batchSizeScheduler';
 import ArchitectureSearch from '../utils/architectureSearch';
 import ModelMetrics from '../utils/metrics';
+import ValidationSystem from '../utils/validationSystem';
+import PerformanceMetrics from '../utils/performanceMetrics.js';
+import TechnicalVerification from '../utils/technicalVerification';
 
 class TrainingPipeline {
   constructor(options = {}) {
@@ -72,45 +75,42 @@ class TrainingPipeline {
     this.architectureSearch = options.architectureSearch || false;
 
     this.metrics = new ModelMetrics();
+
+    // Add new components
+    this.validationSystem = new ValidationSystem(this.model, this.trainer.dataLoader);
+    this.metrics = new PerformanceMetrics();
+    this.technicalVerification = new TechnicalVerification();
   }
 
   async train() {
-    console.log('Initializing training pipeline...');
-    await this.initializeTraining();
-
     try {
-      // Optionally run architecture search
-      if (this.architectureSearch) {
-        console.log('Running architecture search...');
-        const searcher = new ArchitectureSearch({
-          maxLayers: 4,
-          populationSize: 8,
-          generations: 3
-        });
-
-        const bestConfig = await searcher.search(
-          this.trainer.getTrainData(),
-          this.trainer.getValidationData()
-        );
-
-        console.log('Best architecture found:', bestConfig);
-        this.model = searcher.createModel(bestConfig);
-        this.config.learningRate = bestConfig.learningRate;
-        this.config.batchSize = bestConfig.batchSize;
-      }
-
+      // Verify system before training
+      await this.technicalVerification.verifyTrainingPipeline();
+      
       while (this.shouldContinueTraining()) {
-        await this.runEpoch();
+        // Run optimized training loop with gradient accumulation
+        const metrics = await this.accumulateGradients(4);
+        
+        // Update metrics and history
+        this.metrics.updateTrainingMetrics(metrics);
+        this.updateHistory(metrics);
+        
+        // Run validation if needed
+        if (this.state.currentEpoch % this.config.validationFrequency === 0) {
+          const valMetrics = await this.validationSystem.validateEpoch();
+          await this.updateValidationMetrics(valMetrics);
+        }
+        
+        // Memory management and checkpointing
         await this.validateAndSave();
         this.updateLearningRate();
         this.logProgress();
+        
+        this.state.currentEpoch++;
       }
-
-      console.log('Training completed');
-      return this.state;
-
+      
+      return this.metrics.getFormattedMetrics();
     } catch (error) {
-      console.error('Training error:', error);
       await this.handleError(error);
       throw error;
     } finally {
@@ -441,6 +441,51 @@ class TrainingPipeline {
       loss: totalLoss / batchCount,
       accuracy: totalAccuracy / batchCount
     };
+  }
+
+  async optimizedTrainingLoop() {
+    const GRADIENT_ACCUMULATION_STEPS = 4;
+    let accumulatedGradients = null;
+    
+    for (let epoch = 0; epoch < this.config.maxEpochs; epoch++) {
+      const epochStartTime = Date.now();
+      let batchCount = 0;
+      
+      while (batchCount < this.stepsPerEpoch) {
+        // Gradient accumulation loop
+        for (let step = 0; step < GRADIENT_ACCUMULATION_STEPS; step++) {
+          const batch = await this.dataLoader.nextBatch(this.config.batchSize);
+          
+          const { gradients, metrics } = await tf.tidy(() => {
+            const predictions = this.model.predict(batch.xs);
+            const loss = this.calculateLoss(predictions, batch.ys);
+            return tf.variableGrads(() => loss);
+          });
+          
+          // Accumulate gradients
+          if (!accumulatedGradients) {
+            accumulatedGradients = gradients;
+          } else {
+            Object.keys(gradients).forEach(key => {
+              accumulatedGradients[key].addStrict(gradients[key].div(GRADIENT_ACCUMULATION_STEPS));
+            });
+          }
+          
+          // Clean up batch tensors
+          tf.dispose([batch.xs, batch.ys]);
+        }
+        
+        // Apply accumulated gradients
+        this.optimizer.applyGradients(accumulatedGradients);
+        accumulatedGradients = null;
+        batchCount++;
+      }
+      
+      // Validation and checkpointing
+      await this.validateAndSave();
+      this.updateLearningRate();
+      this.logProgress();
+    }
   }
 }
 

@@ -54,8 +54,8 @@ A React-based frontend application for the decentralized betting platform. This 
 - ✅ Data processing pipeline
 - ✅ Input/output formatting
 - ✅ Testing framework
-- [ ] Training loop optimization
-- [ ] Performance metrics
+- ✅ Training loop optimization
+- ✅ Performance metrics
 - [ ] Model validation
 - [ ] Technical verification
 
