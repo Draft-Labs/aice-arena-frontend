@@ -9,7 +9,16 @@ class PerformanceMetrics {
         timePerBatch: [],
         memoryUsage: [],
         gradientNorm: [],
-        learningRate: []
+        learningRate: {
+          values: [],
+          schedule: {
+            warmupSteps: 0,
+            initialLR: 0,
+            currentLR: 0,
+            minLR: 0,
+            decayRate: 0
+          }
+        }
       },
       validation: {
         streetAccuracy: {
@@ -25,9 +34,12 @@ class PerformanceMetrics {
       epoch: {
         current: 0,
         total: 0,
-        startTime: null
+        startTime: null,
+        bestValLoss: Infinity,
+        patience: 5
       }
     };
+    this.lastBatchTime = null;
   }
 
   startEpoch(epochNumber, totalEpochs) {
@@ -49,16 +61,33 @@ class PerformanceMetrics {
       this.metrics.training.timePerBatch.push(timePerBatch);
       
       if (currentLR !== null) {
-        this.metrics.training.learningRate.push(currentLR);
+        this.metrics.training.learningRate.values.push(currentLR);
       }
 
       // Calculate gradient norm if we're in training mode
       if (predictions.trainable) {
-        const gradients = tf.grads(loss);
-        const gradientNorm = tf.norm(gradients).dataSync()[0];
-        this.metrics.training.gradientNorm.push(gradientNorm);
+        return tf.tidy(() => {
+          const gradients = tf.grads(loss);
+          const gradientNorm = tf.norm(gradients).dataSync()[0];
+          this.metrics.training.gradientNorm.push(gradientNorm);
+          return { loss, accuracy, gradientNorm };
+        });
       }
+
+      return { loss, accuracy };
     });
+  }
+
+  updateValidation(valLoss, valAccuracy) {
+    // Early stopping check
+    if (valLoss < this.metrics.epoch.bestValLoss) {
+      this.metrics.epoch.bestValLoss = valLoss;
+      this.metrics.epoch.patience = 5; // Reset patience
+      return true; // Model improved
+    } else {
+      this.metrics.epoch.patience--;
+      return this.metrics.epoch.patience > 0; // Continue if patience remains
+    }
   }
 
   calculateAccuracy(predictions, labels) {
@@ -84,12 +113,17 @@ class PerformanceMetrics {
         accuracy: this.metrics.training.accuracy[this.metrics.training.accuracy.length - 1],
         memoryUsage: this.metrics.training.memoryUsage[this.metrics.training.memoryUsage.length - 1],
         averageTimePerBatch: this.calculateAverage(this.metrics.training.timePerBatch),
-        learningRate: this.metrics.training.learningRate[this.metrics.training.learningRate.length - 1],
+        learningRate: {
+          current: this.metrics.training.learningRate.values[this.metrics.training.learningRate.values.length - 1],
+          schedule: this.metrics.training.learningRate.schedule
+        },
         gradientNorm: this.calculateAverage(this.metrics.training.gradientNorm)
       },
       validation: {
         streetAccuracy: this.metrics.validation.streetAccuracy,
-        betSizingError: this.metrics.validation.betSizingError[this.metrics.validation.betSizingError.length - 1]
+        betSizingError: this.metrics.validation.betSizingError[this.metrics.validation.betSizingError.length - 1],
+        bestLoss: this.metrics.epoch.bestValLoss,
+        patienceRemaining: this.metrics.epoch.patience
       },
       epoch: {
         current: this.metrics.epoch.current,
@@ -103,6 +137,66 @@ class PerformanceMetrics {
     return array.length > 0 
       ? array.reduce((a, b) => a + b) / array.length 
       : 0;
+  }
+
+  reset() {
+    this.metrics.training.loss = [];
+    this.metrics.training.accuracy = [];
+    this.metrics.training.timePerBatch = [];
+    this.metrics.training.memoryUsage = [];
+    this.metrics.training.gradientNorm = [];
+    this.metrics.training.learningRate.values = [];
+    this.metrics.epoch.bestValLoss = Infinity;
+    this.metrics.epoch.patience = 5;
+    this.lastBatchTime = null;
+  }
+
+  updateLearningRate(lrConfig) {
+    const { currentLR, warmupSteps, initialLR, minLR, decayRate, schedule } = lrConfig;
+    
+    // Store previous values for change rate calculation
+    const previousLR = this.metrics.training.learningRate.values[this.metrics.training.learningRate.values.length - 1] || currentLR;
+    this.metrics.training.learningRate.values.push(currentLR);
+    
+    // Update schedule config
+    this.metrics.training.learningRate.schedule = {
+      warmupSteps,
+      initialLR,
+      currentLR,
+      minLR,
+      decayRate,
+      schedule
+    };
+
+    // Validate warmup steps
+    if (warmupSteps > 1000) {
+      console.warn(`Warmup steps (${warmupSteps}) may be too high for dataset size`);
+    }
+
+    // Check learning rate bounds
+    if (currentLR < minLR) {
+      console.warn(`Learning rate ${currentLR} below minimum ${minLR}`);
+    }
+    if (currentLR > initialLR) {
+      console.warn(`Learning rate ${currentLR} above initial ${initialLR}`);
+    }
+
+    // Calculate and validate learning rate change
+    const lrChangeRate = (currentLR - previousLR) / previousLR;
+    const isInWarmup = this.metrics.training.learningRate.values.length < warmupSteps;
+    
+    if (isInWarmup) {
+      // Track warmup progress
+      const warmupProgress = this.metrics.training.learningRate.values.length / warmupSteps;
+      this.metrics.training.learningRate.schedule.warmupProgress = warmupProgress;
+      
+      // Warn if warmup is too slow
+      if (warmupProgress > 0.1 && lrChangeRate < 0.01) {
+        console.warn(`Learning rate increasing too slowly during warmup (change rate: ${lrChangeRate.toFixed(4)})`);
+      }
+    } else if (schedule === 'exponential' && decayRate >= 1.0) {
+      console.warn(`Exponential decay rate (${decayRate}) should be less than 1.0 for proper decay`);
+    }
   }
 }
 
