@@ -17,19 +17,29 @@ async function trainSmallScale() {
     await model.buildModel();
     console.log('Model initialized');
 
-    // Load small dataset
-    await dataLoader.loadData(1000); // Start with 1000 hands
+    // Load larger dataset
+    await dataLoader.loadData(10000); // Increased from 1000 hands
     console.log('Data loaded');
 
     // Training configuration
     const trainConfig = {
-      epochs: 10,
-      batchSize: 32,
+      epochs: 20,
+      batchSize: 64,
       validationSplit: 0.2,
       shuffle: true,
       callbacks: {
         onEpochEnd: (epoch, logs) => {
-          console.log(`Epoch ${epoch + 1}: loss = ${logs.loss.toFixed(4)}, accuracy = ${logs.acc.toFixed(4)}`);
+          console.log(`Epoch ${epoch + 1}/${trainConfig.epochs}:`);
+          console.log(`  Loss: ${logs.loss.toFixed(4)}`);
+          console.log(`  Accuracy: ${logs.acc.toFixed(4)}`);
+          console.log(`  Val Loss: ${logs.val_loss.toFixed(4)}`);
+          console.log(`  Val Accuracy: ${logs.val_acc.toFixed(4)}`);
+        },
+        onBatchEnd: (batch, logs) => {
+          if (batch % 10 === 0) {
+            const memoryInfo = tf.memory();
+            console.log(`  Batch ${batch}: Memory usage: ${(memoryInfo.numBytes / 1024 / 1024).toFixed(2)}MB`);
+          }
         }
       }
     };

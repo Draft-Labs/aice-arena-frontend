@@ -8,7 +8,36 @@ class PokerModel {
     this.model = null;
     this.inputShape = [MODEL_CONFIG.INPUT_SIZE];
     this.outputShape = MODEL_CONFIG.OUTPUT_SIZE;
-    this.metrics = new ModelMetrics();
+    this.metrics = {
+      loss: [],
+      accuracy: [],
+      predictions: [],
+      labels: [],
+      reset: function() {
+        this.loss = [];
+        this.accuracy = [];
+        this.predictions = [];
+        this.labels = [];
+      },
+      update: function(values) {
+        if (values.loss) this.loss.push(values.loss);
+        if (values.accuracy) this.accuracy.push(values.accuracy);
+        if (values.predictions) this.predictions.push(values.predictions);
+        if (values.labels) this.labels.push(values.labels);
+      },
+      getMetrics: function() {
+        return {
+          loss: this.loss,
+          accuracy: this.accuracy,
+          averageLoss: this.loss.length > 0 
+            ? this.loss.reduce((a, b) => a + b) / this.loss.length 
+            : 0,
+          averageAccuracy: this.accuracy.length > 0 
+            ? this.accuracy.reduce((a, b) => a + b) / this.accuracy.length 
+            : 0
+        };
+      }
+    };
     this.earlyStopping = new EarlyStopping({
       patience: 5,
       minDelta: 0.001,
