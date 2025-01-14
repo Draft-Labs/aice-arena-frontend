@@ -59,7 +59,16 @@ A React-based frontend application for the decentralized betting platform. This 
 - [ ] Model validation
 - [ ] Technical verification
 
-#### Phase 8: Game Integration
+#### Phase 8: Training Agent
+- ✅ Define the Dataset Requirements
+- ✅ Create a Data Generation Script
+- ✅ Implement Data Encoding
+- [ ] Integrate with DataLoader
+- [ ] Test the Data Generation
+- [ ] Prepare the Dataset for Training
+- [ ] Monitor and Adjust Training Parameters
+
+#### Phase 9: Game Integration
 - [ ] Model serving system
 - [ ] Real-time inference
 - [ ] Performance optimization
