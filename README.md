@@ -63,8 +63,8 @@ A React-based frontend application for the decentralized betting platform. This 
 - ✅ Define the Dataset Requirements
 - ✅ Create a Data Generation Script
 - ✅ Implement Data Encoding
-- [ ] Integrate with DataLoader
-- [ ] Test the Data Generation
+- ✅ Integrate with DataLoader
+- ✅ Test the Data Generation
 - [ ] Prepare the Dataset for Training
 - [ ] Monitor and Adjust Training Parameters
 

@@ -1,4 +1,5 @@
 import * as tf from '@tensorflow/tfjs';
+import PokerDataGenerator from '../data/dataGenerator.js';
 
 class PokerDataLoader {
   constructor(options = {}) {
@@ -8,32 +9,20 @@ class PokerDataLoader {
     this.shuffledIndices = [];
   }
 
-  async loadData() {
+  async loadData(numHands = 1000) {
     try {
-      // Generate dummy data for testing
-      const numSamples = 1000;
-      const inputDim = 373;
-      const outputDim = 4;
+      // Use PokerDataGenerator to generate data
+      const generator = new PokerDataGenerator(numHands);
+      const dataset = generator.generateDataset();
 
-      // Generate dummy input data
-      const xs = tf.randomNormal([numSamples, inputDim]);
-      
-      // Generate dummy output data (one-hot encoded)
-      const ys = tf.oneHot(
-        tf.randomUniform([numSamples], 0, 4, 'int32'),
-        outputDim
-      );
+      // Convert dataset to tensors
+      const xs = tf.tensor2d(dataset.map(d => d.input));
+      const ys = tf.tensor2d(dataset.map(d => d.output));
 
-      this.data = {
-        xs: xs,
-        ys: ys
-      };
+      this.data = { xs, ys };
 
       // Create shuffled indices
-      this.shuffledIndices = Array.from(
-        { length: numSamples }, 
-        (_, i) => i
-      );
+      this.shuffledIndices = Array.from({ length: numHands }, (_, i) => i);
       this.shuffleData();
       this.currentIndex = 0;
 

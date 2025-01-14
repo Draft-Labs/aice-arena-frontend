@@ -11,7 +11,7 @@ async function testDataLoader() {
   try {
     // Test data loading
     console.log('\nTesting data loading...');
-    await loader.loadData();
+    await loader.loadData(1000); // Specify number of hands to generate
     
     // Test batch generation
     console.log('\nTesting batch generation...');

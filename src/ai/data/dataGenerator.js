@@ -1,5 +1,5 @@
 import { convertCardToIndex } from '../utils/cardConverter.js';
-import { ACTIONS, POSITIONS } from '../utils/constants.js';
+import { ACTIONS, POSITIONS, MODEL_CONFIG } from '../utils/constants.js';
 import HandEvaluator from '../utils/handEvaluator.js';
 
 class PokerDataGenerator {
@@ -19,10 +19,10 @@ class PokerDataGenerator {
   generateRandomHand() {
     const holeCards = [this.generateRandomCard(), this.generateRandomCard()];
     const communityCards = Array(5).fill(null).map(() => this.generateRandomCard());
-    const position = POSITIONS[Math.floor(Math.random() * POSITIONS.length)];
+    const position = Object.keys(POSITIONS)[Math.floor(Math.random() * Object.keys(POSITIONS).length)];
     const stackSize = Math.random() * 1000;
     const potSize = Math.random() * 1000;
-    const action = ACTIONS[Math.floor(Math.random() * ACTIONS.length)];
+    const action = Object.values(ACTIONS)[Math.floor(Math.random() * Object.values(ACTIONS).length)];
 
     return {
       holeCards,
@@ -50,7 +50,8 @@ class PokerDataGenerator {
     });
 
     // Encode position
-    const positionIndex = POSITIONS.indexOf(hand.position);
+    const positionKeys = Object.keys(POSITIONS);
+    const positionIndex = positionKeys.indexOf(hand.position);
     input[364 + positionIndex] = 1;
 
     // Normalize stack size and pot size
@@ -62,8 +63,8 @@ class PokerDataGenerator {
 
   createTargetVector(action) {
     const output = new Array(4).fill(0);
-    const actionIndex = ACTIONS.indexOf(action);
-    if (actionIndex !== -1) {
+    const actionIndex = MODEL_CONFIG.ACTION_MAP[action];
+    if (actionIndex !== undefined) {
       output[actionIndex] = 1;
     }
     return output;
@@ -80,6 +81,8 @@ class PokerDataGenerator {
     return dataset;
   }
 }
+
+export default PokerDataGenerator;
 
 // Usage
 const generator = new PokerDataGenerator(10000);
