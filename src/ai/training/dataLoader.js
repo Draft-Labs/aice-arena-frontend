@@ -4,6 +4,7 @@ import PokerDataGenerator from '../data/dataGenerator.js';
 class PokerDataLoader {
   constructor(options = {}) {
     this.batchSize = options.batchSize || 32;
+    this.validationSplit = options.validationSplit || 0.2;
     this.currentIndex = 0;
     this.data = [];
     this.shuffledIndices = [];
@@ -11,9 +12,14 @@ class PokerDataLoader {
 
   async loadData(numHands = 1000) {
     try {
-      // Use PokerDataGenerator to generate data
       const generator = new PokerDataGenerator(numHands);
       const dataset = generator.generateDataset();
+
+      // Normalize features
+      dataset.forEach(d => {
+        d.input[364] /= 1000; // Normalize stack size
+        d.input[365] /= 1000; // Normalize pot size
+      });
 
       // Convert dataset to tensors
       const xs = tf.tensor2d(dataset.map(d => d.input));
@@ -21,8 +27,11 @@ class PokerDataLoader {
 
       this.data = { xs, ys };
 
-      // Create shuffled indices
-      this.shuffledIndices = Array.from({ length: numHands }, (_, i) => i);
+      // Split data into training and validation sets
+      const numValidationSamples = Math.floor(numHands * this.validationSplit);
+      this.trainIndices = Array.from({ length: numHands - numValidationSamples }, (_, i) => i);
+      this.validationIndices = Array.from({ length: numValidationSamples }, (_, i) => numHands - numValidationSamples + i);
+
       this.shuffleData();
       this.currentIndex = 0;
 
@@ -34,11 +43,10 @@ class PokerDataLoader {
   }
 
   shuffleData() {
-    // Fisher-Yates shuffle
-    for (let i = this.shuffledIndices.length - 1; i > 0; i--) {
+    for (let i = this.trainIndices.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
-      [this.shuffledIndices[i], this.shuffledIndices[j]] = 
-      [this.shuffledIndices[j], this.shuffledIndices[i]];
+      [this.trainIndices[i], this.trainIndices[j]] = 
+      [this.trainIndices[j], this.trainIndices[i]];
     }
   }
 
@@ -48,33 +56,38 @@ class PokerDataLoader {
     }
 
     return tf.tidy(() => {
-      // Get batch indices
-      const batchIndices = this.shuffledIndices.slice(
+      const batchIndices = this.trainIndices.slice(
         this.currentIndex,
         this.currentIndex + batchSize
       );
 
-      // Convert indices to tensor
       const indicesTensor = tf.tensor1d(batchIndices, 'int32');
 
-      // Update current index
       this.currentIndex += batchSize;
-      if (this.currentIndex >= this.shuffledIndices.length) {
+      if (this.currentIndex >= this.trainIndices.length) {
         this.currentIndex = 0;
         this.shuffleData();
       }
 
-      // Gather batch data using tensor indices
       const batchXs = tf.gather(this.data.xs, indicesTensor);
       const batchYs = tf.gather(this.data.ys, indicesTensor);
 
-      // Clean up the indices tensor
       indicesTensor.dispose();
 
       return {
         xs: batchXs,
         ys: batchYs
       };
+    });
+  }
+
+  getValidationData() {
+    return tf.tidy(() => {
+      const indicesTensor = tf.tensor1d(this.validationIndices, 'int32');
+      const validationXs = tf.gather(this.data.xs, indicesTensor);
+      const validationYs = tf.gather(this.data.ys, indicesTensor);
+      indicesTensor.dispose();
+      return { xs: validationXs, ys: validationYs };
     });
   }
 
