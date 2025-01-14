@@ -51,7 +51,8 @@
     "test:ai-parser": "vite-node src/ai/test/handHistoryParser.test.js",
     "test:ai-cards": "vite-node src/ai/test/cardConverter.test.js",
     "test:integration": "jest src/ai/test/integration.test.js",
-    "test:verification": "jest src/ai/test/technicalVerification.js"
+    "test:verification": "jest src/ai/test/technicalVerification.js",
+    "test:data-preparation": "vite-node src/ai/test/dataPreparation.test.js"
   },
   "eslintConfig": {
     "extends": [

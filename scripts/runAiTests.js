@@ -21,7 +21,8 @@ const tests = [
   { name: 'Strategy Verification', command: 'test:ai-strategy' },
   { name: 'Small Scale Training', command: 'test:ai-small-scale' },
   { name: 'Hand History Parser', command: 'test:ai-parser', optional: true },
-  { name: 'Card Conversion', command: 'test:ai-cards', optional: true }
+  { name: 'Card Conversion', command: 'test:ai-cards', optional: true },
+  { name: 'Data Preparation', command: 'test:data-preparation' },
 ];
 
 async function runTests() {

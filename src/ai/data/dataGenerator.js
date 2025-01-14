@@ -1,90 +1,88 @@
-import { convertCardToIndex } from '../utils/cardConverter.js';
-import { ACTIONS, POSITIONS, MODEL_CONFIG } from '../utils/constants.js';
-import HandEvaluator from '../utils/handEvaluator.js';
+import * as tf from '@tensorflow/tfjs';
 
 class PokerDataGenerator {
-  constructor(numHands) {
+  constructor(numHands = 100) {
     this.numHands = numHands;
-    this.evaluator = new HandEvaluator();
-  }
-
-  generateRandomCard() {
-    const ranks = '23456789TJQKA';
-    const suits = 'hsdc'; // hearts, spades, diamonds, clubs
-    const rank = ranks[Math.floor(Math.random() * ranks.length)];
-    const suit = suits[Math.floor(Math.random() * suits.length)];
-    return `${rank}${suit}`;
-  }
-
-  generateRandomHand() {
-    const holeCards = [this.generateRandomCard(), this.generateRandomCard()];
-    const communityCards = Array(5).fill(null).map(() => this.generateRandomCard());
-    const position = Object.keys(POSITIONS)[Math.floor(Math.random() * Object.keys(POSITIONS).length)];
-    const stackSize = Math.random() * 1000;
-    const potSize = Math.random() * 1000;
-    const action = Object.values(ACTIONS)[Math.floor(Math.random() * Object.values(ACTIONS).length)];
-
-    return {
-      holeCards,
-      communityCards,
-      position,
-      stackSize,
-      potSize,
-      action
-    };
-  }
-
-  encodeHand(hand) {
-    const input = new Array(373).fill(0);
-
-    // Encode hole cards
-    hand.holeCards.forEach(card => {
-      const index = convertCardToIndex(card);
-      input[index] = 1;
-    });
-
-    // Encode community cards
-    hand.communityCards.forEach(card => {
-      const index = convertCardToIndex(card);
-      input[104 + index] = 1;
-    });
-
-    // Encode position
-    const positionKeys = Object.keys(POSITIONS);
-    const positionIndex = positionKeys.indexOf(hand.position);
-    input[364 + positionIndex] = 1;
-
-    // Normalize stack size and pot size
-    input[364] = hand.stackSize / 1000;
-    input[365] = hand.potSize / 1000;
-
-    return input;
-  }
-
-  createTargetVector(action) {
-    const output = new Array(4).fill(0);
-    const actionIndex = MODEL_CONFIG.ACTION_MAP[action];
-    if (actionIndex !== undefined) {
-      output[actionIndex] = 1;
-    }
-    return output;
   }
 
   generateDataset() {
     const dataset = [];
+    
     for (let i = 0; i < this.numHands; i++) {
-      const hand = this.generateRandomHand();
-      const input = this.encodeHand(hand);
-      const output = this.createTargetVector(hand.action);
-      dataset.push({ input, output });
+      const hand = this.generateHand();
+      dataset.push({
+        input: this.encodeInput(hand),
+        output: this.encodeOutput(hand.action)
+      });
     }
+    
     return dataset;
+  }
+
+  generateHand() {
+    // Generate 2 unique hole cards
+    const holeCards = this.generateUniqueCards(2);
+    // Generate up to 5 unique community cards
+    const communityCards = this.generateUniqueCards(5, holeCards);
+    
+    return {
+      holeCards,
+      communityCards,
+      position: Math.floor(Math.random() * 6), // 0-5 for BTN,SB,BB,UTG,MP,CO
+      stackSize: 500 + Math.random() * 1500,  // 500-2000 chips
+      potSize: 20 + Math.random() * 480,      // 20-500 chips
+      action: Math.floor(Math.random() * 4)    // 0-3 for fold,check,call,raise
+    };
+  }
+
+  generateUniqueCards(count, existingCards = []) {
+    const cards = [];
+    const usedCards = new Set(existingCards);
+    
+    while (cards.length < count) {
+      const card = Math.floor(Math.random() * 52);
+      if (!usedCards.has(card)) {
+        cards.push(card);
+        usedCards.add(card);
+      }
+    }
+    
+    return cards;
+  }
+
+  encodeInput(hand) {
+    const input = new Float32Array(373);
+    
+    // Encode hole cards (0-103)
+    hand.holeCards.forEach(card => {
+      input[card] = 1;
+    });
+    
+    // Encode community cards (104-363)
+    hand.communityCards.forEach(card => {
+      input[104 + card] = 1;
+    });
+    
+    // Encode position (364-369)
+    input[364 + hand.position] = 1;
+    
+    // Encode stack size (370)
+    input[370] = hand.stackSize / 2000; // Normalize by max stack
+    
+    // Encode pot size (371)
+    input[371] = hand.potSize / 500;    // Normalize by max pot
+    
+    // Encode pot odds (372)
+    input[372] = hand.potSize > 0 ? (20 / hand.potSize) : 0;
+    
+    return input;
+  }
+
+  encodeOutput(action) {
+    const output = new Float32Array(4);
+    output[action] = 1;
+    return output;
   }
 }
 
 export default PokerDataGenerator;
-
-// Usage
-const generator = new PokerDataGenerator(10000);
-const dataset = generator.generateDataset();
-console.log('Generated dataset:', dataset); 
