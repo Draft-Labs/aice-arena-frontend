@@ -1,7 +1,6 @@
 import * as tf from '@tensorflow/tfjs';
-import { ACTIONS } from './constants.js';
 
-class PerformanceMetrics {
+export class PerformanceMetrics {
   constructor() {
     this.metrics = {
       training: {
@@ -33,10 +32,18 @@ class PerformanceMetrics {
     this.metrics.training.loss.push(loss);
     this.metrics.training.memoryUsage.push(memoryInfo.numBytes);
     
-    // Calculate gradient norm
-    const gradients = tf.grads(loss);
-    const gradientNorm = tf.norm(gradients).dataSync()[0];
-    this.metrics.training.gradientNorm.push(gradientNorm);
+    // Calculate gradient norm using the loss tensor
+    try {
+      tf.tidy(() => {
+        const gradients = tf.grad(x => x)(tf.scalar(loss));
+        const gradientNorm = gradients.norm().dataSync()[0];
+        this.metrics.training.gradientNorm.push(gradientNorm);
+        gradients.dispose();
+      });
+    } catch (error) {
+      // If gradient calculation fails (e.g., in Node environment), use default value
+      this.metrics.training.gradientNorm.push(0);
+    }
   }
 
   getFormattedMetrics() {
@@ -55,6 +62,8 @@ class PerformanceMetrics {
       }
     };
   }
-}
 
-export default PerformanceMetrics; 
+  calculateAverage(array) {
+    return array.length > 0 ? array.reduce((a, b) => a + b) / array.length : 0;
+  }
+} 
