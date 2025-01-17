@@ -5,9 +5,9 @@ class LRScheduler {
     this.initialLR = initialLR;
     this.currentLR = initialLR;
     this.schedule = options.schedule || 'exponential';
-    this.decayRate = options.decayRate || 0.1;
-    this.minLR = options.minLR || 1e-7;
-    this.warmupSteps = options.warmupSteps || 1000;
+    this.decayRate = options.decayRate || 0.05;
+    this.minLR = options.minLR || 1e-5;
+    this.warmupSteps = options.warmupSteps || 500;
   }
 
   getLearningRate() {
@@ -44,29 +44,21 @@ class LRScheduler {
       case 'exponential':
         const stepsAfterWarmup = step - this.warmupSteps;
         const decayFactor = Math.pow(1 - this.decayRate, stepsAfterWarmup);
-        const beforeClip = this.initialLR * decayFactor;
-        this.currentLR = Math.max(
-          beforeClip,
-          this.minLR
-        );
+        this.currentLR = Math.max(this.initialLR * decayFactor, this.minLR);
         console.log('Exponential decay calculation:', {
           stepsAfterWarmup,
           decayFactor,
-          beforeClip,
+          beforeClip: this.initialLR * decayFactor,
           afterClip: this.currentLR
         });
         break;
 
       case 'step':
         const decaySteps = Math.floor((step - this.warmupSteps) / 2) + 1;
-        const stepBeforeClip = this.initialLR * Math.pow(0.5, decaySteps);
-        this.currentLR = Math.max(
-          stepBeforeClip,
-          this.minLR
-        );
+        this.currentLR = Math.max(this.initialLR * Math.pow(0.5, decaySteps), this.minLR);
         console.log('Step decay calculation:', {
           decaySteps,
-          beforeClip: stepBeforeClip,
+          beforeClip: this.initialLR * Math.pow(0.5, decaySteps),
           afterClip: this.currentLR
         });
         break;
