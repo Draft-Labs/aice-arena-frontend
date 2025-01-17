@@ -52,7 +52,8 @@
     "test:ai-cards": "vite-node src/ai/test/cardConverter.test.js",
     "test:integration": "jest src/ai/test/integration.test.js",
     "test:verification": "jest src/ai/test/technicalVerification.js",
-    "test:data-preparation": "vite-node src/ai/test/dataPreparation.test.js"
+    "test:data-preparation": "vite-node src/ai/test/dataPreparation.test.js",
+    "prod:generate-data": "node scripts/generateData.js"
   },
   "eslintConfig": {
     "extends": [
