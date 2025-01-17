@@ -66,7 +66,7 @@ A React-based frontend application for the decentralized betting platform. This 
 - ✅ Integrate with DataLoader
 - ✅ Test the Data Generation
 - ✅ Prepare the Dataset for Training
-- [ ] Monitor and Adjust Training Parameters
+- ✅ Monitor and Adjust Training Parameters
 
 #### Phase 9: Game Integration
 - [ ] Model serving system
