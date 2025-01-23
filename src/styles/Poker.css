@@ -864,6 +864,11 @@ h2 {
   color: #000;
 }
 
+.add-house-button{
+  margin-top: 10px;
+  width: 100%;
+}
+
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
