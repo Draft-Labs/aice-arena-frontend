@@ -1260,6 +1260,42 @@ function PokerTable() {
     }
   };
 
+  // Add this new state variable
+  const [isHouseAdded, setIsHouseAdded] = useState(false);
+
+  // Add state for house address
+  const [houseAddress, setHouseAddress] = useState(null);
+
+  // Update the handleAddHouse function
+  const handleAddHouse = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/poker/add-house`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ tableId })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to add house');
+      }
+
+      const data = await response.json();
+      console.log('House added successfully:', data);
+      setHouseAddress(data.houseAddress);
+      setIsHouseAdded(true);
+      toast.success('House added successfully');
+      
+      // Refresh table state
+      await updateGameState();
+    } catch (err) {
+      console.error('Error adding house:', err);
+      toast.error(err.message || 'Failed to add house');
+    }
+  };
+
   if (!account) {
     return <div className="poker-container">Please connect your wallet</div>;
   }
@@ -1303,6 +1339,14 @@ function PokerTable() {
               disabled={isLeavingTable}
             >
               {isLeavingTable ? 'Leaving...' : 'Leave Table'}
+            </button>
+
+            <button 
+              className="add-house-button"
+              onClick={handleAddHouse}
+              disabled={isHouseAdded || players.some(p => p.address?.toLowerCase() === houseAddress?.toLowerCase())}
+            >
+              {isHouseAdded ? 'House Added' : 'Add House'}
             </button>
           </div>
           <div className="poker-table">
