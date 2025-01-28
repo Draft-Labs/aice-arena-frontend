@@ -1,12 +1,108 @@
 .home-container {
-  max-width: 1200px;
+  display: flex;
+  width: 100%;
   margin: 0 auto;
   padding: 2rem;
+  padding-left: 0;
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  min-height: 100vh;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: space-around;
+}
+
+.ascii-art-section {
+  font-family: 'Courier New', monospace;
+  white-space: pre;
+  color: #06F2DB;
+  text-align: left;
+  font-size: 20px;
+  line-height: 20px;
+  letter-spacing: 0;
+  text-shadow: 0 0 10px rgba(6, 242, 219, 0.4);
+  padding: 2rem;
+  padding-left: 0;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 15px;
+  position: sticky;
+  transform: scale(1);
+  transform-origin: left top;
+  height: 50vh;
+  display: flex;
+  align-items: center;
+  width: -webkit-fill-available;
+  max-width: 50vw;
+}
+
+.ascii-art-container {
+  width: 100%;
+  height: auto;
+  border: none;
+  padding-left: 2rem;
+}
+
+.ascii-art-layer {
+  transition: opacity 0.5s ease-in-out;
+  opacity: 0;
+  border: none;
+}
+
+.ascii-art-layer.active {
+  opacity: 1;
+  border: none;
+  position: absolute;
+  bottom: 0;
+}
+
+.ascii-art-layer.previous {
+  opacity: 0;
+  border: none;
+}
+
+.ascii-char {
+  display: inline-block;
+  transition: color 0.3s ease-in-out, text-shadow 0.3s ease-in-out;
+}
+
+.ascii-char.changing {
+  animation: charGlow 0.5s ease-in-out;
+}
+
+@keyframes charGlow {
+  0% {
+    color: #06F2DB;
+    text-shadow: 0 0 10px rgba(6, 242, 219, 0.4);
+  }
+  50% {
+    color: #00ffff;
+    text-shadow: 0 0 20px rgba(0, 255, 255, 0.8);
+  }
+  100% {
+    color: #06F2DB;
+    text-shadow: 0 0 10px rgba(6, 242, 219, 0.4);
+  }
+}
+
+.main-content {
   text-align: center;
 }
 
+@keyframes pulse {
+  0% {
+    text-shadow: 0 0 10px rgba(6, 242, 219, 0.4);
+  }
+  50% {
+    text-shadow: 0 0 20px rgba(6, 242, 219, 0.6);
+  }
+  100% {
+    text-shadow: 0 0 10px rgba(6, 242, 219, 0.4);
+  }
+}
+
 .house-info {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.5);
   padding: 2rem;
   border-radius: 15px;
   margin: 2rem 0;
@@ -22,7 +118,7 @@
 .account-prompt,
 .connect-prompt,
 .game-selection {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.5);
   padding: 2rem;
   border-radius: 15px;
   margin: 2rem 0;

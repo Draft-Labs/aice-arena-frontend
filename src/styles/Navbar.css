@@ -27,13 +27,13 @@
 }
 
 .navbar-logo {
-  color: #06F2DB;
+  color: #FFFFFF;
   text-decoration: none;
   transition: color 0.3s ease;
 }
 
 .navbar-logo:hover {
-  color: #007e72;
+  color: #06F2DB;
 }
 
 .navbar-links {
@@ -49,7 +49,7 @@
 }
 
 .nav-link:hover {
-  color: #007e72;
+  color: #06F2DB;
 }
 
 .navbar-right {
