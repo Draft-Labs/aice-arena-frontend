@@ -145,12 +145,45 @@ function Home() {
     );
   };
 
+  const renderChatBox = () => {
+    return (
+      <div className="chat-box">
+        <div className="chat-header">
+          <h3>Global Chat</h3>
+        </div>
+        <div className="chat-messages">
+          <div className="chat-message system">
+            Welcome to Aice's Arena! Connect your wallet to start chatting.
+          </div>
+          <div className="chat-message">
+            Hey everyone, good luck at the tables! 🎰
+          </div>
+          <div className="chat-message">
+            Just won 2 ETH at blackjack! 🎉
+          </div>
+        </div>
+        <div className="chat-input-container">
+          <input
+            type="text"
+            className="chat-input"
+            placeholder="Type a message..."
+            disabled={!account}
+          />
+          <button className="chat-send-btn" disabled={!account}>
+            Send
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="home-container">
       <div className="ascii-art-section">
         <div className="ascii-art-container">
           {renderArtLayer()}
         </div>
+        {renderChatBox()}
       </div>
       <div className="main-content">
         <h1>Welcome to Aice's Arena</h1>

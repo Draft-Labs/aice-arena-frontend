@@ -26,7 +26,7 @@
   text-shadow: 0 0 10px rgba(6, 242, 219, 0.4);
   padding: 2rem;
   padding-left: 0;
-  background: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.1);
   border-radius: 15px;
   position: sticky;
   transform: scale(1);
@@ -34,15 +34,103 @@
   height: 50vh;
   display: flex;
   align-items: center;
+  gap: 2rem;
   width: -webkit-fill-available;
   max-width: 50vw;
 }
 
 .ascii-art-container {
-  width: 100%;
+  flex: 1;
   height: auto;
   border: none;
   padding-left: 2rem;
+  min-width: 0;
+}
+
+.chat-box {
+  flex: 0.6;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(6, 242, 219, 0.3);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.chat-header {
+  padding: 1rem;
+  background: rgba(6, 242, 219, 0.1);
+  border-bottom: 1px solid rgba(6, 242, 219, 0.3);
+}
+
+.chat-header h3 {
+  margin: 0;
+  color: #06F2DB;
+  font-size: 1.2rem;
+  text-transform: uppercase;
+}
+
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.chat-message {
+  padding: 0.5rem 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  max-width: 80%;
+}
+
+.chat-message.system {
+  align-self: center;
+  background: rgba(6, 242, 219, 0.1);
+  border: 1px solid rgba(6, 242, 219, 0.2);
+}
+
+.chat-input-container {
+  padding: 1rem;
+  border-top: 1px solid rgba(6, 242, 219, 0.3);
+  display: flex;
+  gap: 0.5rem;
+}
+
+.chat-input {
+  flex: 1;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(6, 242, 219, 0.3);
+  border-radius: 5px;
+  padding: 0.5rem 1rem;
+  color: #ffffff;
+  font-family: 'Courier New', monospace;
+}
+
+.chat-input:focus {
+  outline: none;
+  border-color: #06F2DB;
+  box-shadow: 0 0 10px rgba(6, 242, 219, 0.2);
+}
+
+.chat-send-btn {
+  background: rgba(6, 242, 219, 0.1);
+  border: 1px solid rgba(6, 242, 219, 0.3);
+  border-radius: 5px;
+  padding: 0.5rem 1rem;
+  color: #06F2DB;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.chat-send-btn:hover {
+  background: rgba(6, 242, 219, 0.2);
+  box-shadow: 0 0 10px rgba(6, 242, 219, 0.2);
 }
 
 .ascii-art-layer {
@@ -104,7 +192,7 @@
 }
 
 .house-info {
-  background: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.1);
   padding: 2rem;
   border-radius: 15px;
   margin: 2rem 0;
@@ -120,7 +208,7 @@
 .account-prompt,
 .connect-prompt,
 .game-selection {
-  background: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.1);
   padding: 2rem;
   border-radius: 15px;
   margin: 2rem 0;

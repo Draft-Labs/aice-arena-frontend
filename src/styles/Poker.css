@@ -663,8 +663,7 @@ h2 {
 
 .last-hand-container {
   position: absolute;
-  bottom: 20px;
-  right: 20px;
+  right: 10vw;
   background: rgba(0, 0, 0, 0.8);
   border: 1px solid #0ff;
   border-radius: 8px;
@@ -673,6 +672,8 @@ h2 {
   min-width: 200px;
   box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);
   z-index: 10;
+  margin: 1.5rem 0;
+  bottom: 10vh;
 }
 
 .last-hand-container h3 {
