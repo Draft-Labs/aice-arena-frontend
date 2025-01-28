@@ -8,13 +8,15 @@ import '../../styles/Poker.css';
 
 function CreatePokerTable() {
   const navigate = useNavigate();
-  const { pokerTableContract } = useWeb3();
+  const { pokerContract } = useWeb3();
   const [formData, setFormData] = useState({
     tableName: '',
     minBuyIn: '0.1',
     maxBuyIn: '1',
     smallBlind: '0.001',
-    bigBlind: '0.002'
+    bigBlind: '0.002',
+    minBet: '0.002',
+    maxBet: '1'
   });
 
   const handleInputChange = (e) => {
@@ -28,11 +30,13 @@ function CreatePokerTable() {
   const handleCreateTable = async (e) => {
     e.preventDefault();
     try {
-      const tx = await pokerTableContract.createTable(
+      const tx = await pokerContract.createTable(
         ethers.parseEther(formData.minBuyIn),
         ethers.parseEther(formData.maxBuyIn),
         ethers.parseEther(formData.smallBlind),
-        ethers.parseEther(formData.bigBlind)
+        ethers.parseEther(formData.bigBlind),
+        ethers.parseEther(formData.minBet),
+        ethers.parseEther(formData.maxBet)
       );
       const receipt = await tx.wait();
 
@@ -111,6 +115,30 @@ function CreatePokerTable() {
             type="number"
             name="bigBlind"
             value={formData.bigBlind}
+            onChange={handleInputChange}
+            step="0.001"
+            required
+          />
+        </div>
+
+        <div className="form-group">
+          <label>Minimum Bet (ETH)</label>
+          <input
+            type="number"
+            name="minBet"
+            value={formData.minBet}
+            onChange={handleInputChange}
+            step="0.001"
+            required
+          />
+        </div>
+
+        <div className="form-group">
+          <label>Maximum Bet (ETH)</label>
+          <input
+            type="number"
+            name="maxBet"
+            value={formData.maxBet}
             onChange={handleInputChange}
             step="0.001"
             required
