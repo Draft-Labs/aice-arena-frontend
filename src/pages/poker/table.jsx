@@ -501,21 +501,32 @@ function PokerTable() {
     }
   };
 
-  // Add this effect for regular table updates
-  useEffect(() => {
-    if (!pokerTableContract || !account || !tableId || !hasJoined) return;
-
-    const updateTableInfo = async () => {
+  // Move fetchTableData outside useEffect and make it a function of the component
+  const fetchTableData = async () => {
+    if (tableId && pokerTableContract) {
       try {
         // Get table info
         const tableInfo = await pokerTableContract.getTableInfo(tableId);
         
+        console.log('Table Info:', {
+          playerCount: tableInfo[7].toString(),
+          pot: ethers.formatEther(tableInfo[6]),
+          gameState: tableInfo[8].toString()
+        });
+
+        // Get all players at the table
+        const activePlayers = [];
+        const maxPlayers = 6; // Maximum number of players at the table
+        
+        // Create an object to store player names
+        const names = {};
+
         // Get all players at the table
         const playerAddresses = await pokerTableContract.getTablePlayers(tableId);
-        const activePlayers = [];
-        
+        console.log('Player addresses:', playerAddresses);
+
         // Process each player
-        for (let i = 0; i < playerAddresses.length && i < maxPlayersPerTable; i++) {
+        for (let i = 0; i < playerAddresses.length && i < maxPlayers; i++) {
           try {
             const playerAddress = playerAddresses[i];
             if (playerAddress && playerAddress !== ethers.ZeroAddress) {
@@ -523,7 +534,12 @@ function PokerTable() {
               const [tableStake, currentBet, isActive, isSittingOut] = playerInfo;
 
               if (isActive) {
+                // Fetch player name with priority order
                 const playerName = await fetchPlayerName(playerAddress);
+                if (playerName) {
+                  names[playerAddress] = playerName;
+                }
+
                 activePlayers.push({
                   address: playerAddress,
                   position: i,
@@ -533,6 +549,14 @@ function PokerTable() {
                   isSittingOut,
                   displayName: playerName
                 });
+
+                console.log(`Added player at position ${i}:`, {
+                  address: playerAddress,
+                  stake: ethers.formatEther(tableStake),
+                  bet: ethers.formatEther(currentBet),
+                  isActive,
+                  isSittingOut
+                });
               }
             }
           } catch (err) {
@@ -540,9 +564,18 @@ function PokerTable() {
           }
         }
 
-        // Update table state
-        setTable(prevTable => ({
-          ...prevTable,
+        // Update states
+        setPlayerNames(names);
+        setPlayers(activePlayers);
+        setPlayerUsernames(
+          Object.fromEntries(
+            activePlayers.map(p => [p.position, p.displayName])
+          )
+        );
+
+        console.log('Active Players:', activePlayers);
+
+        setTable({
           minBuyIn: ethers.formatEther(tableInfo[0]),
           maxBuyIn: ethers.formatEther(tableInfo[1]),
           smallBlind: ethers.formatEther(tableInfo[2]),
@@ -553,35 +586,43 @@ function PokerTable() {
           playerCount: tableInfo[7].toString(),
           gameState: tableInfo[8].toString(),
           isActive: true
-        }));
+        });
 
-        // Update players state
-        setPlayers(activePlayers);
-
-        // Update game info
+        // Find current player's info
         const currentPlayerInfo = activePlayers.find(p => p.address.toLowerCase() === account?.toLowerCase());
-        setGameInfo(prevInfo => ({
-          ...prevInfo,
+
+        setGameInfo({
           pot: ethers.formatEther(tableInfo[6]),
           currentBet: currentPlayerInfo?.currentBet || '0',
+          isPlayerTurn: false,
+          canCheck: false,
           minRaise: ethers.formatEther(tableInfo[4]),
           maxRaise: ethers.formatEther(tableInfo[5]),
           gameState: getGamePhaseString(Number(tableInfo[8]))
-        }));
+        });
 
       } catch (err) {
-        console.error('Error updating table info:', err);
+        console.error('Error fetching table data:', err);
+        setError(err.message);
       }
-    };
+    }
+  };
 
-    // Initial update
-    updateTableInfo();
-
-    // Set up interval for updates
-    const interval = setInterval(updateTableInfo, 5000);
-
+  // Update the useEffect to use the fetchTableData function
+  useEffect(() => {
+    fetchTableData();
+    const interval = setInterval(fetchTableData, 5000);
     return () => clearInterval(interval);
-  }, [pokerTableContract, account, tableId, hasJoined, maxPlayersPerTable]);
+  }, [tableId, pokerTableContract, account]);
+
+  // Update game info periodically
+  useEffect(() => {
+    if (hasJoined) {
+      updateGameInfo();
+      const interval = setInterval(updateGameInfo, 3000);
+      return () => clearInterval(interval);
+    }
+  }, [hasJoined, pokerTableContract, tableId]);
 
   const handleJoinTable = async (e) => {
     e.preventDefault();
@@ -627,6 +668,8 @@ function PokerTable() {
       console.log('Transaction confirmed');
       
       setHasJoined(true);
+      // Immediately fetch updated table data
+      await fetchTableData();
       toast.success('Successfully joined the table!');
     } catch (err) {
       console.error('Error joining table:', err);
@@ -901,53 +944,6 @@ function PokerTable() {
   // Add a ref to track the current game phase
   const lastGamePhaseRef = useRef('Waiting');
 
-  // Add this at the top level of the component
-  const cardStateRef = useRef({
-    playerCards: [],
-    communityCards: []
-  });
-
-  // Update the card fetching functions
-  const fetchPlayerCards = async () => {
-    try {
-      const playerCardsResult = await pokerTableContract.getPlayerCards(tableId, account);
-      const processedPlayerCards = playerCardsResult[0].map(card => {
-        const suit = Number(card.suit);
-        const rank = Number(card.rank);
-        return (suit * 13) + rank + 1;
-      });
-      console.log('Fetched player cards:', processedPlayerCards);
-      
-      // Only update if cards have changed
-      if (!areCardsEqual(processedPlayerCards, cardStateRef.current.playerCards)) {
-        cardStateRef.current.playerCards = processedPlayerCards;
-        setPlayerCards(processedPlayerCards);
-      }
-    } catch (err) {
-      console.error('Error fetching player cards:', err);
-    }
-  };
-
-  const fetchCommunityCards = async () => {
-    try {
-      const communityCardsResult = await pokerTableContract.getCommunityCards(tableId);
-      const processedCommunityCards = communityCardsResult.map(card => {
-        const suit = Number(card.suit);
-        const rank = Number(card.rank);
-        return (suit * 13) + rank + 1;
-      });
-      console.log('Fetched community cards:', processedCommunityCards);
-      
-      // Only update if cards have changed
-      if (!areCardsEqual(processedCommunityCards, cardStateRef.current.communityCards)) {
-        cardStateRef.current.communityCards = processedCommunityCards;
-        setCommunityCards(processedCommunityCards);
-      }
-    } catch (err) {
-      console.error('Error fetching community cards:', err);
-    }
-  };
-
   // Add event listener for game state changes
   useEffect(() => {
     if (!pokerTableContract || !account || !tableId || !hasJoined) return;
@@ -985,12 +981,7 @@ function PokerTable() {
           return (suit * 13) + rank + 1;
         });
         console.log('Fetched player cards:', processedPlayerCards);
-        
-        // Only update if cards have changed
-        if (!areCardsEqual(processedPlayerCards, cardStateRef.current.playerCards)) {
-          cardStateRef.current.playerCards = processedPlayerCards;
-          setPlayerCards(processedPlayerCards);
-        }
+        setPlayerCards(processedPlayerCards);
       } catch (err) {
         console.error('Error fetching player cards:', err);
       }
@@ -1006,12 +997,7 @@ function PokerTable() {
           return (suit * 13) + rank + 1;
         });
         console.log('Fetched community cards:', processedCommunityCards);
-        
-        // Only update if cards have changed
-        if (!areCardsEqual(processedCommunityCards, cardStateRef.current.communityCards)) {
-          cardStateRef.current.communityCards = processedCommunityCards;
-          setCommunityCards(processedCommunityCards);
-        }
+        setCommunityCards(processedCommunityCards);
       } catch (err) {
         console.error('Error fetching community cards:', err);
       }
@@ -1351,6 +1337,7 @@ function PokerTable() {
       console.log('Post blinds transaction confirmed');
 
       toast.success('Game started successfully!');
+      await fetchTableData();
     } catch (err) {
       console.error('Error starting game:', err);
       toast.error(err.message || 'Failed to start game');
@@ -1639,15 +1626,15 @@ function PokerTable() {
 
             <div className="card-display">
               <div className="community-cards">
-                {cardStateRef.current.communityCards.map((card, index) => (
-                  <MemoizedCard key={`community-${index}-${card}`} card={card} />
+                {memoizedCommunityCards.map((card, index) => (
+                  <MemoizedCard key={index} card={card} />
                 ))}
               </div>
               
               <div className="player-cards">
                 <h3>Your Cards:</h3>
-                {cardStateRef.current.playerCards.map((card, index) => (
-                  <MemoizedCard key={`player-${index}-${card}`} card={card} />
+                {memoizedPlayerCards.map((card, index) => (
+                  <MemoizedCard key={index} card={card} />
                 ))}
               </div>
             </div>
