@@ -12,6 +12,7 @@ function Home() {
   const [hasAccount, setHasAccount] = useState(false);
   const [currentArtIndex, setCurrentArtIndex] = useState(0);
   const [charStates, setCharStates] = useState(new Map());
+  const [hoverStates, setHoverStates] = useState(new Map());
   const waveTimeoutRef = useRef(null);
 
   const originalArt = `                ##%%%@@@@@@%%#{                                
@@ -39,7 +40,7 @@ function Home() {
 <>^[}])<<<<)))<>^+=*^)]}{{}(*......::--=<)>><)((<              
 ])){#}[((()))))))))<>*~:............:-=*(}[]((()`;
 
-  const characterSets = ['@', '&', '$', '%', '#', '*', '+', '='];
+  const characterSets = ['@', '&', '$', '%', '#', '*', '+', '=', '>', '<', '^', '~'];
 
   const startWaveEffect = () => {
     const lines = originalArt.split('\n');
@@ -121,6 +122,43 @@ function Home() {
     checkAccount();
   }, [account, checkTreasuryAccount]);
 
+  const handleCharacterHover = (x, y) => {
+    const radius = 2; // Effect radius
+    const affectedChars = new Map();
+    
+    // Add hover effect to surrounding characters
+    for (let dy = -radius; dy <= radius; dy++) {
+      for (let dx = -radius; dx <= radius; dx++) {
+        const newX = x + dx;
+        const newY = y + dy;
+        const key = `${newX}-${newY}`;
+        
+        // Calculate distance from hover point for delay
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        const delay = distance * 100; // 100ms per unit of distance
+        
+        setTimeout(() => {
+          setHoverStates(prev => {
+            const newStates = new Map(prev);
+            newStates.set(key, {
+              char: characterSets[Math.floor(Math.random() * characterSets.length)],
+              changing: true
+            });
+            // Remove the effect after animation
+            setTimeout(() => {
+              setHoverStates(prev => {
+                const newStates = new Map(prev);
+                newStates.delete(key);
+                return newStates;
+              });
+            }, 500);
+            return newStates;
+          });
+        }, delay);
+      }
+    }
+  };
+
   const renderArtLayer = () => {
     const lines = originalArt.split('\n');
     return (
@@ -130,12 +168,17 @@ function Home() {
             {[...line].map((char, x) => {
               const key = `${x}-${y}`;
               const charState = charStates.get(key);
+              const hoverState = hoverStates.get(key);
+              const displayChar = hoverState?.char || charState?.char || char;
+              const isChanging = charState?.changing || hoverState?.changing;
+              
               return (
                 <span
                   key={key}
-                  className={`ascii-char ${charState?.changing ? 'changing' : ''}`}
+                  className={`ascii-char ${isChanging ? 'hover-effect' : ''}`}
+                  onMouseEnter={() => handleCharacterHover(x, y)}
                 >
-                  {charState ? charState.char : char}
+                  {displayChar}
                 </span>
               );
             })}

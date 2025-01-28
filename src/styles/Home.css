@@ -41,10 +41,11 @@
 
 .ascii-art-container {
   flex: 1;
-  height: auto;
+  height: 100%;
   border: none;
   padding-left: 2rem;
   min-width: 0;
+  position: relative;
 }
 
 .chat-box {
@@ -56,6 +57,7 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  text-wrap: auto;
 }
 
 .chat-header {
@@ -135,8 +137,9 @@
 
 .ascii-art-layer {
   transition: opacity 0.5s ease-in-out;
-  opacity: 0;
+  opacity: 1;
   border: none;
+  cursor: default;
 }
 
 .ascii-art-layer.active {
@@ -154,10 +157,15 @@
 .ascii-char {
   display: inline-block;
   transition: color 0.3s ease-in-out, text-shadow 0.3s ease-in-out;
+  position: relative;
 }
 
 .ascii-char.changing {
   animation: charGlow 0.5s ease-in-out;
+}
+
+.ascii-char.hover-effect {
+  animation: charHoverGlow 0.5s ease-in-out;
 }
 
 @keyframes charGlow {
@@ -168,6 +176,21 @@
   50% {
     color: #00ffff;
     text-shadow: 0 0 20px rgba(0, 255, 255, 0.8);
+  }
+  100% {
+    color: #06F2DB;
+    text-shadow: 0 0 10px rgba(6, 242, 219, 0.4);
+  }
+}
+
+@keyframes charHoverGlow {
+  0% {
+    color: #06F2DB;
+    text-shadow: 0 0 10px rgba(6, 242, 219, 0.4);
+  }
+  50% {
+    color: #ff00ff;
+    text-shadow: 0 0 20px rgba(255, 0, 255, 0.8);
   }
   100% {
     color: #06F2DB;
