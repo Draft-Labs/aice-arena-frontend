@@ -9,7 +9,7 @@ import '../../styles/Poker.css';
 import { getTableName } from '../../config/firebase';
 
 function PokerLobby() {
-  const { account, pokerContract, isLoading, error: web3Error } = useWeb3();
+  const { account, pokerContract, isLoading, error: web3Error, connectWallet } = useWeb3();
   const { checkTreasuryAccount } = useContractInteraction();
   const [tables, setTables] = useState([]);
   const [error, setError] = useState(null);
@@ -119,39 +119,50 @@ function PokerLobby() {
     return <div>Loading...</div>;
   }
 
-  if (!hasAccount && !isCheckingAccount) {
-    navigate('/account');
-    return null;
-  }
 
   return (
     <div className="poker-container">
       <h1>Poker Tables</h1>
 
-      <div className="create-table">
-        <button onClick={() => navigate('/poker/create')}>
-          Create New Table
-        </button>
-      </div>
-
-      <div className="tables-list">
-        {tables.map(table => (
-          <div key={table.id} className="table-card">
-            <h3>{tableNames[table.id] || `Table #${table.id}`}</h3>
-            <div className="table-info">
-              <p>Buy-in Range: {table.minBuyIn} - {table.maxBuyIn} ETH</p>
-              <p>Blinds: {table.smallBlind}/{table.bigBlind} ETH</p>
-              <p>Players: {table.playerCount}/{table.maxPlayers}</p>
-            </div>
-            <button onClick={() => navigate(`/poker/table/${table.id}`)}>
-              Join Table
+      {!account ? (
+        <div className="connect-wallet">
+          <button onClick={connectWallet}>Connect Wallet</button>
+        </div>
+      ) : !hasAccount ? (
+        <div className="open-account">
+          <p>Please open an account to play Poker</p>
+          <button onClick={() => window.location.href = '/account'}>
+            Open Account
+          </button>
+        </div>
+      ) : (
+        <div>
+          <div className="create-table">
+            <button onClick={() => navigate('/poker/create')}>
+              Create New Table
             </button>
           </div>
-        ))}
-      </div>
 
-      {error && <div className="error-message">Error: {error}</div>}
-      <ToastContainer />
+          <div className="tables-list">
+            {tables.map(table => (
+              <div key={table.id} className="table-card">
+                <h3>{tableNames[table.id] || `Table #${table.id}`}</h3>
+                <div className="table-info">
+                  <p>Buy-in Range: {table.minBuyIn} - {table.maxBuyIn} ETH</p>
+                  <p>Blinds: {table.smallBlind}/{table.bigBlind} ETH</p>
+                  <p>Players: {table.playerCount}/{table.maxPlayers}</p>
+                </div>
+                <button onClick={() => navigate(`/poker/table/${table.id}`)}>
+                  Join Table
+                </button>
+              </div>
+            ))}
+          </div>
+
+          {error && <div className="error-message">Error: {error}</div>}
+          <ToastContainer />
+        </div>
+      )}
     </div>
   );
 }

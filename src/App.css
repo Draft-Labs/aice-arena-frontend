@@ -1,4 +1,10 @@
-@import url('https://fonts.googleapis.com/css2?family=Jersey+15&display=swap');
+@font-face {
+  font-family: 'Elnath';
+  src: url('../public/fonts/ELNATH.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400..900&display=swap');
 
 .App {
@@ -21,10 +27,11 @@ h1, h2, h3, h4, h5, h6, p {
 }
 
 h1 {
-  color: #ffd700;
-  text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+  color: #06F2DB;
+  text-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
   margin-bottom: 2rem;
   font-size: 3rem;
+  font-family: 'Elnath', sans-serif;
 }
 
 .account-info {
@@ -59,8 +66,8 @@ h1 {
 }
 
 .house-management h2 {
-  font-family: 'Jersey 15', sans-serif;
-  color: #ffd700;
+  font-family: 'Elnath', sans-serif;
+  color: #06F2DB;
   margin-bottom: 1.5rem;
   font-size: 2rem;
 }
@@ -86,12 +93,12 @@ h1 {
 
 .action-group input:focus {
   outline: none;
-  border-color: #ffd700;
+  border-color: #06F2DB;
   box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
 }
 
 button {
-  background: linear-gradient(45deg, #ffd700, #ffb700);
+  background: linear-gradient(45deg, #06F2DB, #c4c4c4);
   color: #000000;
   border: none;
   padding: 0.8rem 1.5rem;

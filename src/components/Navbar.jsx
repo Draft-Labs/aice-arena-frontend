@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useWeb3 } from '../context/Web3Context';
 import { useContractInteraction } from '../hooks/useContractInteraction';
 import { useEffect, useState, useRef } from 'react';
@@ -13,6 +13,7 @@ function Navbar() {
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef(null);
   const [profileImage, setProfileImage] = useState(null);
+  const location = useLocation();
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -95,23 +96,38 @@ function Navbar() {
       <div className="navbar-left">
         <div className="navbar-brand">
           <Link to="/" className="navbar-logo">
-            Casino
+            Aice's Arena
           </Link>
         </div>
         <div className="navbar-links">
-          <Link to="/blackjack" className="nav-link">
+          <Link 
+            to="/blackjack" 
+            className={`nav-link ${location.pathname === '/blackjack' ? 'active' : ''}`}
+          >
             Blackjack
           </Link>
-          <Link to="/roulette" className="nav-link">
+          <Link 
+            to="/roulette" 
+            className={`nav-link ${location.pathname === '/roulette' ? 'active' : ''}`}
+          >
             Roulette
           </Link>
-          <Link to="/poker" className="nav-link">
+          <Link 
+            to="/poker" 
+            className={`nav-link ${location.pathname === '/poker' ? 'active' : ''}`}
+          >
             Poker
           </Link>
-          <Link to="/leaderboard" className="nav-link">
+          <Link 
+            to="/leaderboard" 
+            className={`nav-link ${location.pathname === '/leaderboard' ? 'active' : ''}`}
+          >
             Leaderboard
           </Link>
-          <Link to="/account" className="nav-link">
+          <Link 
+            to="/account" 
+            className={`nav-link ${location.pathname === '/account' ? 'active' : ''}`}
+          >
             My Account
           </Link>
         </div>

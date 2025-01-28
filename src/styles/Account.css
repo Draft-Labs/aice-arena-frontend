@@ -16,7 +16,7 @@
 }
 
 .open-account p {
-  color: #ffd700 !important;
+  color: #06F2DB !important;
   font-size: 1.5rem;
   margin-bottom: 1.5rem;
   font-weight: bold;
@@ -40,12 +40,12 @@
 
 .deposit-controls input:focus {
   outline: none;
-  border-color: #ffd700;
+  border-color: #06F2DB;
   box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
 }
 
 .deposit-controls button {
-  background: linear-gradient(45deg, #ffd700, #ffb700);
+  background: linear-gradient(45deg, #06F2DB, #c4c4c4);
   color: #000000;
   border: none;
   padding: 0.8rem 1.5rem;
@@ -81,7 +81,7 @@
 }
 
 .transaction-row h2 {
-  color: #ffd700;
+  color: #06F2DB;
   margin-bottom: 1.5rem;
   font-size: 1.2rem;
   text-align: center;
@@ -114,11 +114,11 @@
 
 .transaction-controls input:focus {
   outline: none;
-  border-color: #ffd700;
+  border-color: #06F2DB;
 }
 
 .transaction-controls button {
-  background: linear-gradient(45deg, #ffd700, #ffb700);
+  background: linear-gradient(45deg, #06F2DB, #c4c4c4);
   border: none;
   color: black;
   font-weight: bold;
@@ -252,7 +252,7 @@
 
 .profile-form input:focus {
   outline: none;
-  border-color: #ffd700;
+  border-color: #06F2DB;
 }
 
 .profile-actions {

@@ -325,104 +325,91 @@ function Blackjack() {
       ) : !hasActiveAccount ? (
         <div className="open-account">
           <p>Please open an account to play Blackjack</p>
-          <div className="deposit-controls">
-            <input
-              type="number"
-              min="0.01"
-              step="0.01"
-              value={depositAmount}
-              onChange={(e) => setDepositAmount(e.target.value)}
-              placeholder="Initial deposit amount"
-            />
-            <button onClick={handleDeposit}>
-              Open Account
-            </button>
-          </div>
-          {transactionError && (
-            <div className="error-message">
-              Error: {transactionError}
-            </div>
-          )}
+          <button onClick={() => window.location.href = '/account'}>
+            Open Account
+          </button>
         </div>
       ) : (
-        <div className="game-info">
-          <div className="bet-controls">
-            <input
-              type="number"
-              min="0.01"
-              step="0.01"
-              value={betAmount}
-              onChange={(e) => setBetAmount(e.target.value)}
-              disabled={gameState.isPlaying}
-            />
-            <button 
-              onClick={handlePlaceBet}
-              disabled={gameState.isPlaying || !account}
-            >
-              Place Bet
-            </button>
+        <div>
+          <div className="game-info">
+            <div className="bet-controls">
+              <input
+                type="number"
+                min="0.01"
+                step="0.01"
+                value={betAmount}
+                onChange={(e) => setBetAmount(e.target.value)}
+                disabled={gameState.isPlaying}
+              />
+              <button 
+                onClick={handlePlaceBet}
+                disabled={gameState.isPlaying || !account}
+              >
+                Place Bet
+              </button>
+            </div>
+            
+            {transactionError && (
+              <div className="error-message">
+                Error: {transactionError}
+              </div>
+            )}
           </div>
-          
-          {transactionError && (
-            <div className="error-message">
-              Error: {transactionError}
+
+          {gameState.isPlaying && (
+            <div className="game-controls">
+              <button onClick={handleHit}>Hit</button>
+              <button onClick={handleStand}>Stand</button>
             </div>
           )}
-        </div>
-      )}
 
-      {gameState.isPlaying && (
-        <div className="game-controls">
-          <button onClick={handleHit}>Hit</button>
-          <button onClick={handleStand}>Stand</button>
-        </div>
-      )}
-
-      <div className="game-table">
-        <div className="dealer-hand">
-          <h2>Dealer's Hand</h2>
-          <div className="cards">
-            {gameState.dealerHand.map((card, index) => (
-              <span key={index} className="card">
-                {cardValueToString(card % 13 || 13)}
-              </span>
-            ))}
+          <div className="game-table">
+            <div className="dealer-hand">
+              <h2>Dealer's Hand</h2>
+              <div className="cards">
+                {gameState.dealerHand.map((card, index) => (
+                  <span key={index} className="card">
+                    {cardValueToString(card % 13 || 13)}
+                  </span>
+                ))}
+              </div>
+              {!gameState.isPlaying && gameState.dealerHand.length > 0 && (
+                <p>Dealer Score: {calculateHandScore(gameState.dealerHand)}</p>
+              )}
+            </div>
+            
+            <div className="player-hand">
+              <h2>Your Hand</h2>
+              <div className="cards">
+                {gameState.playerHand.map((card, index) => (
+                  <span key={index} className="card">
+                    {cardValueToString(card % 13 || 13)}
+                  </span>
+                ))}
+              </div>
+              {gameState.playerHand.length > 0 && (
+                <p>Your Score: {calculateHandScore(gameState.playerHand)}</p>
+              )}
+            </div>
           </div>
-          {!gameState.isPlaying && gameState.dealerHand.length > 0 && (
-            <p>Dealer Score: {calculateHandScore(gameState.dealerHand)}</p>
-          )}
-        </div>
-        
-        <div className="player-hand">
-          <h2>Your Hand</h2>
-          <div className="cards">
-            {gameState.playerHand.map((card, index) => (
-              <span key={index} className="card">
-                {cardValueToString(card % 13 || 13)}
-              </span>
-            ))}
-          </div>
-          {gameState.playerHand.length > 0 && (
-            <p>Your Score: {calculateHandScore(gameState.playerHand)}</p>
-          )}
-        </div>
-      </div>
 
-      {gameState.result && (
-        <div className="game-result">
-          <h2>{gameState.result}</h2>
-          <button 
-            onClick={() => setGameState({
-              playerHand: [],
-              dealerHand: [],
-              isPlaying: false,
-              result: null,
-              playerScore: 0,
-              dealerScore: 0
-            })}
-          >
-            New Game
-          </button>
+          {gameState.result && (
+            <div className="game-result">
+              <h2>{gameState.result}</h2>
+              <button 
+                onClick={() => setGameState({
+                  playerHand: [],
+                  dealerHand: [],
+                  isPlaying: false,
+                  result: null,
+                  playerScore: 0,
+                  dealerScore: 0
+                })}
+              >
+                New Game
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>

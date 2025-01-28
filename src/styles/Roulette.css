@@ -7,7 +7,7 @@
 
 .roulette-container h1 {
   text-align: center;
-  color: #ffd700;
+  color: #06F2DB;
   margin-bottom: 2rem;
 }
 
@@ -189,7 +189,7 @@
 
 .connect-wallet button, .open-account button {
   padding: 1rem 2rem;
-  background: linear-gradient(45deg, #ffd700, #ffb700);
+  background: linear-gradient(45deg, #06F2DB, #c4c4c4);
   border: none;
   border-radius: 8px;
   color: black;
@@ -200,5 +200,5 @@
 
 .connect-wallet button:hover, .open-account button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(255, 215, 0, 0.4);
+  box-shadow: 0 5px 15px #06F2DB;
 } 
