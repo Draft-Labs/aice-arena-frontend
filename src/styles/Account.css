@@ -44,23 +44,6 @@
   box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
 }
 
-.deposit-controls button {
-  background: linear-gradient(45deg, #06F2DB, #c4c4c4);
-  color: #000000;
-  border: none;
-  padding: 0.8rem 1.5rem;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: bold;
-  transition: all 0.3s ease;
-  min-width: 120px;
-}
-
-.deposit-controls button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(255, 215, 0, 0.4);
-}
-
 .transaction-section {
   display: flex;
   gap: 2rem;
@@ -117,19 +100,6 @@
   border-color: #06F2DB;
 }
 
-.transaction-controls button {
-  background: linear-gradient(45deg, #06F2DB, #c4c4c4);
-  border: none;
-  color: black;
-  font-weight: bold;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.transaction-controls button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(255, 215, 0, 0.4);
-}
 
 /* Make it responsive */
 @media (max-width: 768px) {
@@ -175,22 +145,6 @@
 .connect-wallet {
   text-align: center;
   margin-top: 2rem;
-}
-
-.connect-wallet button {
-  background: linear-gradient(45deg, #ffd700, #ffb700);
-  color: #000000;
-  border: none;
-  padding: 1rem 2rem;
-  border-radius: 8px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.connect-wallet button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(255, 215, 0, 0.4);
 }
 
 .balance-display {

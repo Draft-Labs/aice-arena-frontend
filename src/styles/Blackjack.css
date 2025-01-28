@@ -181,21 +181,6 @@
   margin: 1.5rem 0;
 }
 
-button {
-  padding: 0.8rem 1.5rem;
-  border: none;
-  border-radius: 5px;
-  background: linear-gradient(45deg, #ffd700, #ffed4a);
-  color: #000000;
-  font-weight: bold;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(255, 215, 0, 0.4);
-}
 
 button:disabled {
   background: #666666;
