@@ -13,6 +13,8 @@
   flex-direction: column;
   align-items: center;
   background: linear-gradient(135deg, #000000 0%, #2d2d2d 100%);
+  position: relative;
+  overflow: hidden;
   color: #ffffff;
   font-family: 'Orbitron', sans-serif;
   padding: 2rem;

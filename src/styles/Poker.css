@@ -25,19 +25,9 @@
 }
 
 .create-table button {
-  background: #4CAF50;
-  color: white;
   padding: 12px 24px;
-  border: none;
-  border-radius: 5px;
   font-size: 1.1em;
   cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.create-table button:hover {
-  background: #45a049;
-  transform: translateY(-2px);
 }
 
 .tables-list {

@@ -1,35 +1,24 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router } from 'react-router-dom';
 import { Web3Provider } from './context/Web3Context';
+import { ToastContainer } from 'react-toastify';
+import Background from './components/Background';
 import Navbar from './components/Navbar';
-import Home from './pages/Home';
-import Account from './pages/Account';
-import Blackjack from './pages/Blackjack';
-import Roulette from './pages/Roulette';
-import PokerLobby from './pages/poker/index';
-import CreatePokerTable from './pages/poker/create';
-import PokerTable from './pages/poker/table';
-import Leaderboard from './pages/Leaderboard';
+import AppRoutes from './routes';
+import 'react-toastify/dist/ReactToastify.css';
 import './App.css';
 
 function App() {
   return (
-    <Web3Provider>
-      <Router>
+    <Router>
+      <Web3Provider>
         <div className="App">
+          <Background />
           <Navbar />
-          <Routes>
-            <Route path="/account" element={<Account />} />
-            <Route path="/blackjack" element={<Blackjack />} />
-            <Route path="/roulette" element={<Roulette />} />
-            <Route path="/poker" element={<PokerLobby />} />
-            <Route path="/poker/create" element={<CreatePokerTable />} />
-            <Route path="/poker/table/:tableId" element={<PokerTable />} />
-            <Route path="/leaderboard" element={<Leaderboard />} />
-            <Route path="/" element={<Home />} />
-          </Routes>
+          <AppRoutes />
+          <ToastContainer position="bottom-right" theme="dark" />
         </div>
-      </Router>
-    </Web3Provider>
+      </Web3Provider>
+    </Router>
   );
 }
 

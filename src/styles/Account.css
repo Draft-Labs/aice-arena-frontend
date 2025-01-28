@@ -156,7 +156,7 @@
 }
 
 .balance-display h2 {
-  color: #ffd700;
+  color: #06F2DB;
   margin-bottom: 1rem;
 }
 
@@ -180,7 +180,7 @@
 
 .profile-form h2,
 .profile-display h2 {
-  color: #ffd700;
+  color: #06F2DB;
   margin-bottom: 1.5rem;
   text-align: center;
 }
@@ -226,7 +226,7 @@
 }
 
 .profile-actions button[type="submit"] {
-  background: linear-gradient(45deg, #ffd700, #ffb700);
+  background: linear-gradient(45deg, #06F2DB, #ffffff);
   color: black;
 }
 
@@ -254,11 +254,11 @@
 }
 
 .profile-info strong {
-  color: #ffd700;
+  color: #06F2DB;
 }
 
 .profile-display button {
-  background: linear-gradient(45deg, #ffd700, #ffb700);
+  background: linear-gradient(45deg, #06F2DB, #ffffff);
   border: none;
   padding: 0.8rem 2rem;
   border-radius: 4px;
@@ -268,12 +268,6 @@
   transition: all 0.3s ease;
 }
 
-.profile-display button:hover,
-.profile-actions button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(255, 215, 0, 0.4);
-}
-
 .twitter-verified {
   display: flex;
   align-items: center;
@@ -281,11 +275,11 @@
   padding: 0.8rem;
   background: rgba(29, 161, 242, 0.1);
   border-radius: 4px;
-  color: #1DA1F2;
+  color: #06F2DB;
 }
 
 .verified-badge {
-  color: #00ff88;
+  color: #06F2DB;
   font-weight: bold;
 }
 
@@ -366,7 +360,7 @@
   border-radius: 50%;
   object-fit: cover;
   display: block;
-  border: 2px solid #ffd700;
+  border: 2px solid #06F2DB;
 }
 
 .profile-image-container {
