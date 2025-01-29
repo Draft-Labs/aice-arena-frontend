@@ -364,6 +364,7 @@ function Blackjack() {
             <div className="bet-controls">
               <input
                 type="number"
+                placeholder="Bet Amount"
                 min="0.01"
                 step="0.01"
                 value={betAmount}
