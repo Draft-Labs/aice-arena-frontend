@@ -991,7 +991,7 @@ function PokerTable() {
     
     const suit = suits[Math.floor((cardNumber - 1) / 13)];
     const value = values[(cardNumber - 1) % 13];
-    const color = suit === '♥' || suit === '♦' ? 'red' : 'black';
+    const color = '#06F2DB';
     
     return { value, suit, color };
   };
@@ -1437,6 +1437,8 @@ function PokerTable() {
                         className={`card ${dealtCards.community.includes(index) ? 'dealt' : ''}`}
                         style={{ color }}
                       >
+                        <div className="logo-top"></div>
+                        <div className="logo-bottom"></div>
                         {value}{suit}
                       </div>
                     );
@@ -1457,6 +1459,8 @@ function PokerTable() {
                         className={`card ${dealtCards.player.includes(index) ? 'dealt' : ''}`}
                         style={{ color }}
                       >
+                        <div className="logo-top"></div>
+                        <div className="logo-bottom"></div>
                         {value}{suit}
                       </div>
                     );

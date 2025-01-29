@@ -551,19 +551,72 @@ h2 {
 .card {
   width: 60px;
   height: 90px;
-  background: white;
-  border: 2px solid #333;
+  background: rgba(255, 255, 255, 0.1);
+  color: #06F2DB;
+  padding: 1.5rem;
   border-radius: 8px;
   display: flex;
   justify-content: center;
   align-items: center;
   font-size: 24px;
   font-weight: bold;
-  box-shadow: 3px 3px 7px rgba(0, 0, 0, 0.2);
+  box-shadow: 
+    0 4px 12px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(6, 242, 219, 0.2);
   transform-style: preserve-3d;
   position: relative;
   opacity: 0;
   transform: translateY(-100vh) rotateY(180deg);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(6, 242, 219, 0.3);
+  transition: all 0.3s ease;
+  animation: pulseBorder 2s linear infinite;
+}
+
+/* Logo styling */
+.card .logo-top,
+.card .logo-bottom {
+  content: '';
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  background-image: url('../assets/draftLabsLogoBlue.svg');
+  background-size: contain;
+  background-repeat: no-repeat;
+  opacity: 0.3;
+  transition: opacity 0.3s ease;
+  filter: brightness(0) saturate(100%) invert(82%) sepia(64%) saturate(1095%) hue-rotate(116deg) brightness(97%) contrast(101%);
+}
+
+.card .logo-top {
+  top: 8px;
+  left: 8px;
+}
+
+.card .logo-bottom {
+  bottom: 8px;
+  right: 8px;
+  transform: rotate(180deg) scaleX(-1);
+}
+
+.card:hover .logo-top,
+.card:hover .logo-bottom {
+  opacity: 0.6;
+}
+
+/* Card back design */
+.card.face-down::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(145deg, rgba(6, 242, 219, 0.2), rgba(8, 145, 178, 0.2));
+  border-radius: 8px;
+  backface-visibility: hidden;
+  transform: rotateY(180deg);
+  border: 1px solid rgba(6, 242, 219, 0.3);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
 }
 
 .card.dealt {
@@ -595,17 +648,6 @@ h2 {
 /* Add delay for player cards */
 .player-cards .card:nth-child(1) { animation-delay: 0s; }
 .player-cards .card:nth-child(2) { animation-delay: 0.2s; }
-
-/* Card back design */
-.card::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(45deg, #06F2DB, #0891B2);
-  border-radius: 6px;
-  backface-visibility: hidden;
-  transform: rotateY(180deg);
-}
 
 .card-display {
   position: absolute;

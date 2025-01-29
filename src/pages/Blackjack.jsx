@@ -395,6 +395,8 @@ function Blackjack() {
                     key={index} 
                     className={`card ${dealtCards.dealer.includes(index) ? 'dealt' : ''}`}
                   >
+                    <div className="logo-top"></div>
+                    <div className="logo-bottom"></div>
                     {cardValueToString(card % 13 || 13)}
                   </span>
                 ))}
@@ -412,6 +414,8 @@ function Blackjack() {
                     key={index} 
                     className={`card ${dealtCards.player.includes(index) ? 'dealt' : ''}`}
                   >
+                    <div className="logo-top"></div>
+                    <div className="logo-bottom"></div>
                     {cardValueToString(card % 13 || 13)}
                   </span>
                 ))}

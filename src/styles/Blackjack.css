@@ -21,10 +21,7 @@
 
 /* Game Info Section */
 .game-info {
-  background: rgba(0, 0, 0, 0.5);
-  padding: 1.5rem;
   border-radius: 10px;
-  margin-bottom: 2rem;
   text-align: center;
 }
 
@@ -98,9 +95,6 @@
   padding: 2rem;
   margin: 1rem 0;
   text-align: center;
-  background: rgba(0, 0, 0, 0.3);
-  border-radius: 10px;
-  border: 1px solid rgba(6, 242, 219, 0.3);
 }
 
 .dealer-hand::before,
@@ -141,24 +135,83 @@
 }
 
 .card {
-  background: white;
-  color: black;
+  background: rgba(255, 255, 255, 0.1);
+  color: #06F2DB;
   padding: 1.5rem;
   border-radius: 8px;
   min-width: 40px;
   font-weight: bold;
   font-size: 1.2rem;
   box-shadow: 
-    0 2px 4px rgba(0, 0, 0, 0.2),
-    0 0 0 1px rgba(255, 255, 255, 0.1);
+    0 4px 12px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(6, 242, 219, 0.2);
   transform-style: preserve-3d;
   position: relative;
   opacity: 0;
   transform: translateY(-100vh) rotateY(180deg);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(6, 242, 219, 0.3);
+  transition: all 0.3s ease;
+  animation: pulseBorder 2s linear infinite;
+}
+
+/* Logo styling */
+.card .logo-top,
+.card .logo-bottom {
+  content: '';
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  background-image: url('../assets/draftLabsLogoBlue.svg');
+  background-size: contain;
+  background-repeat: no-repeat;
+  opacity: 0.3;
+  transition: opacity 0.3s ease;
+  filter: brightness(0) saturate(100%) invert(82%) sepia(64%) saturate(1095%) hue-rotate(116deg) brightness(97%) contrast(101%);
+}
+
+.card .logo-top {
+  top: 8px;
+  left: 8px;
+}
+
+.card .logo-bottom {
+  bottom: 8px;
+  right: 8px;
+  transform: rotate(180deg) scaleX(-1);
+}
+
+.card:hover .logo-top,
+.card:hover .logo-bottom {
+  opacity: 0.6;
+}
+
+/* Card back design */
+.card.face-down::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(145deg, rgba(6, 242, 219, 0.2), rgba(8, 145, 178, 0.2));
+  border-radius: 8px;
+  backface-visibility: hidden;
+  transform: rotateY(180deg);
+  border: 1px solid rgba(6, 242, 219, 0.3);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
 }
 
 .card.dealt {
-  animation: dealCard 0.5s forwards;
+  animation: dealCard 0.5s forwards, pulseBorder 2s linear infinite;
+}
+
+.card:hover {
+  box-shadow: 
+    0 6px 16px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(6, 242, 219, 0.3),
+    0 0 15px rgba(6, 242, 219, 0.4);
+  transform: translateY(0) rotateY(0) scale(1.02);
+  border-color: rgba(6, 242, 219, 0.8);
 }
 
 @keyframes dealCard {
@@ -183,17 +236,6 @@
 .card:nth-child(4) { animation-delay: 0.6s; }
 .card:nth-child(5) { animation-delay: 0.8s; }
 .card:nth-child(6) { animation-delay: 1s; }
-
-/* Card back design */
-.card::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(45deg, #06F2DB, #0891B2);
-  border-radius: 8px;
-  backface-visibility: hidden;
-  transform: rotateY(180deg);
-}
 
 /* Score display */
 .score-display {
