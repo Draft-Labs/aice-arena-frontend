@@ -196,7 +196,7 @@ function Home() {
         </div>
         <div className="chat-messages">
           <div className="chat-message system">
-            Welcome to Aice's Arena! Connect your wallet to start chatting.
+            Welcome to Aice Arena! Connect your wallet to start chatting.
           </div>
           <div className="chat-message">
             Hey everyone, good luck at the tables! 🎰
@@ -229,7 +229,7 @@ function Home() {
         {renderChatBox()}
       </div>
       <div className="main-content">
-        <h1>Welcome to Aice's Arena</h1>
+        <h1>Welcome to Aice Arena</h1>
         
         <div className="house-info">
           <h2>House Treasury</h2>

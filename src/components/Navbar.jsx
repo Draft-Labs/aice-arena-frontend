@@ -96,7 +96,7 @@ function Navbar() {
       <div className="navbar-left">
         <div className="navbar-brand">
           <Link to="/" className="navbar-logo">
-            Aice's Arena
+            Aice Arena
           </Link>
         </div>
         <div className="navbar-links">
