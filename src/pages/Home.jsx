@@ -135,7 +135,7 @@ function Home() {
         
         // Calculate distance from hover point for delay
         const distance = Math.sqrt(dx * dx + dy * dy);
-        const delay = distance * 100; // 100ms per unit of distance
+        const delay = distance * 10; // 100ms per unit of distance
         
         setTimeout(() => {
           setHoverStates(prev => {
