@@ -30,6 +30,13 @@ function Blackjack() {
   const [withdrawAmount, setWithdrawAmount] = useState('0.01');
   const [hasActiveAccount, setHasActiveAccount] = useState(false);
   const [showDepositForm, setShowDepositForm] = useState(false);
+  const [dealtCards, setDealtCards] = useState({
+    player: [],
+    dealer: []
+  });
+
+  const ANIMATION_DURATION = 500; // Base animation duration in ms
+  const CARD_DELAY = 200; // Delay between each card
 
   const cardValueToString = (cardValue) => {
     if (cardValue === 1 || cardValue === 14) return 'A';
@@ -106,9 +113,27 @@ function Blackjack() {
     }
   };
 
+  const animateCardDealing = (cards, isDealer = false) => {
+    return new Promise(resolve => {
+      const key = isDealer ? 'dealer' : 'player';
+      cards.forEach((_, index) => {
+        setTimeout(() => {
+          setDealtCards(prev => ({
+            ...prev,
+            [key]: [...prev[key], index]
+          }));
+        }, index * CARD_DELAY);
+      });
+      // Resolve after all cards are dealt and animated
+      const totalDuration = (cards.length - 1) * CARD_DELAY + ANIMATION_DURATION;
+      setTimeout(resolve, totalDuration);
+    });
+  };
+
   const handlePlaceBet = async () => {
     try {
       setTransactionError(null);
+      setDealtCards({ player: [], dealer: [] }); // Reset dealt cards
       
       if (!account || !blackjackContract) {
         await connectWallet();
@@ -118,13 +143,29 @@ function Blackjack() {
       const success = await placeBet(betAmount);
       
       if (success) {
-        // Initialize new game state
+        const playerCards = [Math.floor(Math.random() * 52) + 1, Math.floor(Math.random() * 52) + 1];
+        const dealerCards = [Math.floor(Math.random() * 52) + 1];
+        
+        // Initialize new game state without scores
         setGameState(prev => ({
           ...prev,
-          playerHand: [Math.floor(Math.random() * 52) + 1, Math.floor(Math.random() * 52) + 1],
-          dealerHand: [Math.floor(Math.random() * 52) + 1],
+          playerHand: playerCards,
+          dealerHand: dealerCards,
           isPlaying: true,
-          result: null
+          result: null,
+          playerScore: null,
+          dealerScore: null
+        }));
+
+        // Wait for all animations to complete
+        await animateCardDealing(playerCards);
+        await animateCardDealing(dealerCards, true);
+
+        // Update scores after animations
+        setGameState(prev => ({
+          ...prev,
+          playerScore: calculateHandScore(playerCards),
+          dealerScore: calculateHandScore(dealerCards)
         }));
       } else {
         throw new Error("Failed to place bet");
@@ -132,7 +173,6 @@ function Blackjack() {
 
     } catch (err) {
       console.error("Error in handlePlaceBet:", err);
-      // Check if the error is related to rate limiting
       if (err.message.includes('ActionRateLimited')) {
         setTransactionError('Bet placed too soon. Please wait a few more seconds.');
       } else {
@@ -145,52 +185,45 @@ function Blackjack() {
     try {
       setTransactionError(null);
       const newCard = Math.floor(Math.random() * 52) + 1;
-      
       const updatedHand = [...gameState.playerHand, newCard];
+      const newCardIndex = updatedHand.length - 1;
+      
+      // Update hand without score first
+      setGameState(prev => ({
+        ...prev,
+        playerHand: updatedHand,
+        playerScore: null
+      }));
+
+      // Add new card to animation state
+      setDealtCards(prev => ({
+        ...prev,
+        player: [...prev.player, newCardIndex]
+      }));
+
+      // Wait for animation to complete
+      await new Promise(resolve => setTimeout(resolve, ANIMATION_DURATION));
+
       const newScore = calculateHandScore(updatedHand);
-
-      console.log('Hit action:', {
-        previousHand: gameState.playerHand,
-        newCard,
-        updatedHand,
-        newScore,
-        dealerHand: gameState.dealerHand,
-        dealerScore: calculateHandScore(gameState.dealerHand)
-      });
-
-      // Update state first
-      await new Promise(resolve => {
-        setGameState(prev => {
-          console.log('Updating game state:', {
-            oldHand: prev.playerHand,
-            newHand: updatedHand
-          });
-          return {
-            ...prev,
-            playerHand: updatedHand,
-            playerScore: newScore
-          };
-        });
-        resolve();
-      });
+      
+      // Update score after animation
+      setGameState(prev => ({
+        ...prev,
+        playerScore: newScore
+      }));
 
       if (newScore > 21) {
         const result = 'BUST! You lose!';
         
-        console.log('Player bust:', {
-          finalHand: updatedHand,
-          finalScore: newScore,
-          dealerHand: gameState.dealerHand,
-          dealerScore: calculateHandScore(gameState.dealerHand)
-        });
-
+        // Small delay before showing bust result
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
         setGameState(prev => ({
           ...prev,
           isPlaying: false,
           result
         }));
         
-        // Pass the updated hand directly to resolveBetWithContract
         await resolveBetWithContract(result, gameState.dealerHand, updatedHand);
       }
 
@@ -209,24 +242,33 @@ function Blackjack() {
       // Dealer hits on 16 or below
       while (dealerScore < 17) {
         const newCard = Math.floor(Math.random() * 52) + 1;
-        currentDealerHand.push(newCard);
+        currentDealerHand = [...currentDealerHand, newCard];
+        const newCardIndex = currentDealerHand.length - 1;
+        
+        // Update hand and current score
+        setGameState(prev => ({
+          ...prev,
+          dealerHand: currentDealerHand,
+          dealerScore: calculateHandScore(currentDealerHand)
+        }));
+
+        // Add new card to animation state
+        setDealtCards(prev => ({
+          ...prev,
+          dealer: [...prev.dealer, newCardIndex]
+        }));
+
+        // Wait for animation to complete
+        await new Promise(resolve => setTimeout(resolve, ANIMATION_DURATION));
+        
         dealerScore = calculateHandScore(currentDealerHand);
       }
 
+      // Small delay before showing final result
+      await new Promise(resolve => setTimeout(resolve, 500));
+
       const playerScore = calculateHandScore(gameState.playerHand);
       let result;
-
-      console.log('Determining game result:', {
-        playerScore,
-        dealerScore,
-        playerHand: gameState.playerHand,
-        dealerHand: currentDealerHand,
-        rawDealerHand: currentDealerHand.map(card => ({
-          card,
-          value: card % 13 || 13,
-          score: calculateHandScore([card])
-        }))
-      });
 
       if (dealerScore > 21) {
         result = 'Dealer busts! You win!';
@@ -238,29 +280,16 @@ function Blackjack() {
         result = 'Push!';
       }
 
-      console.log('Game result determined:', result);
+      // Update final game state
+      setGameState(prev => ({
+        ...prev,
+        dealerHand: currentDealerHand,
+        dealerScore,
+        isPlaying: false,
+        result
+      }));
 
-      // Update game state and wait for it to complete
-      await new Promise(resolve => {
-        setGameState(prev => {
-          console.log('Updating final game state:', {
-            oldDealerHand: prev.dealerHand,
-            newDealerHand: currentDealerHand,
-            dealerScore,
-            result
-          });
-          return {
-            ...prev,
-            dealerHand: currentDealerHand,
-            dealerScore: dealerScore,
-            isPlaying: false,
-            result
-          };
-        });
-        resolve();
-      });
-
-      // Resolve the bet with the contract using the current dealer hand
+      // Resolve the bet with the contract
       await resolveBetWithContract(result, currentDealerHand);
 
     } catch (err) {
@@ -356,25 +385,21 @@ function Blackjack() {
             )}
           </div>
 
-          {gameState.isPlaying && (
-            <div className="game-controls">
-              <button onClick={handleHit}>Hit</button>
-              <button onClick={handleStand}>Stand</button>
-            </div>
-          )}
-
           <div className="game-table">
             <div className="dealer-hand">
               <h2>Dealer's Hand</h2>
               <div className="cards">
                 {gameState.dealerHand.map((card, index) => (
-                  <span key={index} className="card">
+                  <span 
+                    key={index} 
+                    className={`card ${dealtCards.dealer.includes(index) ? 'dealt' : ''}`}
+                  >
                     {cardValueToString(card % 13 || 13)}
                   </span>
                 ))}
               </div>
-              {!gameState.isPlaying && gameState.dealerHand.length > 0 && (
-                <p>Dealer Score: {calculateHandScore(gameState.dealerHand)}</p>
+              {gameState.dealerScore !== null && (
+                <p>Dealer Score: {gameState.dealerScore}</p>
               )}
             </div>
             
@@ -382,13 +407,16 @@ function Blackjack() {
               <h2>Your Hand</h2>
               <div className="cards">
                 {gameState.playerHand.map((card, index) => (
-                  <span key={index} className="card">
+                  <span 
+                    key={index} 
+                    className={`card ${dealtCards.player.includes(index) ? 'dealt' : ''}`}
+                  >
                     {cardValueToString(card % 13 || 13)}
                   </span>
                 ))}
               </div>
-              {gameState.playerHand.length > 0 && (
-                <p>Your Score: {calculateHandScore(gameState.playerHand)}</p>
+              {gameState.playerScore !== null && (
+                <p>Your Score: {gameState.playerScore}</p>
               )}
             </div>
           </div>
@@ -408,6 +436,13 @@ function Blackjack() {
               >
                 New Game
               </button>
+            </div>
+          )}
+
+          {gameState.isPlaying && (
+            <div className="game-controls">
+              <button onClick={handleHit}>Hit</button>
+              <button onClick={handleStand}>Stand</button>
             </div>
           )}
         </div>

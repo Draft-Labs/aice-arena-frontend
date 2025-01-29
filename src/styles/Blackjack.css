@@ -60,16 +60,18 @@
 
 /* Game Table */
 .game-table {
-  background: #1a472a;
+  background: rgba(0, 0, 0, 0.5);
   padding: 3rem 2rem;
-  border-radius: 0 !important;
+  border-radius: 20px;
   margin: 2rem 0;
   position: relative;
   overflow: hidden;
-  border: 2px solid #ffd700;
+  border: 1px solid #06F2DB;
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
 }
 
-/* Add more visible felt texture with casino and crypto elements */
+/* Add subtle pattern overlay */
 .game-table::before {
   content: '';
   position: absolute;
@@ -77,24 +79,15 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffd700' fill-opacity='0.15'%3E%3Cpath d='M30 15a3 3 0 110 6 3 3 0 010-6zm0 24a3 3 0 110 6 3 3 0 010-6zM15 30a3 3 0 110 6 3 3 0 010-6zm30 0a3 3 0 110 6 3 3 0 010-6zM19.5 19.5l3 3-3 3-3-3zM37.5 19.5l3 3-3 3-3-3zM19.5 37.5l3-3-3-3-3 3zM37.5 37.5l3-3-3-3-3 3zM30 30l-4 4 4 4 4-4z'/%3E%3C/g%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%2306F2DB' fill-opacity='0.1'%3E%3Cpath d='M30 15a3 3 0 110 6 3 3 0 010-6zm0 24a3 3 0 110 6 3 3 0 010-6zM15 30a3 3 0 110 6 3 3 0 010-6zm30 0a3 3 0 110 6 3 3 0 010-6zM19.5 19.5l3 3-3 3-3-3zM37.5 19.5l3 3-3 3-3-3zM19.5 37.5l3-3-3-3-3 3zM37.5 37.5l3-3-3-3-3 3zM30 30l-4 4 4 4 4-4z'/%3E%3C/g%3E%3C/svg%3E");
   background-size: 30px 30px;
-  opacity: 1;
+  opacity: 0.5;
   z-index: 0;
 }
 
-/* Decorative border */
+/* Remove decorative border */
 .game-table::after {
-  content: '';
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  right: 10px;
-  bottom: 10px;
-  border: 2px solid rgba(255, 215, 0, 0.4);
-  border-radius: 10px;
-  pointer-events: none;
-  z-index: 1;
+  display: none;
 }
 
 /* Playing areas */
@@ -105,9 +98,9 @@
   padding: 2rem;
   margin: 1rem 0;
   text-align: center;
-  border: none;
-  background: rgba(0, 0, 0, 0.2);
-  border-radius: 50px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 10px;
+  border: 1px solid rgba(6, 242, 219, 0.3);
 }
 
 .dealer-hand::before,
@@ -123,7 +116,7 @@
   background: linear-gradient(
     90deg,
     transparent,
-    rgba(255, 215, 0, 0.5),
+    rgba(6, 242, 219, 0.3),
     transparent
   );
 }
@@ -144,6 +137,7 @@
   margin: 1rem 0;
   position: relative;
   z-index: 2;
+  perspective: 1000px;
 }
 
 .card {
@@ -158,11 +152,47 @@
     0 2px 4px rgba(0, 0, 0, 0.2),
     0 0 0 1px rgba(255, 255, 255, 0.1);
   transform-style: preserve-3d;
-  transition: transform 0.2s ease;
+  position: relative;
+  opacity: 0;
+  transform: translateY(-100vh) rotateY(180deg);
 }
 
-.card:hover {
-  transform: translateY(-5px) rotateX(10deg);
+.card.dealt {
+  animation: dealCard 0.5s forwards;
+}
+
+@keyframes dealCard {
+  0% {
+    opacity: 0;
+    transform: translateY(-100vh) rotateY(180deg);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(0) rotateY(180deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) rotateY(0);
+  }
+}
+
+/* Add delay for each card */
+.card:nth-child(1) { animation-delay: 0s; }
+.card:nth-child(2) { animation-delay: 0.2s; }
+.card:nth-child(3) { animation-delay: 0.4s; }
+.card:nth-child(4) { animation-delay: 0.6s; }
+.card:nth-child(5) { animation-delay: 0.8s; }
+.card:nth-child(6) { animation-delay: 1s; }
+
+/* Card back design */
+.card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(45deg, #06F2DB, #0891B2);
+  border-radius: 8px;
+  backface-visibility: hidden;
+  transform: rotateY(180deg);
 }
 
 /* Score display */
@@ -174,12 +204,25 @@
 
 /* Game Controls */
 .game-controls {
+  position: relative !important;
   display: flex;
   gap: 1rem;
   justify-content: center;
-  margin: 1.5rem 0;
+  margin: 1.5rem auto;
+  width: 15vw !important;
+  position: relative;
+  z-index: 3;
+  background: rgba(0, 0, 0, 0.5);
+  padding: 1rem 2rem;
+  border-radius: 10px;
+  border: 1px solid rgba(6, 242, 219, 0.3);
+  transform: none !important;
+  margin-left: none !important;
 }
 
+.game-controls button {
+  min-width: 100px;
+}
 
 button:disabled {
   background: #666666;

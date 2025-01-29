@@ -269,7 +269,7 @@
   100% { box-shadow: 0 0 20px rgba(6, 242, 0, 0.3); }
 }
 
-.game-controls {
+.poker-game-controls {
   position: absolute;
   bottom: 20px;
   left: 0;

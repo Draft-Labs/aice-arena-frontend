@@ -1412,7 +1412,7 @@ function PokerTable() {
               </div>
             </div>
           </div>
-          <div className="game-controls">
+          <div className="poker-game-controls">
             <div className="action-buttons">
               <button 
                 className="fold-button" 
