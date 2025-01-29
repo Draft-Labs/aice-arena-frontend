@@ -321,7 +321,14 @@ function Account() {
     }
   };
 
-  if (isLoading || authLoading) return <div>Loading...</div>;
+  if (isLoading || authLoading) return (
+    <div className="account-container">
+      <h1>My Account</h1>
+      <div className="loading-container">
+        <div>Loading...</div>
+      </div>
+    </div>
+  );
   if (web3Error) return (
     <div>
       <div>Error: {web3Error}</div>

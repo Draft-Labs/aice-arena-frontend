@@ -1,19 +1,30 @@
 .leaderboard-container {
-  max-width: 1000px;
+  width: 100%;
+  max-width: 1200px;
   margin: 0 auto;
   padding: 2rem;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  border: 1px solid #06F2DB;
+  color: white;
 }
 
 .leaderboard-container h1 {
   text-align: center;
   color: #06F2DB;
   margin-bottom: 2rem;
+  margin-top: 0;
+  font-family: 'Elnath', sans-serif;
 }
 
 .leaderboard-table {
-  background: rgba(0, 0, 0, 0.8);
+  background: rgba(0, 0, 0, 0.5);
+  padding: 1.5rem;
   border-radius: 10px;
-  overflow: hidden;
+  margin-bottom: 2rem;
+  text-align: center;
 }
 
 .leaderboard-header {

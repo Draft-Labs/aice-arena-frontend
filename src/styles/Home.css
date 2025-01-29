@@ -37,6 +37,8 @@
   gap: 2rem;
   width: -webkit-fill-available;
   max-width: 50vw;
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
 }
 
 .ascii-art-container {
@@ -219,6 +221,8 @@
   padding: 2rem;
   border-radius: 15px;
   margin: 2rem 0;
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
 }
 
 .treasury-amount {
@@ -239,6 +243,8 @@
   flex-direction: column;
   align-items: center;
   gap: 1rem;
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
 }
 
 .falling-card {

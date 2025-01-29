@@ -1,49 +1,78 @@
 .account-container {
-  max-width: 800px;
+  width: 100%;
+  max-width: 1200px;
   margin: 0 auto;
-  padding: 0 2rem 2rem 2rem;
+  padding: 2rem;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  border: 1px solid #06F2DB;
+  color: white;
 }
 
 .account-container h1 {
-    text-align: center;
-}
-
-.open-account {
-  background-color: #000000 !important;
-  padding: 2rem;
-  border-radius: 15px;
   text-align: center;
+  color: #06F2DB;
+  margin-bottom: 2rem;
+  margin-top: 0;
+  font-family: 'Elnath', sans-serif;
 }
 
-.open-account p {
-  color: #06F2DB !important;
-  font-size: 1.5rem;
+/* Loading container */
+.loading-container {
+  background: rgba(0, 0, 0, 0.5);
+  padding: 1.5rem;
+  border-radius: 10px;
+  margin: 2rem 0;
+  text-align: center;
+  color: #06F2DB;
+  font-size: 1.2rem;
+}
+
+/* Profile section */
+.profile-section {
+  background: rgba(0, 0, 0, 0.5);
+  padding: 1.5rem;
+  border-radius: 10px;
+  margin-bottom: 2rem;
+}
+
+.profile-form {
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.profile-form h2,
+.profile-display h2 {
+  color: #06F2DB;
   margin-bottom: 1.5rem;
+  text-align: center;
+  font-family: 'Elnath', sans-serif;
+}
+
+/* Balance display */
+.balance-display {
+  background: rgba(0, 0, 0, 0.5);
+  padding: 1.5rem;
+  border-radius: 10px;
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.balance-display h2 {
+  color: #06F2DB;
+  margin-bottom: 1rem;
+  font-family: 'Elnath', sans-serif;
+}
+
+.balance-display p {
+  font-size: 2rem;
+  color: #ffffff;
   font-weight: bold;
 }
 
-.deposit-controls {
-  display: flex;
-  gap: 1rem;
-  justify-content: center;
-}
-
-.deposit-controls input {
-  padding: 0.8rem;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.1);
-  color: #ffffff;
-  width: 92%;
-  font-size: 1rem;
-}
-
-.deposit-controls input:focus {
-  outline: none;
-  border-color: #06F2DB;
-  box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
-}
-
+/* Transaction section */
 .transaction-section {
   display: flex;
   gap: 2rem;
@@ -55,7 +84,7 @@
 
 .transaction-row {
   flex: 1;
-  background: rgba(0, 0, 0, 0.8);
+  background: rgba(0, 0, 0, 0.5);
   padding: 1.5rem;
   border-radius: 10px;
   display: flex;
@@ -68,7 +97,111 @@
   margin-bottom: 1.5rem;
   font-size: 1.2rem;
   text-align: center;
-  width: 100%;
+  font-family: 'Elnath', sans-serif;
+}
+
+/* Connect wallet and open account sections */
+.connect-wallet,
+.open-account {
+  text-align: center;
+  margin: 3rem 0;
+  background: rgba(0, 0, 0, 0.5);
+  padding: 2rem;
+  border-radius: 10px;
+}
+
+.open-account p {
+  color: #06F2DB;
+  font-size: 1.5rem;
+  margin-bottom: 1.5rem;
+  font-weight: bold;
+  font-family: 'Elnath', sans-serif;
+}
+
+/* Form controls */
+.deposit-controls,
+.transaction-controls {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.deposit-controls input,
+.transaction-controls input {
+  padding: 0.8rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.3);
+  color: #ffffff;
+  width: 92%;
+  font-size: 1rem;
+}
+
+.deposit-controls input:focus,
+.transaction-controls input:focus {
+  outline: none;
+  border-color: #06F2DB;
+  box-shadow: 0 0 10px rgba(6, 242, 219, 0.3);
+}
+
+/* Buttons */
+button {
+  background: linear-gradient(45deg, #06F2DB, #0891B2);
+  color: black;
+  border: none;
+  padding: 0.8rem 1.5rem;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(6, 242, 219, 0.3);
+}
+
+.close-account-button {
+  margin-top: 2rem;
+}
+
+/* Error message */
+.error-message {
+  color: #ff4444;
+  background: rgba(255, 68, 68, 0.1);
+  padding: 1rem;
+  border-radius: 8px;
+  margin: 1rem 0;
+  text-align: center;
+}
+
+/* Media Queries */
+@media (max-width: 768px) {
+  .transaction-section {
+    flex-direction: column;
+  }
+  
+  .transaction-controls {
+    max-width: 100%;
+  }
+
+  .account-container {
+    margin: 1rem;
+    padding: 1rem;
+  }
+}
+
+.open-account {
+  background-color: #000000 !important;
+  padding: 2rem;
+  border-radius: 15px;
+  text-align: center;
+}
+
+.deposit-controls {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
 }
 
 .transaction-controls {
@@ -100,139 +233,14 @@
   border-color: #06F2DB;
 }
 
-
-/* Make it responsive */
-@media (max-width: 768px) {
-  .transaction-section {
-    flex-direction: column;
-  }
-  
-  .transaction-controls {
-    max-width: 100%;
-  }
-}
-
 .close-account-section {
   text-align: center;
   margin-top: 2rem;
 }
 
-.close-account-button {
-  background: linear-gradient(45deg, #ff4444, #ff6b6b);
-  color: white;
-  border: none;
-  padding: 1rem 2rem;
-  border-radius: 8px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.close-account-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(255, 68, 68, 0.4);
-}
-
-.error-message {
-  color: #ff4444;
-  margin-top: 1rem;
-  padding: 1rem;
-  background: rgba(255, 68, 68, 0.1);
-  border-radius: 8px;
-  text-align: center;
-}
-
 .connect-wallet {
   text-align: center;
   margin-top: 2rem;
-}
-
-.balance-display {
-  background: rgba(255, 255, 255, 0.1);
-  padding: 2rem;
-  border-radius: 15px;
-  text-align: center;
-  margin-bottom: 2rem;
-}
-
-.balance-display h2 {
-  color: #06F2DB;
-  margin-bottom: 1rem;
-}
-
-.balance-display p {
-  font-size: 2rem;
-  color: #ffffff;
-  font-weight: bold;
-}
-
-.profile-section {
-  background: rgba(0, 0, 0, 0.8);
-  padding: 2rem;
-  border-radius: 10px;
-  margin-bottom: 2rem;
-}
-
-.profile-form {
-  max-width: 500px;
-  margin: 0 auto;
-}
-
-.profile-form h2,
-.profile-display h2 {
-  color: #06F2DB;
-  margin-bottom: 1.5rem;
-  text-align: center;
-}
-
-.profile-form .form-group {
-  margin-bottom: 1.5rem;
-}
-
-.profile-form label {
-  display: block;
-  margin-bottom: 0.5rem;
-  color: #fff;
-}
-
-.profile-form input {
-  width: 100%;
-  padding: 0.8rem;
-  border: 1px solid #666;
-  border-radius: 4px;
-  background: #333;
-  color: #fff;
-}
-
-.profile-form input:focus {
-  outline: none;
-  border-color: #06F2DB;
-}
-
-.profile-actions {
-  display: flex;
-  gap: 1rem;
-  margin-top: 2rem;
-}
-
-.profile-actions button {
-  flex: 1;
-  padding: 0.8rem;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: bold;
-  transition: all 0.3s ease;
-}
-
-.profile-actions button[type="submit"] {
-  background: linear-gradient(45deg, #06F2DB, #ffffff);
-  color: black;
-}
-
-.profile-actions button[type="button"] {
-  background: #666;
-  color: white;
 }
 
 .profile-display {
@@ -258,14 +266,9 @@
 }
 
 .profile-display button {
-  background: linear-gradient(45deg, #06F2DB, #ffffff);
-  border: none;
   padding: 0.8rem 2rem;
-  border-radius: 4px;
-  color: black;
   font-weight: bold;
   cursor: pointer;
-  transition: all 0.3s ease;
 }
 
 .twitter-verified {
@@ -333,7 +336,7 @@
 .profile-actions {
   display: flex;
   gap: 1rem;
-  margin-top: 1rem;
+  margin-top: 2rem;
 }
 
 .profile-form .account-profile-image,

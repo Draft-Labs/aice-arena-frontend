@@ -151,11 +151,6 @@ button:hover,
 .cta-button:hover,
 .game-button:hover {
   transform: translateY(-2px);
-  box-shadow: 
-    0 0 10px rgba(6, 242, 219, 0.4),
-    0 0 20px rgba(6, 242, 219, 0.2),
-    0 0 30px rgba(6, 242, 219, 0.1);
-  background: linear-gradient(45deg, rgba(6, 242, 219, 0.2), rgba(196, 196, 196, 0.2));
 }
 
 .game-button {

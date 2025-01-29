@@ -12,136 +12,142 @@
   align-items: start;
 }
 
+.poker-container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  border: 1px solid #06F2DB;
+  color: white;
+}
+
 .poker-container h1 {
   text-align: center;
   color: #06F2DB;
-  margin-bottom: 30px;
+  margin-bottom: 2rem;
+  margin-top: 0;
+  font-family: 'Elnath', sans-serif;
 }
 
 /* Lobby styles */
 .create-table {
   text-align: center;
-  margin-bottom: 30px;
+  margin-bottom: 2rem;
 }
 
 .create-table button {
-  padding: 12px 24px;
-  font-size: 1.1em;
+  padding: 1rem 2rem;
+  font-weight: bold;
   cursor: pointer;
 }
 
 .tables-list {
+  background: rgba(0, 0, 0, 0.5);
+  padding: 1.5rem;
+  border-radius: 10px;
+  margin-bottom: 2rem;
+  text-align: center;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 60px;
-  padding: 20px;
-  max-width: 1200px;
-  margin: auto;
+  gap: 2rem;
 }
 
 .table-card {
-  width: 100%;
-  min-width: 300px;
-  height: auto;
-  background: #2d2d2d;
+  background: rgba(0, 0, 0, 0.3);
   border-radius: 10px;
-  padding: 25px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  transition: transform 0.3s ease;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
+  padding: 1.5rem;
+  border: 1px solid rgba(6, 242, 219, 0.3);
+  transition: all 0.3s ease;
 }
 
 .table-card:hover {
   transform: translateY(-5px);
+  border-color: #06F2DB;
+  box-shadow: 0 5px 15px rgba(6, 242, 219, 0.2);
 }
 
 .table-card h3 {
   color: #06F2DB;
-  margin: 0;
-  text-align: center;
-  font-size: 1.4em;
-  padding-bottom: 10px;
+  margin: 0 0 1rem 0;
+  font-family: 'Elnath', sans-serif;
 }
 
-.table-card .table-info {
+.table-info {
   background: rgba(0, 0, 0, 0.2);
-  padding: 20px;
+  padding: 1rem;
   border-radius: 8px;
-  flex-grow: 1;
-  width: auto;
-  background: #1a1a1a;
+  margin-bottom: 1rem;
 }
 
-.table-card .table-info p {
-  margin: 12px 0;
-  color: #ddd;
-  font-size: 1.1em;
+.table-info p {
+  margin: 0.5rem 0;
+  color: #fff;
+}
+
+/* Error message */
+.error-message {
+  color: #ff4444;
+  background: rgba(255, 68, 68, 0.1);
+  padding: 1rem;
+  border-radius: 8px;
+  margin: 1rem 0;
+  text-align: center;
+}
+
+/* Connect wallet and open account sections */
+.connect-wallet,
+.open-account {
+  text-align: center;
+  margin: 3rem 0;
+  background: rgba(0, 0, 0, 0.5);
+  padding: 2rem;
+  border-radius: 10px;
+}
+
+.connect-wallet button:hover,
+.open-account button:hover,
+.create-table button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(6, 242, 219, 0.3);
 }
 
 .table-card button {
   width: 100%;
-  padding: 14px;
-  background: #2196F3;
-  color: white;
+  padding: 0.8rem;
+  background: linear-gradient(45deg, #06F2DB, #0891B2);
+  color: black;
   border: none;
-  border-radius: 5px;
+  border-radius: 8px;
+  font-weight: bold;
   cursor: pointer;
   transition: all 0.3s ease;
-  font-size: 1.1em;
-  font-weight: bold;
-  margin-top: auto;
 }
 
 .table-card button:hover {
-  background: #1976D2;
   transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(6, 242, 219, 0.3);
 }
 
-/* Create table form styles */
-.create-table-form {
-  max-width: 500px;
-  margin: 0 auto;
-  background: #2d2d2d;
-  padding: 30px;
-  border-radius: 10px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+/* Media Queries */
+@media (max-width: 1024px) {
+  .tables-list {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
-.form-group {
-  margin-bottom: 20px;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 8px;
-  color: #ddd;
-}
-
-.form-group input {
-  width: 100%;
-  padding: 10px;
-  border: 1px solid #444;
-  border-radius: 5px;
-  background: #1a1a1a;
-  color: white;
-}
-
-.create-button {
-  width: 100%;
-  padding: 12px;
-  background: #4CAF50;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 1.1em;
-  transition: background 0.3s ease;
-}
-
-.create-button:hover {
-  background: #45a049;
+@media (max-width: 768px) {
+  .tables-list {
+    grid-template-columns: 1fr;
+  }
+  
+  .poker-container {
+    margin: 1rem;
+    padding: 1rem;
+  }
 }
 
 /* Poker table styles */
@@ -333,33 +339,6 @@
 .raise-controls input[type="number"]:focus {
   outline: none;
   border-color: #2196F3;
-}
-
-/* Error message */
-.error-message {
-  color: #f44336;
-  text-align: center;
-  margin: 20px 0;
-  padding: 10px;
-  background: rgba(244, 67, 54, 0.1);
-  border-radius: 5px;
-}
-
-/* Add media queries for smaller screens */
-@media (max-width: 1024px) {
-  .tables-list {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (max-width: 768px) {
-  .tables-list {
-    grid-template-columns: 1fr;
-  }
-  
-  .table-card {
-    min-width: unset;
-  }
 }
 
 /* Add these styles for the dealer controls */
@@ -975,4 +954,14 @@ h2 {
 
 .modal-buttons button:active {
   transform: translateY(1px);
+}
+
+.loading-container {
+  background: rgba(0, 0, 0, 0.5);
+  padding: 1.5rem;
+  border-radius: 10px;
+  margin: 2rem 0;
+  text-align: center;
+  color: #06F2DB;
+  font-size: 1.2rem;
 }

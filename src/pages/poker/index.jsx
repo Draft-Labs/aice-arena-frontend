@@ -116,9 +116,15 @@ function PokerLobby() {
   console.log('Current tables state:', tables);
 
   if (isCheckingAccount) {
-    return <div>Loading...</div>;
+    return (
+      <div className="poker-container">
+        <h1>Poker Tables</h1>
+        <div className="loading-container">
+          <div>Loading...</div>
+        </div>
+      </div>
+    );
   }
-
 
   return (
     <div className="poker-container">
