@@ -552,21 +552,59 @@ h2 {
   width: 60px;
   height: 90px;
   background: white;
-  border: 1px solid #ccc;
-  border-radius: 5px;
+  border: 2px solid #333;
+  border-radius: 8px;
   display: flex;
   justify-content: center;
   align-items: center;
   font-size: 24px;
   font-weight: bold;
-  box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
+  box-shadow: 3px 3px 7px rgba(0, 0, 0, 0.2);
+  transform-style: preserve-3d;
+  position: relative;
+  opacity: 0;
+  transform: translateY(-100vh) rotateY(180deg);
 }
 
-.poker-table {
-  position: relative;
-  width: 100%;
-  max-width: 800px;
-  margin: 0 auto;
+.card.dealt {
+  animation: dealCard 0.5s forwards;
+}
+
+@keyframes dealCard {
+  0% {
+    opacity: 0;
+    transform: translateY(-100vh) rotateY(180deg);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(0) rotateY(180deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) rotateY(0);
+  }
+}
+
+/* Add delay for each community card */
+.community-cards .card:nth-child(1) { animation-delay: 0s; }
+.community-cards .card:nth-child(2) { animation-delay: 0.2s; }
+.community-cards .card:nth-child(3) { animation-delay: 0.4s; }
+.community-cards .card:nth-child(4) { animation-delay: 0.6s; }
+.community-cards .card:nth-child(5) { animation-delay: 0.8s; }
+
+/* Add delay for player cards */
+.player-cards .card:nth-child(1) { animation-delay: 0s; }
+.player-cards .card:nth-child(2) { animation-delay: 0.2s; }
+
+/* Card back design */
+.card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(45deg, #06F2DB, #0891B2);
+  border-radius: 6px;
+  backface-visibility: hidden;
+  transform: rotateY(180deg);
 }
 
 .card-display {
@@ -579,39 +617,32 @@ h2 {
   flex-direction: column;
   align-items: center;
   gap: 20px;
+  perspective: 1000px;
 }
 
 .community-cards {
   display: flex;
   gap: 10px;
   background: rgba(0, 0, 0, 0.2);
-  padding: 10px;
+  padding: 15px;
   border-radius: 10px;
+  border: 1px solid rgba(6, 242, 219, 0.3);
 }
 
 .player-cards {
   display: flex;
   gap: 10px;
   margin-top: 20px;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 15px;
+  border-radius: 10px;
+  border: 1px solid rgba(6, 242, 219, 0.3);
 }
 
-.card {
-  width: 60px;
-  height: 90px;
-  background: white;
-  border: 2px solid #333;
-  border-radius: 8px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-size: 24px;
-  font-weight: bold;
-  box-shadow: 3px 3px 7px rgba(0, 0, 0, 0.2);
-  transition: transform 0.2s;
-}
-
-.card:hover {
-  transform: translateY(-5px);
+.player-cards h3 {
+  color: #06F2DB;
+  margin: 0 0 10px 0;
+  font-size: 1.2em;
 }
 
 .dealer-button {

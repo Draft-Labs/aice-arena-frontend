@@ -63,6 +63,49 @@ function PokerTable() {
   // Add maxPlayersPerTable constant at the top of your component
   const maxPlayersPerTable = 6;
 
+  // Add this to your state variables at the top
+  const [dealtCards, setDealtCards] = useState({
+    community: [],
+    player: [],
+    // Track which cards have been animated
+    animatedCommunity: new Set(),
+    animatedPlayer: new Set()
+  });
+
+  // Add this constant for animation timing
+  const ANIMATION_DURATION = 500; // Base animation duration in ms
+  const CARD_DELAY = 200; // Delay between each card
+
+  // Update the animateCards function to only animate new cards
+  const animateCards = (cards, type) => {
+    return new Promise(resolve => {
+      const newCards = cards.filter((_, index) => {
+        // Only animate cards that haven't been animated before
+        return !dealtCards[`animated${type.charAt(0).toUpperCase() + type.slice(1)}`].has(index);
+      });
+
+      if (newCards.length === 0) {
+        resolve();
+        return;
+      }
+
+      newCards.forEach((_, index) => {
+        setTimeout(() => {
+          setDealtCards(prev => ({
+            ...prev,
+            [type]: [...prev[type], index],
+            [`animated${type.charAt(0).toUpperCase() + type.slice(1)}`]: 
+              new Set([...prev[`animated${type.charAt(0).toUpperCase() + type.slice(1)}`], index])
+          }));
+        }, index * CARD_DELAY);
+      });
+
+      // Resolve after all new cards are dealt and animated
+      const totalDuration = (newCards.length - 1) * CARD_DELAY + ANIMATION_DURATION;
+      setTimeout(resolve, totalDuration);
+    });
+  };
+
   // Simplify the username display function
   const formatAddress = (address) => {
     if (!address || address === ethers.ZeroAddress) return 'Empty Seat';
@@ -953,7 +996,7 @@ function PokerTable() {
     return { value, suit, color };
   };
 
-  // Update the useEffect for fetching cards with console logs
+  // Update the useEffect for fetching cards
   useEffect(() => {
     const fetchCards = async () => {
       if (!account || !tableId || !hasJoined) {
@@ -979,10 +1022,12 @@ function PokerTable() {
         if (playerData.success) {
           console.log('Setting player cards:', playerData.cards);
           setPlayerCards(playerData.cards);
+          await animateCards(playerData.cards, 'player');
         }
         if (communityData.success) {
           console.log('Setting community cards:', communityData.cards);
           setCommunityCards(communityData.cards);
+          await animateCards(communityData.cards, 'community');
         }
       } catch (err) {
         console.error('Error fetching cards:', err);
@@ -1387,7 +1432,11 @@ function PokerTable() {
                   communityCards.map((card, index) => {
                     const { value, suit, color } = cardValueToString(card);
                     return (
-                      <div key={index} className="card" style={{ color }}>
+                      <div 
+                        key={index} 
+                        className={`card ${dealtCards.community.includes(index) ? 'dealt' : ''}`}
+                        style={{ color }}
+                      >
                         {value}{suit}
                       </div>
                     );
@@ -1403,7 +1452,11 @@ function PokerTable() {
                   playerCards.map((card, index) => {
                     const { value, suit, color } = cardValueToString(card);
                     return (
-                      <div key={index} className="card" style={{ color }}>
+                      <div 
+                        key={index} 
+                        className={`card ${dealtCards.player.includes(index) ? 'dealt' : ''}`}
+                        style={{ color }}
+                      >
                         {value}{suit}
                       </div>
                     );
