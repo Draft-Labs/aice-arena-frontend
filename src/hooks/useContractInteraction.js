@@ -283,7 +283,7 @@ export function useContractInteraction() {
     }
   }, [blackjackContract, account]);
 
-  const placeRouletteBet = useCallback(async (amount, numbers) => {
+  const placeRouletteBet = useCallback(async (amount, numbers, gasLimit) => {
     try {
       if (!rouletteContract || !account) {
         throw new Error('Contract or account not initialized');
@@ -301,7 +301,8 @@ export function useContractInteraction() {
         firstElementType: typeof numbers[0],
         arrayConstructor: numbers.constructor.name,
         elements: [...numbers],
-        elementTypes: numbers.map(n => typeof n)
+        elementTypes: numbers.map(n => typeof n),
+        providedGasLimit: gasLimit
       });
 
       // Convert numbers to uint8 array and validate
@@ -338,7 +339,7 @@ export function useContractInteraction() {
         
         numbersArray.push(bigIntValue);
       }
-      
+
       // Debug transformed array in detail
       console.log('Transformed array details:', {
         array: numbersArray,
@@ -361,18 +362,25 @@ export function useContractInteraction() {
         placeBetFunction: rouletteContract.interface.getFunction('placeBet'),
         contractAddress: await rouletteContract.getAddress(),
         account,
-        betAmountWei: betAmountWei.toString()
+        betAmountWei: betAmountWei.toString(),
+        providedGasLimit: gasLimit
       });
 
-      // Debug transaction parameters
+      // Ensure gas limit is a BigInt and at least 500000
+      const finalGasLimit = ethers.getBigInt(Math.max(Number(gasLimit || 500000), 500000));
+
+      // Create transaction parameters
       const txParams = {
         value: betAmountWei,
-        gasLimit: 500000
+        gasLimit: finalGasLimit
       };
       
       console.log('Transaction parameters:', {
         numbers: numbersArray.map(n => n.toString()),
-        params: txParams,
+        params: {
+          value: txParams.value.toString(),
+          gasLimit: txParams.gasLimit.toString()
+        },
         encodedData: rouletteContract.interface.encodeFunctionData('placeBet', [numbersArray])
       });
 
@@ -382,9 +390,19 @@ export function useContractInteraction() {
         txParams
       );
 
-      console.log('Transaction sent:', tx.hash);
+      console.log('Transaction sent:', {
+        hash: tx.hash,
+        gasLimit: tx.gasLimit?.toString(),
+        value: tx.value?.toString(),
+        data: tx.data
+      });
+
       const receipt = await tx.wait();
-      console.log('Transaction confirmed:', receipt);
+      console.log('Transaction confirmed:', {
+        hash: receipt.hash,
+        gasUsed: receipt.gasUsed?.toString(),
+        status: receipt.status
+      });
 
       return {
         success: true,

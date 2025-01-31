@@ -91,8 +91,20 @@ function Roulette() {
       // Calculate total bet amount
       const totalBetAmount = (selectedBetSize * selectedNumbers.length).toString();
 
-      // Place bet with selected numbers
-      const success = await placeRouletteBet(totalBetAmount, selectedNumbers);
+      // Calculate gas limit based on number of selected numbers
+      const baseGas = 500000;  // Increased base gas significantly
+      const gasPerNumber = 100000;  // Increased per-number gas
+      const gasLimit = baseGas + (selectedNumbers.length * gasPerNumber);
+
+      console.log('Placing bet with gas limit:', {
+        baseGas,
+        gasPerNumber,
+        totalGasLimit: gasLimit,
+        selectedNumbers: selectedNumbers.length
+      });
+
+      // Place bet with selected numbers and dynamic gas limit
+      const success = await placeRouletteBet(totalBetAmount, selectedNumbers, gasLimit);
       
       if (success) {
         // Note: In production, the result would come from the blockchain event
