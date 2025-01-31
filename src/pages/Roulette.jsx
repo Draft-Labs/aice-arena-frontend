@@ -32,6 +32,42 @@ function Roulette() {
     });
   };
 
+  const handleSpecialBet = (type) => {
+    let numbers = [];
+    switch (type) {
+      case 'odd':
+        numbers = [1,3,5,7,9,11,13,15,17,19,21,23,25,27,29,31,33,35];
+        break;
+      case 'even':
+        numbers = [2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32,34,36];
+        break;
+      case '1-18':
+        numbers = Array.from({length: 18}, (_, i) => i + 1);
+        break;
+      case '19-36':
+        numbers = Array.from({length: 18}, (_, i) => i + 19);
+        break;
+      case '1-12':
+        numbers = Array.from({length: 12}, (_, i) => i + 1);
+        break;
+      case '13-24':
+        numbers = Array.from({length: 12}, (_, i) => i + 13);
+        break;
+      case '25-36':
+        numbers = Array.from({length: 12}, (_, i) => i + 25);
+        break;
+      case 'red':
+        numbers = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
+        break;
+      case 'black':
+        numbers = [2,4,6,8,10,11,13,15,17,20,22,24,26,28,29,31,33,35];
+        break;
+      default:
+        return;
+    }
+    setSelectedNumbers(numbers);
+  };
+
   const handlePlaceBet = async () => {
     try {
       setTransactionError(null);
@@ -137,13 +173,11 @@ function Roulette() {
             ))}
           </div>
 
-          {selectedNumbers.length > 0 && (
-            <div className="current-bet-info">
-              <p>Selected Numbers: {selectedNumbers.join(', ')}</p>
-              <p>Total Bet: {(selectedBetSize * selectedNumbers.length).toFixed(2)} ETH</p>
-              <p>Potential Win (per number): {(selectedBetSize * 36).toFixed(2)} ETH</p>
-            </div>
-          )}
+          <div className="current-bet-info">
+            <p>Selected Numbers: {selectedNumbers.length > 0 ? selectedNumbers.join(', ') : 'None'}</p>
+            <p>Total Bet: {selectedNumbers.length > 0 ? `${(selectedBetSize * selectedNumbers.length).toFixed(2)} ETH` : 'None'}</p>
+            <p>Potential Win (per number): {selectedNumbers.length > 0 ? `${(selectedBetSize * 36).toFixed(2)} ETH` : 'None'}</p>
+          </div>
 
           <div className="roulette-board">
             <div className="numbers-grid">
@@ -167,6 +201,65 @@ function Roulette() {
                   </div>
                 );
               })}
+            </div>
+          </div>
+
+          <div className="special-bets">
+            <div className="special-bets-grid">
+              <button 
+                className={`special-bet-button ${selectedNumbers.length === 18 && selectedNumbers.every(n => n % 2 === 1) ? 'selected' : ''}`}
+                onClick={() => handleSpecialBet('odd')}
+              >
+                Odd Numbers
+              </button>
+              <button 
+                className={`special-bet-button ${selectedNumbers.length === 18 && selectedNumbers.every(n => n % 2 === 0) ? 'selected' : ''}`}
+                onClick={() => handleSpecialBet('even')}
+              >
+                Even Numbers
+              </button>
+              <button 
+                className={`special-bet-button ${selectedNumbers.length === 18 && selectedNumbers.every(n => n <= 18) ? 'selected' : ''}`}
+                onClick={() => handleSpecialBet('1-18')}
+              >
+                1 to 18
+              </button>
+              <button 
+                className={`special-bet-button ${selectedNumbers.length === 18 && selectedNumbers.every(n => n > 18) ? 'selected' : ''}`}
+                onClick={() => handleSpecialBet('19-36')}
+              >
+                19 to 36
+              </button>
+              <button 
+                className={`special-bet-button ${selectedNumbers.length === 12 && selectedNumbers.every(n => n <= 12) ? 'selected' : ''}`}
+                onClick={() => handleSpecialBet('1-12')}
+              >
+                1st 12
+              </button>
+              <button 
+                className={`special-bet-button ${selectedNumbers.length === 12 && selectedNumbers.every(n => n > 12 && n <= 24) ? 'selected' : ''}`}
+                onClick={() => handleSpecialBet('13-24')}
+              >
+                2nd 12
+              </button>
+              <button 
+                className={`special-bet-button ${selectedNumbers.length === 12 && selectedNumbers.every(n => n > 24) ? 'selected' : ''}`}
+                onClick={() => handleSpecialBet('25-36')}
+              >
+                3rd 12
+              </button>
+              <button 
+                className={`special-bet-button ${selectedNumbers.length === 18 && selectedNumbers.every(n => redNumbers.includes(n)) ? 'selected' : ''}`}
+                onClick={() => handleSpecialBet('red')}
+              >
+                Red
+              </button>
+              <button 
+                className={`special-bet-button ${selectedNumbers.length === 18 && selectedNumbers.every(n => !redNumbers.includes(n) && n !== 0) ? 'selected' : ''}`}
+                onClick={() => handleSpecialBet('black')}
+              >
+                Black
+              </button>
             </div>
           </div>
 
