@@ -31,7 +31,7 @@
   text-align: right;
   margin-bottom: 2rem;
   font-size: 1.2rem;
-  color: #ffd700;
+  color: #06F2DB;
 }
 
 .betting-controls {
@@ -43,7 +43,6 @@
 
 .betting-controls button {
   padding: 10px 20px;
-  border-radius: 4px;
   cursor: pointer;
 }
 
@@ -61,21 +60,14 @@
 
 .bet-size {
   padding: 0.8rem 1.5rem;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 215, 0, 0.3);
-  border-radius: 8px;
   color: white;
   font-weight: bold;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
-.bet-size:hover {
-  background: rgba(255, 215, 0, 0.2);
-}
-
 .bet-size.selected {
-  background: linear-gradient(45deg, #ffd700, #ffb700);
+  background: #06F2DB;
   color: black;
 }
 
@@ -89,7 +81,7 @@
 
 .current-bet-info p {
   margin: 0.5rem 0;
-  color: #ffd700;
+  color: #06F2DB;
 }
 
 .roulette-board {
@@ -101,7 +93,6 @@
   grid-template-columns: repeat(12, 1fr);
   gap: 4px;
   padding: 1rem;
-  background: rgba(0, 100, 0, 0.3);
   border-radius: 15px;
 }
 
@@ -111,7 +102,8 @@
   align-items: center;
   justify-content: center;
   color: white;
-  font-weight: bold;
+  font-weight: 400;
+  font-size: 1.4rem;
   border-radius: 4px;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -132,11 +124,10 @@
 
 .number:hover {
   transform: scale(1.1);
-  box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
 }
 
 .number.selected {
-  background: #ffd700;
+  background: #06F2DB;
   color: black;
 }
 

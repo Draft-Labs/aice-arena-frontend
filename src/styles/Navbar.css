@@ -65,7 +65,8 @@
   background: rgba(255, 215, 0, 0.1);
   border-radius: 5px;
   color: #06F2DB;
-  font-weight: bold;
+  font-weight: 400;
+  letter-spacing: 0.1rem;
 }
 
 .connect-button {
@@ -75,7 +76,7 @@
   border-radius: 5px;
   color: #000;
   font-family: 'Orbitron', 'Sans Seriff';
-  font-weight: bold;
+  font-weight: 400;
   cursor: pointer;
   transition: all 0.3s ease;
 }
@@ -95,6 +96,8 @@
   align-items: center;
   gap: 8px;
   font-family: monospace;
+  font-weight: 400;
+  letter-spacing: 0.1rem;
   padding: 0.5rem 1rem;
   background: rgba(255, 255, 255, 0.1);
   border-radius: 5px;

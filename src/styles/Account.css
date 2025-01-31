@@ -150,7 +150,6 @@ button {
   color: black;
   border: none;
   padding: 0.8rem 1.5rem;
-  border-radius: 8px;
   font-weight: bold;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -217,7 +216,6 @@ button:hover {
 .transaction-controls button {
   width: 100%;
   padding: 0.8rem;
-  border-radius: 4px;
   font-size: 1rem;
 }
 

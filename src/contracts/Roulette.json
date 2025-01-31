@@ -1,5 +1,5 @@
 {
-    "abi": [
+  "abi": [
     {
       "inputs": [
         {
@@ -32,21 +32,15 @@
         },
         {
           "indexed": false,
-          "internalType": "enum Roulette.BetType",
-          "name": "betType",
-          "type": "uint8"
-        },
-        {
-          "indexed": false,
           "internalType": "uint256",
           "name": "amount",
           "type": "uint256"
         },
         {
           "indexed": false,
-          "internalType": "uint8[]",
-          "name": "numbers",
-          "type": "uint8[]"
+          "internalType": "uint8",
+          "name": "number",
+          "type": "uint8"
         }
       ],
       "name": "BetPlaced",
@@ -158,19 +152,14 @@
               "type": "address"
             },
             {
-              "internalType": "enum Roulette.BetType",
-              "name": "betType",
-              "type": "uint8"
-            },
-            {
               "internalType": "uint256",
               "name": "amount",
               "type": "uint256"
             },
             {
-              "internalType": "uint8[]",
-              "name": "numbers",
-              "type": "uint8[]"
+              "internalType": "uint8",
+              "name": "number",
+              "type": "uint8"
             }
           ],
           "internalType": "struct Roulette.Bet[]",
@@ -217,11 +206,6 @@
     {
       "inputs": [
         {
-          "internalType": "enum Roulette.BetType",
-          "name": "betType",
-          "type": "uint8"
-        },
-        {
           "internalType": "uint8[]",
           "name": "numbers",
           "type": "uint8[]"
@@ -253,32 +237,13 @@
           "type": "address"
         },
         {
-          "internalType": "enum Roulette.BetType",
-          "name": "betType",
-          "type": "uint8"
-        },
-        {
           "internalType": "uint256",
           "name": "amount",
           "type": "uint256"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "name": "redNumbers",
-      "outputs": [
+        },
         {
           "internalType": "uint8",
-          "name": "",
+          "name": "number",
           "type": "uint8"
         }
       ],

@@ -8,7 +8,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400..900&display=swap');
 
 .App {
-  min-height: 100vh;
+  min-height: 98vh;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -22,10 +22,16 @@
   justify-content: center;
 }
 
-h1, h2, h3, h4, h5, h6, p {
+h1, h2, h3, h4, h5, h6 {
   font-family: 'Orbitron', Courier, monospace;
   font-weight: 600;
   letter-spacing: 2px;
+}
+
+p {
+  font-family: 'Orbitron', Courier, monospace;
+  font-weight: 400;
+  letter-spacing: 0.1rem;
 }
 
 h1 {
