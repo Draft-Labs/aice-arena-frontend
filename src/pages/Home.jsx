@@ -192,17 +192,15 @@ function Home() {
     return (
       <div className="chat-box">
         <div className="chat-header">
-          <h3>Global Chat</h3>
+          <h3>Aice Chat</h3>
         </div>
         <div className="chat-messages">
           <div className="chat-message system">
             Welcome to Aice Arena! Connect your wallet to start chatting.
           </div>
+          <p className='chat-title'>Aice</p>
           <div className="chat-message">
-            Hey everyone, good luck at the tables! 🎰
-          </div>
-          <div className="chat-message">
-            Just won 2 ETH at blackjack! 🎉
+            Hello... who are you?
           </div>
         </div>
         <div className="chat-input-container">

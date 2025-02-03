@@ -75,8 +75,16 @@
   text-transform: uppercase;
 }
 
+.chat-title {
+  color: #06F2DB;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  margin-bottom: 0;
+}
+
 .chat-messages {
   flex: 1;
+
   overflow-y: auto;
   padding: 1rem;
   display: flex;
