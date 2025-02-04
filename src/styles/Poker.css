@@ -293,8 +293,6 @@
 .action-buttons button {
   width: 100%;
   padding: 10px 20px;
-  border: none;
-  border-radius: 5px;
   cursor: pointer;
   font-weight: bold;
   transition: all 0.3s ease;
@@ -305,10 +303,70 @@
   cursor: not-allowed;
 }
 
-.fold-button { background: #f44336; color: white; }
-.check-button { background: #4CAF50; color: white; }
-.call-button { background: #2196F3; color: white; }
-.raise-button { background: #ff9800; color: white; }
+.action-button {
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  align-items: center;
+  position: relative;
+  padding: 10px 20px;
+  width: 100%;
+}
+
+.action-buttons button svg {
+  width: 30px;
+  height: 30px;
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+/* Specific colors for each button type */
+.fold-button svg {
+  color: #ff4444;
+}
+
+.check-button svg {
+  color: #33b5e5;
+}
+
+.call-button svg {
+  color: #00C851;
+}
+
+/* Update the arrow pulse animation */
+.action-buttons button:hover svg {
+  animation: arrowPulse 1s infinite;
+}
+
+@keyframes arrowPulse {
+  0% {
+    filter: brightness(1);
+  }
+  50% {
+    filter: brightness(2);
+  }
+  100% {
+    filter: brightness(1);
+  }
+}
+
+.action-button span {
+  grid-column: 1 / -1;
+  text-align: center;
+}
+
+.action-button.fold svg {
+  color: #ff4444;
+}
+
+.action-button.check svg {
+  color: #33b5e5;
+}
+
+.action-button.call svg {
+  color: #00C851;
+}
 
 .raise-controls {
   display: flex;
@@ -806,11 +864,21 @@ h2 {
 }
 
 /* Active turn indicator styles */
+.player-position {
+  transition: border-color 0.3s ease-in-out;
+  will-change: transform, box-shadow, border-color;
+  transform: translateZ(0);
+}
+
 .player-position.current-turn {
-  animation: turnGlow 2s infinite;
   border: 2px solid #06F2DB;
   box-shadow: 0 0 20px rgba(0, 238, 255, 0.4);
   z-index: 10;
+  animation: turnGlow 2s infinite;
+  animation-timing-function: linear;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
 }
 
 @keyframes turnGlow {
@@ -833,7 +901,7 @@ h2 {
   position: absolute;
   top: -25px;
   left: 50%;
-  transform: translateX(-50%);
+  transform: translateX(-50%) translateZ(0);
   background: #06F2DB;
   color: black;
   padding: 4px 8px;
@@ -842,25 +910,25 @@ h2 {
   font-weight: bold;
   white-space: nowrap;
   opacity: 0;
-  animation: fadeInOut 2s infinite;
+  pointer-events: none;
+  will-change: opacity;
+  animation: fadeInOut 2s infinite linear;
+  backface-visibility: hidden;
 }
 
 .player-position.current-turn .turn-indicator {
   opacity: 1;
+  transition: opacity 0.2s ease-in-out;
 }
 
 @keyframes fadeInOut {
-  0%, 100% { opacity: 0.8; }
-  50% { opacity: 1; }
+  0%, 100% { opacity: 0.8; transform: translateX(-50%) translateZ(0); }
+  50% { opacity: 1; transform: translateX(-50%) translateZ(0); }
 }
 
 .leave-table-button {
   margin-top: 15px;
   padding: 10px 20px;
-  background: #dc3545;
-  color: white;
-  border: none;
-  border-radius: 5px;
   cursor: pointer;
   font-size: 0.9em;
   transition: all 0.3s ease;

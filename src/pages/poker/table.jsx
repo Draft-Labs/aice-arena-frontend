@@ -9,6 +9,7 @@ import { getTableName } from '../../config/firebase';
 import { API_BASE_URL } from '../../config/constants';
 import { db } from '../../config/firebase';
 import { doc, getDoc } from 'firebase/firestore';
+import { MdKeyboardDoubleArrowRight, MdKeyboardDoubleArrowUp, MdKeyboardDoubleArrowDown } from "react-icons/md";
 import tableBackground from '../../assets/table.svg';
 
 function PokerTable() {
@@ -329,6 +330,17 @@ function PokerTable() {
         throw new Error('Invalid action for current game state');
       }
 
+      // Get players before action to calculate next turn
+      const [players, table] = await Promise.all([
+        pokerContract.getTablePlayers(tableId),
+        pokerContract.tables(tableId)
+      ]);
+
+      // Calculate next turn before action
+      const currentPos = Number(table.currentPosition);
+      const nextPosition = (currentPos + 1) % players.length;
+      const nextPlayer = players[nextPosition];
+
       let tx;
       const options = { 
         gasLimit: 1000000,
@@ -357,8 +369,50 @@ function PokerTable() {
       }
 
       console.log('Transaction sent:', tx.hash);
+      
+      // Update current turn state immediately after sending transaction
+      setCurrentTurn(nextPlayer);
+      
+      // Start waiting for transaction confirmation
       const receipt = await tx.wait();
       console.log('Transaction receipt:', receipt);
+      
+      // After transaction is confirmed, update all game state
+      const [newTableInfo, newCommunityCards, confirmedPlayers, confirmedTable] = await Promise.all([
+        pokerContract.getTableInfo(tableId),
+        pokerContract.getCommunityCards(tableId),
+        pokerContract.getTablePlayers(tableId),
+        pokerContract.tables(tableId)
+      ]);
+
+      // Verify and update turn if needed
+      const confirmedPos = Number(confirmedTable.currentPosition);
+      const confirmedCurrentPlayer = confirmedPlayers[confirmedPos];
+      if (confirmedCurrentPlayer !== nextPlayer) {
+        setCurrentTurn(confirmedCurrentPlayer);
+      }
+
+      console.log('New table info:', newTableInfo);
+
+      // Update game state with null checks
+      setGameState(prevState => ({
+        ...prevState,
+        pot: newTableInfo[6] ? ethers.formatEther(newTableInfo[6]) : '0',
+        currentBet: newTableInfo[4] ? ethers.formatEther(newTableInfo[4]) : '0',
+        gamePhase: getGamePhaseString(Number(newTableInfo[8]))
+      }));
+
+      // Update community cards if they exist
+      if (newCommunityCards && newCommunityCards.length > 0) {
+        const validCards = newCommunityCards
+          .map(card => Number(card))
+          .filter(card => card > 0);
+        
+        if (validCards.length > 0) {
+          setCommunityCards(validCards);
+          await animateCards(validCards, 'community');
+        }
+      }
       
       toast.success(`Successfully ${action}ed`);
       await updateGameState();
@@ -1472,25 +1526,27 @@ function PokerTable() {
           <div className="poker-game-controls">
             <div className="action-buttons">
               <button 
-                className="fold-button" 
-                onClick={() => handleAction('fold')}
-                disabled={!gameState.isPlayerTurn}
-              >
-                Fold
-              </button>
-              <button 
-                className="check-button" 
-                onClick={() => handleAction('check')}
-                //disabled={!gameState.isPlayerTurn || !gameState.canCheck}
-              >
-                Check
-              </button>
-              <button 
                 className="call-button" 
                 onClick={() => handleAction('call')}
                 disabled={!gameState.isPlayerTurn}
               >
-                Call
+                <MdKeyboardDoubleArrowUp />
+                <span>Call</span>
+              </button>
+              <button 
+                className="check-button" 
+                onClick={() => handleAction('check')}
+              >
+                <MdKeyboardDoubleArrowRight />
+                <span>Check</span>
+              </button>
+              <button 
+                className="fold-button" 
+                onClick={() => handleAction('fold')}
+                disabled={!gameState.isPlayerTurn}
+              >
+                <MdKeyboardDoubleArrowDown />
+                <span>Fold</span>
               </button>
               <div className="raise-controls">
                 <input
