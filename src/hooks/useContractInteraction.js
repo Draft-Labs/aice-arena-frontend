@@ -42,7 +42,7 @@ export function useContractInteraction() {
       
       // Get current gas price and increase it slightly
       const gasPrice = await provider.getGasPrice();
-      const adjustedGasPrice = gasPrice * BigInt(Math.floor(GAS_PRICE_MULTIPLIER * 100)) / BigInt(100);
+      const adjustedGasPrice = gasPrice * ethers.getBigInt(Math.floor(GAS_PRICE_MULTIPLIER * 100)) / ethers.getBigInt(100);
 
       const tx = await blackjackContract.placeBet({
         value: betAmountWei,
