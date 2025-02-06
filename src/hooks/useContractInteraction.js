@@ -2,8 +2,11 @@ import { useCallback } from 'react';
 import { useWeb3 } from '../context/Web3Context';
 import { ethers } from 'ethers';
 
+const AVALANCHE_GAS_LIMIT = 8000000;
+const GAS_PRICE_MULTIPLIER = 1.5; // Multiplier for gas price to ensure transaction goes through
+
 export function useContractInteraction() {
-  const { blackjackContract, rouletteContract, treasuryContract, account } = useWeb3();
+  const { blackjackContract, rouletteContract, treasuryContract, account, provider } = useWeb3();
 
   const calculateHandScore = (hand) => {
     let score = 0;
@@ -37,34 +40,14 @@ export function useContractInteraction() {
 
       const betAmountWei = ethers.parseEther(amount.toString());
       
-      console.log('Placing bet...', {
-        amount,
-        betAmountWei: betAmountWei.toString(),
-        account,
-        blackjackAddress: await blackjackContract.getAddress(),
-        treasuryAddress: await treasuryContract.getAddress()
-      });
+      // Get current gas price and increase it slightly
+      const gasPrice = await provider.getGasPrice();
+      const adjustedGasPrice = gasPrice * BigInt(Math.floor(GAS_PRICE_MULTIPLIER * 100)) / BigInt(100);
 
-      // Check if treasury has enough funds to cover potential win
-      const houseFunds = await treasuryContract.getHouseFunds();
-      console.log('House funds:', ethers.formatEther(houseFunds));
-      
-      const betAmountBigInt = ethers.toBigInt(betAmountWei);
-      if (houseFunds < betAmountBigInt * ethers.toBigInt(2)) {
-        throw new Error('Insufficient house funds to cover potential win');
-      }
-
-      // Check if player already has an active bet
-      const isActive = await blackjackContract.isPlayerActive(account);
-      if (isActive) {
-        throw new Error('Player already has an active bet');
-      }
-
-      // Place bet with ETH from wallet
-      console.log('Placing bet transaction...');
       const tx = await blackjackContract.placeBet({
         value: betAmountWei,
-        gasLimit: 500000
+        gasLimit: AVALANCHE_GAS_LIMIT,
+        gasPrice: adjustedGasPrice
       });
 
       console.log('Transaction sent:', tx.hash);
@@ -76,7 +59,7 @@ export function useContractInteraction() {
       console.error('Detailed error:', error);
       throw error;
     }
-  }, [blackjackContract, treasuryContract, account]);
+  }, [blackjackContract, treasuryContract, account, provider]);
 
   const hit = useCallback(async () => {
     try {

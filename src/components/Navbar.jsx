@@ -14,6 +14,7 @@ function Navbar() {
   const dropdownRef = useRef(null);
   const [profileImage, setProfileImage] = useState(null);
   const location = useLocation();
+  const [networkStatus, setNetworkStatus] = useState(null);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -91,6 +92,24 @@ function Navbar() {
     fetchProfileData();
   }, [account]);
 
+  useEffect(() => {
+    const checkNetwork = async () => {
+      if (window.ethereum) {
+        const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+        setNetworkStatus(chainId === '0xa869' ? 'connected' : 'wrong-network');
+      } else {
+        setNetworkStatus('no-wallet');
+      }
+    };
+    
+    checkNetwork();
+    window.ethereum?.on('chainChanged', checkNetwork);
+    
+    return () => {
+      window.ethereum?.removeListener('chainChanged', checkNetwork);
+    };
+  }, []);
+
   return (
     <nav className="navbar">
       <div className="navbar-left">
@@ -158,6 +177,11 @@ function Navbar() {
             <div className={`dropdown-menu ${showDropdown ? 'show' : ''}`}>
               <button onClick={handleDisconnect}>Disconnect</button>
             </div>
+          </div>
+        )}
+        {networkStatus === 'wrong-network' && (
+          <div className="network-warning">
+            Please connect to Avalanche Fuji Testnet
           </div>
         )}
       </div>

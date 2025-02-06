@@ -8,7 +8,7 @@ import PokerJSON from '../contracts/Poker.json';
 const Web3Context = createContext();
 
 const AVALANCHE_FUJI_CONFIG = {
-  chainId: '43113', // 43113 in hex
+  chainId: '0xa869', // 43113 in hex
   chainName: 'Avalanche Testnet C-Chain',
   nativeCurrency: {
     name: 'AVAX',
@@ -16,7 +16,7 @@ const AVALANCHE_FUJI_CONFIG = {
     decimals: 18
   },
   rpcUrls: ['https://api.avax-test.network/ext/bc/C/rpc'],
-  blockExplorerUrls: ['https://subnets-test.avax.network/']
+  blockExplorerUrls: ['https://testnet.snowtrace.io/']
 };
 
 export function Web3Provider({ children }) {
@@ -58,17 +58,13 @@ export function Web3Provider({ children }) {
             await new Promise(resolve => setTimeout(resolve, 1500));
             
           } catch (switchError) {
-            // This error code indicates that the chain has not been added to MetaMask
-            if (switchError.code === 4902 || switchError.code === -32603) {
+            // Update error handling for Avalanche
+            if (switchError.code === 4902 || switchError.code === -32603 || switchError.code === -32000) {
               try {
                 await window.ethereum.request({
                   method: 'wallet_addEthereumChain',
                   params: [AVALANCHE_FUJI_CONFIG],
                 });
-                
-                // Add delay after adding network
-                await new Promise(resolve => setTimeout(resolve, 1500));
-                
               } catch (addError) {
                 console.error('Add network error:', addError);
                 throw new Error('Failed to add Avalanche network. Please add it manually to your wallet.');
