@@ -44,7 +44,14 @@ export function useContractInteraction() {
       const feeData = await provider.getFeeData();
       const adjustedGasPrice = feeData.gasPrice * ethers.getBigInt(Math.floor(GAS_PRICE_MULTIPLIER * 100)) / ethers.getBigInt(100);
 
-      const tx = await blackjackContract.placeBet({
+      // Debug log the contract and function
+      console.log('Contract details:', {
+        address: await blackjackContract.getAddress(),
+        hasPlaceBet: typeof blackjackContract.placeBet === 'function'
+      });
+
+      // Call placeBet function with proper parameters
+      const tx = await blackjackContract.placeBet.send({
         value: betAmountWei,
         gasLimit: AVALANCHE_GAS_LIMIT,
         gasPrice: adjustedGasPrice
@@ -56,7 +63,13 @@ export function useContractInteraction() {
 
       return true;
     } catch (error) {
-      console.error('Detailed error:', error);
+      console.error('Detailed error:', {
+        error,
+        message: error.message,
+        code: error.code,
+        data: error.data,
+        transaction: error.transaction
+      });
       throw error;
     }
   }, [blackjackContract, treasuryContract, account, provider]);
