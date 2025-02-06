@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useWeb3 } from '../context/Web3Context';
+import { useOpenAI } from '../context/OpenAIContext';
 import { useContractInteraction } from '../hooks/useContractInteraction';
 import { Link } from 'react-router-dom';
 import { ethers } from 'ethers';
@@ -7,6 +8,7 @@ import '../styles/Home.css';
 
 function Home() {
   const { account, treasuryContract } = useWeb3();
+  const { chatHistory, isLoading, error, sendMessage } = useOpenAI();
   const { checkTreasuryAccount } = useContractInteraction();
   const [houseFunds, setHouseFunds] = useState('0');
   const [hasAccount, setHasAccount] = useState(false);
@@ -14,6 +16,8 @@ function Home() {
   const [charStates, setCharStates] = useState(new Map());
   const [hoverStates, setHoverStates] = useState(new Map());
   const waveTimeoutRef = useRef(null);
+  const [inputMessage, setInputMessage] = useState('');
+  const chatMessagesRef = useRef(null);
 
   const originalArt = `                ##%%%@@@@@@%%#{                                
                #%%@@@@@@@@@@%%%#}                                
@@ -122,6 +126,26 @@ function Home() {
     checkAccount();
   }, [account, checkTreasuryAccount]);
 
+  // Add auto-scroll effect for chat messages
+  useEffect(() => {
+    if (chatMessagesRef.current) {
+      chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
+    }
+  }, [chatHistory]);
+
+  // Handle message submission
+  const handleSendMessage = async (e) => {
+    e.preventDefault();
+    if (!inputMessage.trim() || !account || isLoading) return;
+
+    try {
+      await sendMessage(inputMessage, account);
+      setInputMessage('');
+    } catch (err) {
+      console.error('Error sending message:', err);
+    }
+  };
+
   const handleCharacterHover = (x, y) => {
     const radius = 2; // Effect radius
     const affectedChars = new Map();
@@ -190,30 +214,51 @@ function Home() {
 
   const renderChatBox = () => {
     return (
-      <div className="chat-box">
+      <div className="aice-chat-box">
         <div className="chat-header">
           <h3>Aice Chat</h3>
+          {isLoading && <div className="chat-loading">Aice is typing...</div>}
         </div>
-        <div className="chat-messages">
+
+        <div className="chat-messages" ref={chatMessagesRef}>
           <div className="chat-message system">
-            Welcome to Aice Arena! Connect your wallet to start chatting.
+            Welcome to Aice Arena! {!account ? 'Connect your wallet to start chatting.' : 'How can I help you today?'}
           </div>
-          <p className='chat-title'>Aice</p>
-          <div className="chat-message">
-            Hello... who are you?
-          </div>
+          
+          {chatHistory.map((msg, index) => (
+            <div key={index} className={`chat-message ${msg.role}`}>
+              <p className='chat-sender'>{msg.sender === 'Aice' ? 'Aice' : 'You'}</p>
+              <div className="message-content">{msg.content}</div>
+              <span className="message-time">
+                {new Date(msg.timestamp).toLocaleTimeString()}
+              </span>
+            </div>
+          ))}
+
+          {error && (
+            <div className="chat-message error">
+              Error: {error}
+            </div>
+          )}
         </div>
-        <div className="chat-input-container">
+
+        <form onSubmit={handleSendMessage} className="aice-input-container">
           <input
             type="text"
-            className="chat-input"
-            placeholder="Type a message..."
-            disabled={!account}
+            className="aice-input"
+            placeholder={account ? "Type a message..." : "Connect wallet to chat"}
+            value={inputMessage}
+            onChange={(e) => setInputMessage(e.target.value)}
+            disabled={!account || isLoading}
           />
-          <button className="chat-send-btn" disabled={!account}>
-            Send
+          <button 
+            type="submit" 
+            className="chat-send-btn"
+            disabled={!account || isLoading || !inputMessage.trim()}
+          >
+            {isLoading ? '...' : 'Send'}
           </button>
-        </div>
+        </form>
       </div>
     );
   };

@@ -154,8 +154,8 @@ function PokerLobby() {
               <div key={table.id} className="table-card">
                 <h3>{tableNames[table.id] || `Table #${table.id}`}</h3>
                 <div className="table-info">
-                  <p>Buy-in Range: {table.minBuyIn} - {table.maxBuyIn} ETH</p>
-                  <p>Blinds: {table.smallBlind}/{table.bigBlind} ETH</p>
+                  <p>Buy-in Range: {table.minBuyIn} - {table.maxBuyIn}</p>
+                  <p>Blinds: {table.smallBlind}/{table.bigBlind}</p>
                   <p>Players: {table.playerCount}/{table.maxPlayers}</p>
                 </div>
                 <button onClick={() => navigate(`/poker/table/${table.id}`)}>

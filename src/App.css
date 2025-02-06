@@ -9,6 +9,7 @@
 
 .App {
   min-height: 98vh;
+  max-height: 97.52vh;
   display: flex;
   flex-direction: column;
   align-items: center;

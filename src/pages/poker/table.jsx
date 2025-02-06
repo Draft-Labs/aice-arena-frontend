@@ -109,7 +109,7 @@ function PokerTable() {
 
   // Simplify the username display function
   const formatAddress = (address) => {
-    if (!address || address === ethers.ZeroAddress) return 'Empty Seat';
+    if (!address || address === ethers.ZeroAddress) return 'None';
     return `${address.slice(0, 6)}...${address.slice(-4)}`;
   };
 
@@ -1409,180 +1409,200 @@ function PokerTable() {
     return (
       <>
         <div className="poker-game">
-          <div className="last-hand-container">
-            <h3>Last Hand</h3>
-            {lastWinner ? (
-              <div className="last-hand-info">
-                <p className="winner-address">
-                  Winner: {lastWinner.displayName || formatAddress(lastWinner.address)}
-                </p>
-                <p className="hand-rank">
-                  Hand: <span className="rank">{lastWinner.handRank}</span>
-                </p>
-                <p className="pot-won">
-                  Won: <span className="amount">{lastWinner.potAmount} ETH</span>
-                </p>
-              </div>
-            ) : (
-              <p>None</p>
-            )}
-          </div>
-          <div className="table-info">
-            <h2>{tableName || `Poker Table #${tableId}`}</h2>
-            <p>Game Phase: {gameState.gamePhase}</p>
-            <p className="pot-amount">Pot: {gameState.pot} ETH</p>
-            <p>Players: {gameState.playerCount}/6</p>
-            
-            <button 
-              className={`leave-table-button ${isLeavingTable ? 'loading' : ''}`}
-              onClick={handleLeaveClick}
-              disabled={isLeavingTable}
-            >
-              {isLeavingTable ? 'Leaving...' : 'Leave Table'}
-            </button>
-
-            <button 
-              className="add-house-button"
-              onClick={handleAddHouse}
-              disabled={isHouseAdded || players.some(p => p.address?.toLowerCase() === houseAddress?.toLowerCase())}
-            >
-              {isHouseAdded ? 'House Added' : 'Add House'}
-            </button>
-          </div>
-          <div className="poker-table">
-            <img src={tableBackground} alt="Table Background" className="table-background" />
-
-            <div className="player-positions">
-              {Array.from({ length: maxPlayersPerTable }).map((_, i) => {
-                const player = players.find(p => p.position === i);
-                const isCurrentTurn = player && currentTurn && 
-                  player.address?.toLowerCase() === currentTurn.toLowerCase();
-                
-                return (
-                  <div 
-                    key={i} 
-                    className={`player-position position-${i} ${isCurrentTurn ? 'current-turn' : ''}`}
-                  >
-                    {isCurrentTurn && <div className="turn-indicator">Current Turn</div>}
-                    <div className="player-info">
-                      <h3>{player ? player.displayName : `Seat ${i + 1}`}</h3>
-                      {player && (
-                        <>
-                          <p className="player-stack">Stack: {player.tableStake} ETH</p>
-                          <p className="player-bet">Bet: {player.currentBet} ETH</p>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
+          <div className="left-container">
+            <div className="table-info">
+              <h2>{tableName || `Poker Table #${tableId}`}</h2>
+              <p>Game Phase: {gameState.gamePhase}</p>
+              <p className="pot-amount">Pot: {gameState.pot} ETH</p>
+              <p>Players: {gameState.playerCount}/6</p>
             </div>
 
-            <div className="card-display">
-              <div className="community-cards">
-                {communityCards.length === 0 ? (
-                  <p>No table cards yet</p>
-                ) : (
-                  communityCards.map((card, index) => {
-                    const { value, suit, color } = cardValueToString(card);
-                    return (
-                      <div 
-                        key={index} 
-                        className={`card ${dealtCards.community.includes(index) ? 'dealt' : ''}`}
-                        style={{ color }}
-                      >
-                        <div className="logo-top"></div>
-                        <div className="logo-bottom"></div>
-                        {value}{suit}
-                      </div>
-                    );
-                  })
-                )}
+            <div className="last-hand-container">
+              <h3>Last Hand</h3>
+              {lastWinner ? (
+                <div className="last-hand-info">
+                  <p className="winner-address">
+                    Winner: {lastWinner.displayName || formatAddress(lastWinner.address)}
+                  </p>
+                  <p className="hand-rank">
+                    Hand: <span className="rank">{lastWinner.handRank || 'None'}</span>
+                  </p>
+                  <p className="pot-won">
+                    Won: <span className="amount">{lastWinner.potAmount} ETH</span>
+                  </p>
+                </div>
+              ) : (
+                <p>None</p>
+              )}
+            </div>
+
+            <div className="chat-box">
+              <div className="chat-title">Table Chat</div>
+              <div className="chat-messages">
+                <div className="chat-message">
+                  <span className="sender">Player1:</span>
+                  Nice hand!
+                </div>
+                <div className="chat-message">
+                  <span className="sender">Player2:</span>
+                  Good game everyone
+                </div>
+                <div className="chat-message">
+                  <span className="sender">Player3:</span>
+                  All in next hand 😎
+                </div>
               </div>
-              
-              <div className="player-cards">
-                <h3>Your Cards:</h3>
-                {playerCards.length === 0 ? (
-                  <p>No player cards yet</p>
-                ) : (
-                  playerCards.map((card, index) => {
-                    const { value, suit, color } = cardValueToString(card);
+              <div className="chat-input">
+                <input type="text" placeholder="Type a message..." />
+                <button>Send</button>
+              </div>
+            </div>
+          </div>
+
+          <div className="right-container">
+            <div className="game-area">
+              <div className="poker-table">
+                <img src={tableBackground} alt="Table Background" className="table-background" />
+                
+                <div className="player-positions">
+                  {Array.from({ length: maxPlayersPerTable }).map((_, i) => {
+                    const player = players.find(p => p.position === i);
+                    const isCurrentTurn = player && currentTurn && 
+                      player.address?.toLowerCase() === currentTurn.toLowerCase();
+                    
                     return (
                       <div 
-                        key={index} 
-                        className={`card ${dealtCards.player.includes(index) ? 'dealt' : ''}`}
-                        style={{ color }}
+                        key={i} 
+                        className={`player-position position-${i} ${isCurrentTurn ? 'current-turn' : ''}`}
                       >
-                        <div className="logo-top"></div>
-                        <div className="logo-bottom"></div>
-                        {value}{suit}
+                        {isCurrentTurn && <div className="turn-indicator">Current Turn</div>}
+                        <div className="player-info">
+                          <h3>{player ? player.displayName : `Seat ${i + 1}`}</h3>
+                          {player && (
+                            <>
+                              <p className="player-stack">Stack: {player.tableStake} ETH</p>
+                              <p className="player-bet">Bet: {player.currentBet} ETH</p>
+                            </>
+                          )}
+                        </div>
                       </div>
                     );
-                  })
-                )}
+                  })}
+                </div>
+
+                <div className="card-display">
+                  <div className="community-cards">
+                    {communityCards.length === 0 ? (
+                      <p>No table cards yet</p>
+                    ) : (
+                      communityCards.map((card, index) => {
+                        const { value, suit, color } = cardValueToString(card);
+                        return (
+                          <div 
+                            key={index} 
+                            className={`card ${dealtCards.community.includes(index) ? 'dealt' : ''}`}
+                            style={{ color }}
+                          >
+                            <div className="logo-top"></div>
+                            <div className="logo-bottom"></div>
+                            {value}{suit}
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                  
+                  <div className="player-cards">
+                    <h3>Your Cards:</h3>
+                    {playerCards.length === 0 ? (
+                      <p>No player cards yet</p>
+                    ) : (
+                      playerCards.map((card, index) => {
+                        const { value, suit, color } = cardValueToString(card);
+                        return (
+                          <div 
+                            key={index} 
+                            className={`card ${dealtCards.player.includes(index) ? 'dealt' : ''}`}
+                            style={{ color }}
+                          >
+                            <div className="logo-top"></div>
+                            <div className="logo-bottom"></div>
+                            {value}{suit}
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
           <div className="poker-game-controls">
-            <div className="action-buttons">
-              <button 
-                className="call-button" 
-                onClick={() => handleAction('call')}
-                disabled={!gameState.isPlayerTurn}
-              >
-                <MdKeyboardDoubleArrowUp />
-                <span>Call</span>
-              </button>
-              <button 
-                className="check-button" 
-                onClick={() => handleAction('check')}
-              >
-                <MdKeyboardDoubleArrowRight />
-                <span>Check</span>
-              </button>
-              <button 
-                className="fold-button" 
-                onClick={() => handleAction('fold')}
-                disabled={!gameState.isPlayerTurn}
-              >
-                <MdKeyboardDoubleArrowDown />
-                <span>Fold</span>
-              </button>
-              <div className="raise-controls">
-                <input
-                  type="text"
-                  value={raiseAmount}
-                  onChange={(e) => {
-                    const value = e.target.value.replace(/[^\d.]/g, '');
-                    setRaiseAmount(value);
-                  }}
-                  min={parseFloat(currentBet) * 2}
-                  step="0.001"
-                />
+              <div className="action-buttons">
                 <button 
-                  className="raise-button"
-                  onClick={() => handleAction('raise', raiseAmount)}
-                  disabled={!gameState.isPlayerTurn || raiseAmount === '' || raiseAmount === '.' || 
-                           parseFloat(raiseAmount) < parseFloat(gameState.minRaise) || 
-                           parseFloat(raiseAmount) > parseFloat(gameState.maxRaise)}
+                  className="call-button" 
+                  onClick={() => handleAction('call')}
+                  disabled={!gameState.isPlayerTurn}
                 >
-                  Raise to {raiseAmount || '0'} ETH
+                  <MdKeyboardDoubleArrowUp />
+                  <span>Call</span>
+                </button>
+                <button 
+                  className="check-button" 
+                  onClick={() => handleAction('check')}
+                >
+                  <MdKeyboardDoubleArrowRight />
+                  <span>Check</span>
+                </button>
+                <button 
+                  className="fold-button" 
+                  onClick={() => handleAction('fold')}
+                  disabled={!gameState.isPlayerTurn}
+                >
+                  <MdKeyboardDoubleArrowDown />
+                  <span>Fold</span>
+                </button>
+                <div className="raise-controls">
+                  <input
+                    type="text"
+                    value={raiseAmount}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/[^\d.]/g, '');
+                      setRaiseAmount(value);
+                    }}
+                    min={parseFloat(currentBet) * 2}
+                    step="0.001"
+                  />
+                  <button 
+                    className="raise-button"
+                    onClick={() => handleAction('raise', raiseAmount)}
+                    disabled={!gameState.isPlayerTurn || raiseAmount === '' || raiseAmount === '.' || 
+                             parseFloat(raiseAmount) < parseFloat(gameState.minRaise) || 
+                             parseFloat(raiseAmount) > parseFloat(gameState.maxRaise)}
+                  >
+                    Raise to {raiseAmount || '0'} ETH
+                  </button>
+                </div>
+              </div>
+              
+              <div className="table-control-buttons">
+                <button 
+                  className={`leave-table-button ${isLeavingTable ? 'loading' : ''}`}
+                  onClick={handleLeaveClick}
+                  disabled={isLeavingTable}
+                >
+                  {isLeavingTable ? 'Leaving...' : 'Leave Table'}
+                </button>
+
+                <button 
+                  className="add-house-button"
+                  onClick={handleAddHouse}
+                  disabled={isHouseAdded || players.some(p => p.address?.toLowerCase() === houseAddress?.toLowerCase())}
+                >
+                  {isHouseAdded ? 'House Added' : 'Add House'}
                 </button>
               </div>
             </div>
-          </div>
-          <ToastContainer 
-            position="bottom-right"
-            autoClose={5000}
-            hideProgressBar={false}
-            newestOnTop={false}
-            closeOnClick
-            rtl={false}
-            pauseOnFocusLoss
-            draggable
-            pauseOnHover
-            theme="dark"
-          />
         </div>
         
         <LeaveWarningModal
@@ -1592,6 +1612,19 @@ function PokerTable() {
             handleLeaveTable();
           }}
           onCancel={() => setShowLeaveWarning(false)}
+        />
+        
+        <ToastContainer 
+          position="bottom-right"
+          autoClose={5000}
+          hideProgressBar={false}
+          newestOnTop={false}
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme="dark"
         />
       </>
     );

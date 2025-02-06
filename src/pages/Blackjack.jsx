@@ -1,3 +1,7 @@
+//add a line to the leaderboard page
+//replace place bet with hit and stand
+//move the new game button into the table
+
 import { useState, useEffect } from 'react';
 import { useWeb3 } from '../context/Web3Context';
 import { useContractInteraction } from '../hooks/useContractInteraction';
