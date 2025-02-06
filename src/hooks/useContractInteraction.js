@@ -51,7 +51,7 @@ export function useContractInteraction() {
       });
 
       // Call placeBet function with proper parameters
-      const tx = await blackjackContract.placeBet.send({
+      const tx = await blackjackContract.placeBet({
         value: betAmountWei,
         gasLimit: AVALANCHE_GAS_LIMIT,
         gasPrice: adjustedGasPrice
