@@ -7,6 +7,18 @@ import PokerJSON from '../contracts/Poker.json';
 
 const Web3Context = createContext();
 
+const AVALANCHE_FUJI_CONFIG = {
+  chainId: '0xA869', // 43113 in hex
+  chainName: 'Avalanche Fuji Testnet',
+  nativeCurrency: {
+    name: 'AVAX',
+    symbol: 'AVAX',
+    decimals: 18
+  },
+  rpcUrls: ['https://api.avax-test.network/ext/bc/C/rpc'],
+  blockExplorerUrls: ['https://testnet.snowtrace.io/']
+};
+
 export function Web3Provider({ children }) {
   const [provider, setProvider] = useState(null);
   const [signer, setSigner] = useState(null);
@@ -26,72 +38,94 @@ export function Web3Provider({ children }) {
 
       setIsLoading(true);
 
-      try {
-        const accounts = await window.ethereum.request({
-          method: 'eth_requestAccounts'
-        });
-        
-        if (!accounts || accounts.length === 0) {
-          throw new Error('No accounts found');
-        }
-
-        const account = accounts[0];
-        setAccount(account);
-
-        const provider = new ethers.BrowserProvider(window.ethereum);
-        const signer = await provider.getSigner();
-
-        // Get network to ensure we're on the correct chain
-        const network = await provider.getNetwork();
-        console.log('Connected to network:', network);
-
-        // Contract addresses
-        const blackjackAddress = "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512";
-        const treasuryAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
-        const rouletteAddress = "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0";
-        const pokerAddress = "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9";
-
-        // Create contract instances
-        const blackjack = new ethers.Contract(
-          blackjackAddress,
-          BlackjackJSON.abi,
-          signer
-        );
-
-        const treasury = new ethers.Contract(
-          treasuryAddress,
-          TreasuryJSON.abi,
-          signer
-        );
-
-        const roulette = new ethers.Contract(
-          rouletteAddress,
-          RouletteJSON.abi,
-          signer
-        );
-
-        const poker = new ethers.Contract(
-          pokerAddress,
-          PokerJSON.abi,
-          signer
-        );
-
-        setProvider(provider);
-        setSigner(signer);
-        setBlackjackContract(blackjack);
-        setTreasuryContract(treasury);
-        setRouletteContract(roulette);
-        setPokerContract(poker);
-        setError(null);
-
-      } catch (requestError) {
-        if (requestError.code === -32002) {
-          setError('Please open MetaMask and accept the connection request');
-          return;
-        }
-        throw requestError;
-      }
+      // Check if we're on the right network
+      const currentChainId = await window.ethereum.request({ method: 'eth_chainId' });
       
+      // If not on Fuji, prompt to switch
+      if (currentChainId !== AVALANCHE_FUJI_CONFIG.chainId) {
+        try {
+          // Try to switch to Fuji
+          await window.ethereum.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: AVALANCHE_FUJI_CONFIG.chainId }],
+          });
+        } catch (switchError) {
+          // If the network doesn't exist in MetaMask, add it
+          if (switchError.code === 4902) {
+            try {
+              await window.ethereum.request({
+                method: 'wallet_addEthereumChain',
+                params: [AVALANCHE_FUJI_CONFIG],
+              });
+            } catch (addError) {
+              throw new Error('Failed to add Avalanche network to MetaMask');
+            }
+          } else {
+            throw new Error('Failed to switch to Avalanche network');
+          }
+        }
+      }
+
+      // Request account access
+      const accounts = await window.ethereum.request({
+        method: 'eth_requestAccounts'
+      });
+      
+      if (!accounts || accounts.length === 0) {
+        throw new Error('No accounts found');
+      }
+
+      const account = accounts[0];
+      setAccount(account);
+
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+
+      // Verify we're on Fuji
+      const network = await provider.getNetwork();
+      if (network.chainId !== 43113) { // Fuji chainId
+        throw new Error('Please connect to Avalanche Fuji Testnet');
+      }
+
+      // Use your deployed contract addresses
+      const blackjackAddress = process.env.REACT_APP_BLACKJACK_ADDRESS;
+      const treasuryAddress = process.env.REACT_APP_TREASURY_ADDRESS;
+      const rouletteAddress = process.env.REACT_APP_ROULETTE_ADDRESS;
+      const pokerAddress = process.env.REACT_APP_POKER_ADDRESS;
+
+      // Create contract instances
+      const blackjack = new ethers.Contract(
+        blackjackAddress,
+        BlackjackJSON.abi,
+        signer
+      );
+
+      const treasury = new ethers.Contract(
+        treasuryAddress,
+        TreasuryJSON.abi,
+        signer
+      );
+
+      const roulette = new ethers.Contract(
+        rouletteAddress,
+        RouletteJSON.abi,
+        signer
+      );
+
+      const poker = new ethers.Contract(
+        pokerAddress,
+        PokerJSON.abi,
+        signer
+      );
+
+      setProvider(provider);
+      setSigner(signer);
+      setBlackjackContract(blackjack);
+      setTreasuryContract(treasury);
+      setRouletteContract(roulette);
+      setPokerContract(poker);
+      setError(null);
+
     } catch (err) {
       console.error('Connection error:', err);
       setError(err.message);
