@@ -48,6 +48,7 @@
   padding-left: 2rem;
   min-width: 0;
   position: relative;
+  z-index: 1;
 }
 
 .aice-chat-box {
@@ -60,6 +61,7 @@
   width: 350px;
   margin: 1rem;
   overflow: hidden;
+  z-index: 2;
 }
 
 .chat-header {
