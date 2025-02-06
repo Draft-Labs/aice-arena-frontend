@@ -6,17 +6,20 @@ import Navbar from './components/Navbar';
 import AppRoutes from './routes';
 import 'react-toastify/dist/ReactToastify.css';
 import './App.css';
+import { OpenAIProvider } from './context/OpenAIContext';
 
 function App() {
   return (
     <Router>
       <Web3Provider>
-        <div className="App">
-          <Background />
-          <Navbar />
-          <AppRoutes />
-          <ToastContainer position="bottom-right" theme="dark" />
-        </div>
+        <OpenAIProvider>
+          <div className="App">
+            <Background />
+            <Navbar />
+            <AppRoutes />
+            <ToastContainer position="bottom-right" theme="dark" />
+          </div>
+        </OpenAIProvider>
       </Web3Provider>
     </Router>
   );

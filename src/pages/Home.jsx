@@ -226,7 +226,10 @@ function Home() {
           </div>
           
           {chatHistory.map((msg, index) => (
-            <div key={index} className={`chat-message ${msg.role}`}>
+            <div 
+              key={index} 
+              className={`chat-message ${msg.role} ${msg.isError ? 'isError' : ''}`}
+            >
               <p className='chat-sender'>{msg.sender === 'Aice' ? 'Aice' : 'You'}</p>
               <div className="message-content">{msg.content}</div>
               <span className="message-time">
