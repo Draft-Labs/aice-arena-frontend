@@ -51,24 +51,32 @@ export function useContractInteraction() {
         placeBetFunction: blackjackContract.interface.getFunction('placeBet'),
         contractAddress: await blackjackContract.getAddress(),
         account,
-        betAmountWei: betAmountWei.toString()
+        betAmountWei: betAmountWei.toString(),
+        functionData: blackjackContract.interface.encodeFunctionData('placeBet')
       });
 
-      // Call placeBet with value parameter
-      const tx = await blackjackContract.placeBet({
+      // Call placeBet with properly encoded function data
+      const tx = await blackjackContract.placeBet.staticCall({
+        value: betAmountWei,
+        gasLimit: AVALANCHE_GAS_LIMIT,
+        gasPrice: adjustedGasPrice
+      });
+
+      // If staticCall succeeds, send the actual transaction
+      const realTx = await blackjackContract.placeBet({
         value: betAmountWei,
         gasLimit: AVALANCHE_GAS_LIMIT,
         gasPrice: adjustedGasPrice
       });
 
       console.log('Transaction sent:', {
-        hash: tx.hash,
-        gasLimit: tx.gasLimit?.toString(),
-        value: tx.value?.toString(),
-        data: tx.data
+        hash: realTx.hash,
+        gasLimit: realTx.gasLimit?.toString(),
+        value: realTx.value?.toString(),
+        data: realTx.data
       });
 
-      const receipt = await tx.wait();
+      const receipt = await realTx.wait();
       console.log('Transaction confirmed:', {
         hash: receipt.hash,
         gasUsed: receipt.gasUsed?.toString(),
