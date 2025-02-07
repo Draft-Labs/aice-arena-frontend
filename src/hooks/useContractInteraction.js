@@ -59,11 +59,11 @@ export function useContractInteraction() {
         contractAddress: await blackjackContract.getAddress(),
         account,
         betAmountWei: betAmountWei.toString(),
-        encodedData: blackjackContract.interface.encodeFunctionData('placeBet', [])
+        encodedData: blackjackContract.interface.encodeFunctionData('placeBet')
       });
 
-      // Place bet directly through the contract - call placeBet() with no arguments
-      const tx = await blackjackContract.placeBet([], txParams);
+      // Place bet directly through the contract - call placeBet() with just transaction parameters
+      const tx = await blackjackContract.placeBet(txParams);
 
       console.log('Transaction sent:', {
         hash: tx.hash,
