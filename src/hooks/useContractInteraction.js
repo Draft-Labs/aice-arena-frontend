@@ -44,22 +44,39 @@ export function useContractInteraction() {
       const feeData = await provider.getFeeData();
       const adjustedGasPrice = feeData.gasPrice * ethers.getBigInt(Math.floor(GAS_PRICE_MULTIPLIER * 100)) / ethers.getBigInt(100);
 
-      // Debug log the contract and function
-      console.log('Contract details:', {
-        address: await blackjackContract.getAddress(),
-        hasPlaceBet: typeof blackjackContract.placeBet === 'function'
-      });
-
-      // Call placeBet function with proper parameters
-      const tx = await blackjackContract.placeBet({
+      // Create transaction parameters
+      const txParams = {
         value: betAmountWei,
         gasLimit: AVALANCHE_GAS_LIMIT,
         gasPrice: adjustedGasPrice
+      };
+
+      // Debug contract interface
+      console.log('Contract interface details:', {
+        hasContract: !!blackjackContract,
+        hasInterface: !!blackjackContract.interface,
+        placeBetFunction: blackjackContract.interface.getFunction('placeBet'),
+        contractAddress: await blackjackContract.getAddress(),
+        account,
+        betAmountWei: betAmountWei.toString()
       });
 
-      console.log('Transaction sent:', tx.hash);
+      // Place bet directly through the contract
+      const tx = await blackjackContract.placeBet(txParams);
+
+      console.log('Transaction sent:', {
+        hash: tx.hash,
+        gasLimit: tx.gasLimit?.toString(),
+        value: tx.value?.toString(),
+        data: tx.data
+      });
+
       const receipt = await tx.wait();
-      console.log('Transaction confirmed:', receipt);
+      console.log('Transaction confirmed:', {
+        hash: receipt.hash,
+        gasUsed: receipt.gasUsed?.toString(),
+        status: receipt.status
+      });
 
       return true;
     } catch (error) {
