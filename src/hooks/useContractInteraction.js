@@ -44,13 +44,6 @@ export function useContractInteraction() {
       const feeData = await provider.getFeeData();
       const adjustedGasPrice = feeData.gasPrice * ethers.getBigInt(Math.floor(GAS_PRICE_MULTIPLIER * 100)) / ethers.getBigInt(100);
 
-      // Create transaction parameters
-      const txParams = {
-        value: betAmountWei,
-        gasLimit: AVALANCHE_GAS_LIMIT,
-        gasPrice: adjustedGasPrice
-      };
-
       // Debug contract interface
       console.log('Contract interface details:', {
         hasContract: !!blackjackContract,
@@ -58,12 +51,15 @@ export function useContractInteraction() {
         placeBetFunction: blackjackContract.interface.getFunction('placeBet'),
         contractAddress: await blackjackContract.getAddress(),
         account,
-        betAmountWei: betAmountWei.toString(),
-        encodedData: blackjackContract.interface.encodeFunctionData('placeBet')
+        betAmountWei: betAmountWei.toString()
       });
 
-      // Place bet directly through the contract - call placeBet() with just transaction parameters
-      const tx = await blackjackContract.placeBet(txParams);
+      // Call placeBet with value parameter
+      const tx = await blackjackContract.placeBet({
+        value: betAmountWei,
+        gasLimit: AVALANCHE_GAS_LIMIT,
+        gasPrice: adjustedGasPrice
+      });
 
       console.log('Transaction sent:', {
         hash: tx.hash,
