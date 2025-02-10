@@ -14,6 +14,7 @@ export function Web3Provider({ children }) {
   const [treasuryContract, setTreasuryContract] = useState(null);
   const [rouletteContract, setRouletteContract] = useState(null);
   const [pokerContract, setPokerContract] = useState(null);
+  const [balatroContract, setBalatroContract] = useState(null);
   const [account, setAccount] = useState(null);
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -50,6 +51,7 @@ export function Web3Provider({ children }) {
         const treasuryAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
         const rouletteAddress = "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0";
         const pokerAddress = "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9";
+        const balatroAddress = "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9";
 
         // Create contract instances
         const blackjack = new ethers.Contract(
@@ -76,12 +78,19 @@ export function Web3Provider({ children }) {
           signer
         );
 
+        const balatro = new ethers.Contract(
+          balatroAddress,
+          BalatroJSON.abi,
+          signer
+        );
+
         setProvider(provider);
         setSigner(signer);
         setBlackjackContract(blackjack);
         setTreasuryContract(treasury);
         setRouletteContract(roulette);
         setPokerContract(poker);
+        setBalatroContract(balatro);
         setError(null);
 
       } catch (requestError) {
@@ -107,6 +116,7 @@ export function Web3Provider({ children }) {
     setTreasuryContract(null);
     setRouletteContract(null);
     setPokerContract(null);
+    setBalatroContract(null);
     setError(null);
   };
 
@@ -125,6 +135,7 @@ export function Web3Provider({ children }) {
           setTreasuryContract(null);
           setRouletteContract(null);
           setPokerContract(null);
+          setBalatroContract(null);
         }
       });
 
@@ -147,6 +158,7 @@ export function Web3Provider({ children }) {
     treasuryContract,
     rouletteContract,
     pokerContract,
+    balatroContract,
     account,
     error,
     isLoading,
