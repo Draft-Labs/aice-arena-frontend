@@ -3,7 +3,7 @@ import { useWeb3 } from '../context/Web3Context';
 import { ethers } from 'ethers';
 
 export function useContractInteraction() {
-  const { blackjackContract, rouletteContract, treasuryContract, account } = useWeb3();
+  const { blackjackContract, rouletteContract, treasuryContract, balatroContract, account } = useWeb3();
 
   const calculateHandScore = (hand) => {
     let score = 0;

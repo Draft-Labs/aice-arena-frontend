@@ -101,27 +101,34 @@
 
 /* Card Styling */
 .card {
-  background: rgba(255, 255, 255, 0.1);
-  padding: 1.5rem;
-  border-radius: 8px;
-  min-width: 80px;
-  height: 120px;
   position: relative;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  transform-style: preserve-3d;
-  opacity: 0;
-  transform: translateY(-100vh) rotateY(180deg);
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(6, 242, 219, 0.3);
+  width: 100px;
+  height: 140px;
+  background: white;
+  border-radius: 8px;
+  margin: 0 10px;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.card.selected {
+  transform: translateY(-10px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+  border: 2px solid #4CAF50;
 }
 
 .card.dealt {
-  animation: dealCard 0.5s forwards;
+  animation: dealCard 0.5s ease-out;
 }
 
 .card.small {
@@ -132,43 +139,44 @@
 }
 
 .card-value {
-  font-size: 1.5rem;
+  font-size: 24px;
   font-weight: bold;
+  margin-bottom: 5px;
 }
 
 .card-suit {
-  font-size: 2rem;
+  font-size: 32px;
 }
 
 .red-suit {
-  color: #ff4444;
+  color: #D32F2F;
 }
 
 .black-suit {
-  color: #ffffff;
+  color: #212121;
 }
 
 .joker-suit {
-  color: #ffd700;
+  color: #9C27B0;
 }
 
 .joker-label {
   position: absolute;
-  top: 50%;
+  top: 5px;
   left: 50%;
-  transform: translate(-50%, -50%) rotate(-45deg);
-  font-size: 0.8rem;
+  transform: translateX(-50%);
+  font-size: 12px;
   font-weight: bold;
-  color: #ffd700;
-  text-transform: uppercase;
-  letter-spacing: 1px;
+  color: #9C27B0;
 }
 
 /* Game Controls */
 .game-controls {
+  width: 80%;
   display: flex;
   gap: 1rem;
   justify-content: center;
+  justify-self: center;
   margin: 1.5rem 0;
 }
 
@@ -234,17 +242,13 @@
 
 /* Animations */
 @keyframes dealCard {
-  0% {
+  from {
     opacity: 0;
-    transform: translateY(-100vh) rotateY(180deg);
+    transform: translateY(-50px) rotate(-10deg);
   }
-  50% {
+  to {
     opacity: 1;
-    transform: translateY(0) rotateY(180deg);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0) rotateY(0);
+    transform: translateY(0) rotate(0);
   }
 }
 
@@ -293,5 +297,27 @@
 
   .card-suit {
     font-size: 1.5rem;
+  }
+}
+
+.hand-type {
+  color: #4CAF50;
+  font-size: 1.2rem;
+  margin: 0.5rem 0;
+  text-align: center;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 } 

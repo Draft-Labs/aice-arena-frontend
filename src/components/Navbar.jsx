@@ -107,8 +107,15 @@ function Navbar() {
             Blackjack
           </Link>
           <Link 
+            to="/balatro" 
+            className={`nav-link ${location.pathname === '/balatro' ? 'active' : ''}`}
+          >
+            Balatro
+          </Link>
+          <Link 
             to="/roulette" 
             className={`nav-link ${location.pathname === '/roulette' ? 'active' : ''}`}
+
           >
             Roulette
           </Link>
@@ -142,7 +149,7 @@ function Navbar() {
                 className="navbar-profile-image"
               />
             )}
-            <div className="navbar-balance">Account Balance: {balance} ETH</div>
+            <div className="navbar-balance">Account Balance: {balance} AVAX</div>
           </>
         )}
         {!account ? (

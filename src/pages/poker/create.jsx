@@ -74,7 +74,7 @@ function CreatePokerTable() {
         </div>
 
         <div className="form-group">
-          <label>Minimum Buy-in (ETH)</label>
+          <label>Minimum Buy-in (AVAX)</label>
           <input
             type="number"
             name="minBuyIn"
@@ -86,7 +86,7 @@ function CreatePokerTable() {
         </div>
 
         <div className="form-group">
-          <label>Maximum Buy-in (ETH)</label>
+          <label>Maximum Buy-in (AVAX)</label>
           <input
             type="number"
             name="maxBuyIn"
@@ -98,7 +98,7 @@ function CreatePokerTable() {
         </div>
 
         <div className="form-group">
-          <label>Small Blind (ETH)</label>
+          <label>Small Blind (AVAX)</label>
           <input
             type="number"
             name="smallBlind"
@@ -110,7 +110,7 @@ function CreatePokerTable() {
         </div>
 
         <div className="form-group">
-          <label>Big Blind (ETH)</label>
+          <label>Big Blind (AVAX)</label>
           <input
             type="number"
             name="bigBlind"
@@ -122,7 +122,7 @@ function CreatePokerTable() {
         </div>
 
         <div className="form-group">
-          <label>Minimum Bet (ETH)</label>
+          <label>Minimum Bet (AVAX)</label>
           <input
             type="number"
             name="minBet"
@@ -134,7 +134,7 @@ function CreatePokerTable() {
         </div>
 
         <div className="form-group">
-          <label>Maximum Bet (ETH)</label>
+          <label>Maximum Bet (AVAX)</label>
           <input
             type="number"
             name="maxBet"

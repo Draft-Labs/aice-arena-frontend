@@ -768,7 +768,7 @@ function PokerTable() {
 
       if (walletBalance < buyInWei) {
         const needed = ethers.formatEther(buyInWei - walletBalance);
-        toast.error(`Insufficient wallet balance. You need ${needed} more ETH in your wallet.`);
+        toast.error(`Insufficient wallet balance. You need ${needed} more AVAX in your wallet.`);
         return;
       }
 
@@ -783,7 +783,7 @@ function PokerTable() {
 
       if (treasuryBalance < buyInWei) {
         const needed = ethers.formatEther(buyInWei - treasuryBalance);
-        toast.error(`Insufficient treasury balance. Please deposit at least ${needed} ETH to your account.`);
+        toast.error(`Insufficient treasury balance. Please deposit at least ${needed} AVAX to your account.`);
         return;
       }
 
@@ -1165,7 +1165,7 @@ function PokerTable() {
           disabled={!isMyTurn || parseFloat(currentBet) === 0}
           className={`action-button ${(!isMyTurn || parseFloat(currentBet) === 0) ? 'disabled' : ''}`}
         >
-          Call {currentBet} ETH
+          Call {currentBet} AVAX
         </button>
         
         <div className="raise-controls">
@@ -1185,7 +1185,7 @@ function PokerTable() {
             disabled={!isMyTurn || parseFloat(raiseAmount) <= parseFloat(currentBet) * 2}
             className={`action-button ${(!isMyTurn || parseFloat(raiseAmount) <= parseFloat(currentBet) * 2) ? 'disabled' : ''}`}
           >
-            Raise to {raiseAmount} ETH
+            Raise to {raiseAmount} AVAX
           </button>
         </div>
       </div>
@@ -1413,7 +1413,7 @@ function PokerTable() {
             <div className="table-info">
               <h2>{tableName || `Poker Table #${tableId}`}</h2>
               <p>Game Phase: {gameState.gamePhase}</p>
-              <p className="pot-amount">Pot: {gameState.pot} ETH</p>
+              <p className="pot-amount">Pot: {gameState.pot} AVAX</p>
               <p>Players: {gameState.playerCount}/6</p>
             </div>
 
@@ -1428,7 +1428,7 @@ function PokerTable() {
                     Hand: <span className="rank">{lastWinner.handRank || 'None'}</span>
                   </p>
                   <p className="pot-won">
-                    Won: <span className="amount">{lastWinner.potAmount} ETH</span>
+                    Won: <span className="amount">{lastWinner.potAmount} AVAX</span>
                   </p>
                 </div>
               ) : (
@@ -1480,8 +1480,8 @@ function PokerTable() {
                           <h3>{player ? player.displayName : `Seat ${i + 1}`}</h3>
                           {player && (
                             <>
-                              <p className="player-stack">Stack: {player.tableStake} ETH</p>
-                              <p className="player-bet">Bet: {player.currentBet} ETH</p>
+                              <p className="player-stack">Stack: {player.tableStake} AVAX</p>
+                              <p className="player-bet">Bet: {player.currentBet} AVAX</p>
                             </>
                           )}
                         </div>
@@ -1580,7 +1580,7 @@ function PokerTable() {
                              parseFloat(raiseAmount) < parseFloat(gameState.minRaise) || 
                              parseFloat(raiseAmount) > parseFloat(gameState.maxRaise)}
                   >
-                    Raise to {raiseAmount || '0'} ETH
+                    Raise to {raiseAmount || '0'} AVAX
                   </button>
                 </div>
               </div>
@@ -1635,14 +1635,14 @@ function PokerTable() {
     <div className="poker-container">
       <h2>Join {tableName || `Poker Table #${tableId}`}</h2>
       <div className="table-info">
-        <p>Buy-in Range: {table.minBuyIn} - {table.maxBuyIn} ETH</p>
-        <p>Blinds: {table.smallBlind}/{table.bigBlind} ETH</p>
+        <p>Buy-in Range: {table.minBuyIn} - {table.maxBuyIn} AVAX</p>
+        <p>Blinds: {table.smallBlind}/{table.bigBlind} AAVAX</p>
         <p>Players: {table.playerCount}/6</p>
       </div>
       
       <form onSubmit={handleJoinTable} className="join-form">
         <div className="form-group">
-          <label>Buy-in Amount (ETH)</label>
+          <label>Buy-in Amount (AVAX)</label>
           <input
             type="number"
             step="0.01"

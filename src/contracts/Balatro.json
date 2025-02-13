@@ -1,5 +1,5 @@
 {
-    "abi": [
+  "abi": [
     {
       "inputs": [
         {
@@ -143,6 +143,19 @@
     {
       "inputs": [],
       "name": "completeHand",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint8[]",
+          "name": "cardIndices",
+          "type": "uint8[]"
+        }
+      ],
+      "name": "discardAndDraw",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"

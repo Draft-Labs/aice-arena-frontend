@@ -4,6 +4,7 @@ import BlackjackJSON from '../contracts/Blackjack.json';
 import TreasuryJSON from '../contracts/HouseTreasury.json';
 import RouletteJSON from '../contracts/Roulette.json';
 import PokerJSON from '../contracts/Poker.json';
+import BalatroJSON from '../contracts/Balatro.json';
 
 const Web3Context = createContext();
 

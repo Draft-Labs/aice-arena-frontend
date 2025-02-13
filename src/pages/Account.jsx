@@ -449,7 +449,7 @@ function Account() {
           <div className="account-controls">
             <div className="balance-display">
               <h2>Current Balance</h2>
-              <p>{currentBalance} ETH</p>
+              <p>{currentBalance} AVAX</p>
             </div>
 
             <div className="transaction-section">
