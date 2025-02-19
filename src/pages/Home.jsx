@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useWeb3 } from '../context/Web3Context';
 import { useOpenAI } from '../context/OpenAIContext';
 import { useContractInteraction } from '../hooks/useContractInteraction';
@@ -19,29 +19,29 @@ function Home() {
   const [inputMessage, setInputMessage] = useState('');
   const chatMessagesRef = useRef(null);
 
-  const originalArt = `                ##%%%@@@@@@%%#{                                
-               #%%@@@@@@@@@@%%%#}                                
-              %@%@@@@@@@@@@@@@@@%#{                             
-             %@@@@@@@@@@@@@@@[><{%%                              
-            @@@@@@@@@@@@@@@@@%)-*}#{                             
-            @@%%@@@@@@@@@@@@@%{+~]##                            
-            @@%@@@@@@@@@@@@@@@{*=]##                           
-             @%@@@@@@@@@@@@@@@{**}##                            
-             %%@@@@@@@@@@@@@@@}=>##}                             
-               @@@@@@@@@@@@@@%(=[%{                              
-               @@@@@@@@@@@@@@#^<%##                              
-               @@@@@@@@@@@@@@}^#%#                               
-               @@@@@@@@@@@@@@@@%#{                               
-              @@@@@@@@@@@@@@@@%##                                
-            @@@@@@@@@@%%###{}#{                                  
-         %@@@@@@@@@@%%%%##{###%%%%##{}                           
- @@%@@@@@%@@@@@@@@%%%%%###{##%%%%%%%%%%#{                        
-@@@%@@@@%%%%%%%%%%%%%%########%%%%%%%%%%{<~                      
-@@@%%%%%%%%%%%%%%%%%%%##########%########{}}()                   
-@@@%%%%%%%%%%%%%%%%%%%%##############[*--~....-==               
-##%#[[}{###%%%%%%%%%%%%%%########{]*~~-:-=:...~*<                
-*=+[(<>>>><)(]}}{#%%%%#%#####{]*:::--:-~+-..~*<)]               
-<>^[}])<<<<)))<>^+=*^)]}{{}(*......::--=<)>><)((<              
+  const originalArt = `                ##%%%@@@@@@%%#{
+               #%%@@@@@@@@@@%%%#}
+              %@%@@@@@@@@@@@@@@@%#{
+             %@@@@@@@@@@@@@@@[><{%%
+            @@@@@@@@@@@@@@@@@%)-*}#{
+            @@%%@@@@@@@@@@@@@%{+~]##
+            @@%@@@@@@@@@@@@@@@{*=]##
+             @%@@@@@@@@@@@@@@@{**}##
+             %%@@@@@@@@@@@@@@@}=>##}
+               @@@@@@@@@@@@@@%(=[%{
+               @@@@@@@@@@@@@@#^<%##
+               @@@@@@@@@@@@@@}^#%#
+               @@@@@@@@@@@@@@@@%#{
+              @@@@@@@@@@@@@@@@%##
+            @@@@@@@@@@%%###{}#{
+         %@@@@@@@@@@%%%%##{###%%%%##{}
+ @@%@@@@@%@@@@@@@@%%%%%###{##%%%%%%%%%%#{
+@@@%@@@@%%%%%%%%%%%%%%########%%%%%%%%%%{<~
+@@@%%%%%%%%%%%%%%%%%%%##########%########{}}()
+@@@%%%%%%%%%%%%%%%%%%%%##############[*--~....-==
+##%#[[}{###%%%%%%%%%%%%%%########{]*~~-:-=:...~*<
+*=+[(<>>>><)(]}}{#%%%%#%#####{]*:::--:-~+-..~*<)]
+<>^[}])<<<<)))<>^+=*^)]}{{}(*......::--=<)>><)((<
 ])){#}[((()))))))))<>*~:............:-=*(}[]((()`;
 
   const characterSets = ['@', '&', '$', '%', '#', '*', '+', '=', '>', '<', '^', '~'];
@@ -182,6 +182,24 @@ function Home() {
       }
     }
   };
+
+  const handleWindowResize = useCallback(() => {
+    const container = document.querySelector('.ascii-art-container');
+    if (container) {
+      const scale = Math.min(
+        container.clientWidth / (originalArt.split('\n')[0].length * 8),
+        1
+      );
+      container.style.transform = `scale(${scale})`;
+      container.style.transformOrigin = 'left bottom';
+    }
+  }, [originalArt]);
+
+  useEffect(() => {
+    window.addEventListener('resize', handleWindowResize);
+    handleWindowResize(); // Initial call
+    return () => window.removeEventListener('resize', handleWindowResize);
+  }, [handleWindowResize]);
 
   const renderArtLayer = () => {
     const lines = originalArt.split('\n');
