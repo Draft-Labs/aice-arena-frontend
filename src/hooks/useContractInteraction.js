@@ -6,7 +6,7 @@ const AVALANCHE_GAS_LIMIT = 8000000;
 const GAS_PRICE_MULTIPLIER = 1.5; // Multiplier for gas price to ensure transaction goes through
 
 export function useContractInteraction() {
-  const { blackjackContract, rouletteContract, treasuryContract, balatroContract, account } = useWeb3();
+  const { blackjackContract, rouletteContract, treasuryContract, balatroContract, account, provider } = useWeb3();
 
   const calculateHandScore = (hand) => {
     let score = 0;

@@ -8,16 +8,15 @@ import BalatroJSON from '../contracts/Balatro.json';
 
 const Web3Context = createContext();
 
-const AVALANCHE_FUJI_CONFIG = {
-  chainId: '0xa869', // 43113 in hex
-  chainName: 'Avalanche Testnet C-Chain',
+const HARDHAT_CONFIG = {
+  chainId: '0x7A69', // 31337 in hex
+  chainName: 'Hardhat Network',
   nativeCurrency: {
-    name: 'AVAX',
-    symbol: 'AVAX',
+    name: 'ETH',
+    symbol: 'ETH',
     decimals: 18
   },
-  rpcUrls: ['https://api.avax-test.network/ext/bc/C/rpc'],
-  blockExplorerUrls: ['https://testnet.snowtrace.io/']
+  rpcUrls: ['http://127.0.0.1:8545'],
 };
 
 export function Web3Provider({ children }) {
@@ -47,33 +46,32 @@ export function Web3Provider({ children }) {
         // Check if we're on the right network
         const currentChainId = await window.ethereum.request({ method: 'eth_chainId' });
         
-        // If not on Fuji, prompt to switch
-        if (currentChainId !== AVALANCHE_FUJI_CONFIG.chainId) {
+        // If not on Hardhat, prompt to switch
+        if (currentChainId !== HARDHAT_CONFIG.chainId) {
           try {
-            // Try to switch to Fuji
+            // Try to switch to Hardhat
             await window.ethereum.request({
               method: 'wallet_switchEthereumChain',
-              params: [{ chainId: AVALANCHE_FUJI_CONFIG.chainId }],
+              params: [{ chainId: HARDHAT_CONFIG.chainId }],
             });
             
             // Add delay after network switch
             await new Promise(resolve => setTimeout(resolve, 1500));
             
           } catch (switchError) {
-            // Update error handling for Avalanche
-            if (switchError.code === 4902 || switchError.code === -32603 || switchError.code === -32000) {
+            if (switchError.code === 4902) {
               try {
                 await window.ethereum.request({
                   method: 'wallet_addEthereumChain',
-                  params: [AVALANCHE_FUJI_CONFIG],
+                  params: [HARDHAT_CONFIG],
                 });
               } catch (addError) {
                 console.error('Add network error:', addError);
-                throw new Error('Failed to add Avalanche network. Please add it manually to your wallet.');
+                throw new Error('Failed to add Hardhat network. Please add it manually to your wallet.');
               }
             } else {
               console.error('Switch network error:', switchError);
-              throw new Error('Failed to switch to Avalanche network. Please switch manually in your wallet.');
+              throw new Error('Failed to switch to Hardhat network. Please switch manually in your wallet.');
             }
           }
         }
@@ -96,65 +94,65 @@ export function Web3Provider({ children }) {
         const provider = new ethers.BrowserProvider(window.ethereum);
         const signer = await provider.getSigner();
 
-        // Verify we're on Fuji
+        // Verify we're on Hardhat
         const network = await provider.getNetwork();
         console.log('Current network:', {
           chainId: network.chainId,
           name: network.name
         });
 
-        // Use your deployed contract addresses
+        // Get contract addresses
         const blackjackAddress = process.env.REACT_APP_BLACKJACK_ADDRESS;
         const treasuryAddress = process.env.REACT_APP_TREASURY_ADDRESS;
         const rouletteAddress = process.env.REACT_APP_ROULETTE_ADDRESS;
         const pokerAddress = process.env.REACT_APP_POKER_ADDRESS;
+        const balatroAddress = process.env.REACT_APP_BALATRO_ADDRESS;
 
         // Log contract addresses for debugging
         console.log('Contract addresses:', {
           blackjack: blackjackAddress,
           treasury: treasuryAddress,
           roulette: rouletteAddress,
-          poker: pokerAddress
+          poker: pokerAddress,
+          balatro: balatroAddress
         });
 
-        // Create contract instances
-        const blackjack = new ethers.Contract(
-          blackjackAddress,
-          BlackjackJSON.abi,
-          signer
-        );
-
-        const treasury = new ethers.Contract(
-          treasuryAddress,
-          TreasuryJSON.abi,
-          signer
-        );
-
-        const roulette = new ethers.Contract(
-          rouletteAddress,
-          RouletteJSON.abi,
-          signer
-        );
-
-        const poker = new ethers.Contract(
-          pokerAddress,
-          PokerJSON.abi,
-          signer
-        );
-
-        const balatro = new ethers.Contract(
-          balatroAddress,
-          BalatroJSON.abi,
-          signer
-        );
+        // Only create contract instances if addresses are available
+        const contracts = {
+          blackjack: blackjackAddress ? new ethers.Contract(
+            blackjackAddress,
+            BlackjackJSON.abi,
+            signer
+          ) : null,
+          treasury: treasuryAddress ? new ethers.Contract(
+            treasuryAddress,
+            TreasuryJSON.abi,
+            signer
+          ) : null,
+          roulette: rouletteAddress ? new ethers.Contract(
+            rouletteAddress,
+            RouletteJSON.abi,
+            signer
+          ) : null,
+          poker: pokerAddress ? new ethers.Contract(
+            pokerAddress,
+            PokerJSON.abi,
+            signer
+          ) : null,
+          balatro: balatroAddress ? new ethers.Contract(
+            balatroAddress,
+            BalatroJSON.abi,
+            signer
+          ) : null
+        };
 
         setProvider(provider);
         setSigner(signer);
-        setBlackjackContract(blackjack);
-        setTreasuryContract(treasury);
-        setRouletteContract(roulette);
-        setPokerContract(poker);
-        setBalatroContract(balatro);
+        setBlackjackContract(contracts.blackjack);
+        setTreasuryContract(contracts.treasury);
+        setRouletteContract(contracts.roulette);
+        setPokerContract(contracts.poker);
+        setBalatroContract(contracts.balatro);
         setError(null);
 
       } catch (requestError) {

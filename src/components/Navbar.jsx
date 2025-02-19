@@ -94,19 +94,33 @@ function Navbar() {
 
   useEffect(() => {
     const checkNetwork = async () => {
-      if (window.ethereum) {
-        const chainId = await window.ethereum.request({ method: 'eth_chainId' });
-        setNetworkStatus(chainId === '0xa869' ? 'connected' : 'wrong-network');
-      } else {
+      if (!window.ethereum) {
         setNetworkStatus('no-wallet');
+        return;
+      }
+
+      try {
+        const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+        if (accounts.length === 0) {
+          setNetworkStatus(null); // Not connected yet
+          return;
+        }
+
+        const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+        setNetworkStatus(chainId === '0x7A69' ? 'connected' : 'wrong-network');
+      } catch (error) {
+        console.error('Error checking network:', error);
+        setNetworkStatus('error');
       }
     };
     
     checkNetwork();
     window.ethereum?.on('chainChanged', checkNetwork);
+    window.ethereum?.on('accountsChanged', checkNetwork);
     
     return () => {
       window.ethereum?.removeListener('chainChanged', checkNetwork);
+      window.ethereum?.removeListener('accountsChanged', checkNetwork);
     };
   }, []);
 
@@ -188,7 +202,7 @@ function Navbar() {
         )}
         {networkStatus === 'wrong-network' && (
           <div className="network-warning">
-            Please connect to Avalanche Fuji Testnet
+            Please connect to Hardhat Network
           </div>
         )}
       </div>
