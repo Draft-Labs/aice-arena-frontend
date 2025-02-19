@@ -2,6 +2,7 @@ import { Routes, Route } from 'react-router-dom';
 import Home from './pages/Home';
 import Account from './pages/Account';
 import Blackjack from './pages/Blackjack';
+import Balatro from './pages/Balatro';
 import Roulette from './pages/Roulette';
 import PokerLobby from './pages/poker/index';
 import CreatePokerTable from './pages/poker/create';
@@ -13,6 +14,7 @@ const AppRoutes = () => {
     <Routes>
       <Route path="/account" element={<Account />} />
       <Route path="/blackjack" element={<Blackjack />} />
+      <Route path="/balatro" element={<Balatro />} />
       <Route path="/roulette" element={<Roulette />} />
       <Route path="/poker" element={<PokerLobby />} />
       <Route path="/poker/create" element={<CreatePokerTable />} />

@@ -217,7 +217,7 @@ function Account() {
         } catch (err) {
           console.error('Error updating balance:', err);
         }
-      }, 5000); // Update every 5 seconds
+      }, 5000);
     }
 
     return () => {
@@ -449,7 +449,7 @@ function Account() {
           <div className="account-controls">
             <div className="balance-display">
               <h2>Current Balance</h2>
-              <p>{currentBalance} ETH</p>
+              <p>{currentBalance} AVAX</p>
             </div>
 
             <div className="transaction-section">

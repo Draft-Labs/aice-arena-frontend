@@ -279,7 +279,7 @@ function Home() {
         
         <div className="house-info">
           <h2>House Treasury</h2>
-          <div className="treasury-amount">{houseFunds} ETH</div>
+          <div className="treasury-amount">{houseFunds} AVAX</div>
         </div>
 
         {account && !hasAccount ? (

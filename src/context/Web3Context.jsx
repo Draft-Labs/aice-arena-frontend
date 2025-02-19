@@ -4,6 +4,7 @@ import BlackjackJSON from '../contracts/Blackjack.json';
 import TreasuryJSON from '../contracts/HouseTreasury.json';
 import RouletteJSON from '../contracts/Roulette.json';
 import PokerJSON from '../contracts/Poker.json';
+import BalatroJSON from '../contracts/Balatro.json';
 
 const Web3Context = createContext();
 
@@ -26,6 +27,7 @@ export function Web3Provider({ children }) {
   const [treasuryContract, setTreasuryContract] = useState(null);
   const [rouletteContract, setRouletteContract] = useState(null);
   const [pokerContract, setPokerContract] = useState(null);
+  const [balatroContract, setBalatroContract] = useState(null);
   const [account, setAccount] = useState(null);
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -140,12 +142,19 @@ export function Web3Provider({ children }) {
           signer
         );
 
+        const balatro = new ethers.Contract(
+          balatroAddress,
+          BalatroJSON.abi,
+          signer
+        );
+
         setProvider(provider);
         setSigner(signer);
         setBlackjackContract(blackjack);
         setTreasuryContract(treasury);
         setRouletteContract(roulette);
         setPokerContract(poker);
+        setBalatroContract(balatro);
         setError(null);
 
       } catch (requestError) {
@@ -172,6 +181,7 @@ export function Web3Provider({ children }) {
     setTreasuryContract(null);
     setRouletteContract(null);
     setPokerContract(null);
+    setBalatroContract(null);
     setError(null);
   };
 
@@ -190,6 +200,7 @@ export function Web3Provider({ children }) {
           setTreasuryContract(null);
           setRouletteContract(null);
           setPokerContract(null);
+          setBalatroContract(null);
         }
       });
 
@@ -212,6 +223,7 @@ export function Web3Provider({ children }) {
     treasuryContract,
     rouletteContract,
     pokerContract,
+    balatroContract,
     account,
     error,
     isLoading,
