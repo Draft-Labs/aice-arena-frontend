@@ -61,9 +61,9 @@ export function Web3Provider({ children }) {
       const signer = await provider.getSigner();
 
       // Get contract addresses
-      const blackjackAddress = "0x75189f668a08693430632Be3a1f38a2Fbe5038F5";
-      const treasuryAddress = "0x875F9bC922006Ec89ce55212Fb351f4b3FAfa109";
-      const rouletteAddress = "0xcFf96B0578816b96Aec75b3DAb6A185aA9bC2E23";
+      const blackjackAddress = "0xc66c1714BF9db7F8b47AFEEc24c6328D98eB9877";
+      const treasuryAddress = "0x6F09dB2589AF1F4b526aaA5457e8d3eB02ea4e5D";
+      const rouletteAddress = "0x267d2277c93aD6C1381B9E9Aaae6691D7897026a";
 
       console.log('Contract addresses:', {
         blackjack: blackjackAddress,
