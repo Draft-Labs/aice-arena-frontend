@@ -200,11 +200,11 @@ function Navbar() {
             </div>
           </div>
         )}
-        {networkStatus === 'wrong-network' && (
+        {/* {networkStatus === 'wrong-network' && (
           <div className="network-warning">
             Please connect to Hardhat Network
           </div>
-        )}
+        )} */}
       </div>
     </nav>
   );

@@ -180,15 +180,15 @@ function Roulette() {
                 className={`bet-size ${selectedBetSize === size ? 'selected' : ''}`}
                 onClick={() => setSelectedBetSize(size)}
               >
-                {size} ETH
+                {size} AVAX
               </button>
             ))}
           </div>
 
           <div className="current-bet-info">
             <p>Selected Numbers: {selectedNumbers.length > 0 ? selectedNumbers.join(', ') : 'None'}</p>
-            <p>Total Bet: {selectedNumbers.length > 0 ? `${(selectedBetSize * selectedNumbers.length).toFixed(2)} ETH` : 'None'}</p>
-            <p>Potential Win (per number): {selectedNumbers.length > 0 ? `${(selectedBetSize * 36).toFixed(2)} ETH` : 'None'}</p>
+            <p>Total Bet: {selectedNumbers.length > 0 ? `${(selectedBetSize * selectedNumbers.length).toFixed(2)} AVAX` : 'None'}</p>
+            <p>Potential Win (per number): {selectedNumbers.length > 0 ? `${(selectedBetSize * 36).toFixed(2)} AVAX` : 'None'}</p>
           </div>
 
           <div className="roulette-board">
@@ -294,7 +294,7 @@ function Roulette() {
             <div className="game-result">
               <h2>Result: {gameResult.number}</h2>
               {gameResult.won ? (
-                <p className="win">You won {gameResult.payout} ETH!</p>
+                <p className="win">You won {gameResult.payout} AVAX!</p>
               ) : (
                 <p className="loss">Better luck next time!</p>
               )}

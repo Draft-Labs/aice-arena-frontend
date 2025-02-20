@@ -1,0 +1,16 @@
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="neonGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#06F2DB;stop-opacity:0.2"/>
+      <stop offset="100%" style="stop-color:#06F2DB;stop-opacity:0.8"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Dice -->
+  <rect x="30" y="30" width="40" height="40" rx="5" 
+    fill="none" stroke="#06F2DB" stroke-width="1.5"/>
+  
+  <!-- Star (Joker Symbol) -->
+  <path d="M 50 37 L 53 47 L 63 47 L 55 53 L 58 63 L 50 57 L 42 63 L 45 53 L 37 47 L 47 47 Z" 
+    fill="none" stroke="#06F2DB" stroke-width="0.5"/>
+</svg>

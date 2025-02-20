@@ -1,0 +1,21 @@
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="neonGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#06F2DB;stop-opacity:0.2"/>
+      <stop offset="100%" style="stop-color:#06F2DB;stop-opacity:0.8"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Roulette Wheel -->
+  <circle cx="50" cy="50" r="30" fill="none" stroke="#06F2DB" stroke-width="2"/>
+  <circle cx="50" cy="50" r="25" fill="none" stroke="url(#neonGlow)" stroke-width="1"/>
+  
+  <!-- Wheel Divisions -->
+  <path d="M50,20 L50,80" stroke="#06F2DB" stroke-width="0.5"/>
+  <path d="M20,50 L80,50" stroke="#06F2DB" stroke-width="0.5"/>
+  <path d="M29,29 L71,71" stroke="#06F2DB" stroke-width="0.5"/>
+  <path d="M29,71 L71,29" stroke="#06F2DB" stroke-width="0.5"/>
+  
+  <!-- Ball -->
+  <circle cx="50" cy="25" r="2" fill="#06F2DB"/>
+</svg>

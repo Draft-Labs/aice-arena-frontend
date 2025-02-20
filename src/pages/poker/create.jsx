@@ -8,7 +8,7 @@ import '../../styles/Poker.css';
 
 function CreatePokerTable() {
   const navigate = useNavigate();
-  const { pokerContract } = useWeb3();
+  const { account, pokerContract, connectWallet } = useWeb3();
   const [formData, setFormData] = useState({
     tableName: '',
     minBuyIn: '0.1',
@@ -30,6 +30,15 @@ function CreatePokerTable() {
   const handleCreateTable = async (e) => {
     e.preventDefault();
     try {
+      if (!account) {
+        await connectWallet();
+        return;
+      }
+
+      if (!pokerContract) {
+        throw new Error("Poker contract not initialized");
+      }
+
       const tx = await pokerContract.createTable(
         ethers.parseEther(formData.minBuyIn),
         ethers.parseEther(formData.maxBuyIn),
@@ -59,96 +68,106 @@ function CreatePokerTable() {
     <div className="poker-container">
       <h1>Create New Poker Table</h1>
       
-      <form onSubmit={handleCreateTable} className="create-table-form">
-        <div className="form-group">
-          <label>Table Name</label>
-          <input
-            type="text"
-            name="tableName"
-            value={formData.tableName}
-            onChange={handleInputChange}
-            placeholder="Enter a name for your table"
-            required
-            maxLength={30}
-          />
+      {!account ? (
+        <div className="connect-wallet">
+          <button onClick={connectWallet}>Connect Wallet</button>
         </div>
-
-        <div className="form-group">
-          <label>Minimum Buy-in (AVAX)</label>
-          <input
-            type="number"
-            name="minBuyIn"
-            value={formData.minBuyIn}
-            onChange={handleInputChange}
-            step="0.01"
-            required
-          />
+      ) : !pokerContract ? (
+        <div className="error-message">
+          Error: Unable to connect to poker contract
         </div>
+      ) : (
+        <form onSubmit={handleCreateTable} className="create-table-form">
+          <div className="form-group">
+            <label>Table Name</label>
+            <input
+              type="text"
+              name="tableName"
+              value={formData.tableName}
+              onChange={handleInputChange}
+              placeholder="Enter a name for your table"
+              required
+              maxLength={30}
+            />
+          </div>
 
-        <div className="form-group">
-          <label>Maximum Buy-in (AVAX)</label>
-          <input
-            type="number"
-            name="maxBuyIn"
-            value={formData.maxBuyIn}
-            onChange={handleInputChange}
-            step="0.01"
-            required
-          />
-        </div>
+          <div className="form-group">
+            <label>Minimum Buy-in (AVAX)</label>
+            <input
+              type="number"
+              name="minBuyIn"
+              value={formData.minBuyIn}
+              onChange={handleInputChange}
+              step="0.01"
+              required
+            />
+          </div>
 
-        <div className="form-group">
-          <label>Small Blind (AVAX)</label>
-          <input
-            type="number"
-            name="smallBlind"
-            value={formData.smallBlind}
-            onChange={handleInputChange}
-            step="0.001"
-            required
-          />
-        </div>
+          <div className="form-group">
+            <label>Maximum Buy-in (AVAX)</label>
+            <input
+              type="number"
+              name="maxBuyIn"
+              value={formData.maxBuyIn}
+              onChange={handleInputChange}
+              step="0.01"
+              required
+            />
+          </div>
 
-        <div className="form-group">
-          <label>Big Blind (AVAX)</label>
-          <input
-            type="number"
-            name="bigBlind"
-            value={formData.bigBlind}
-            onChange={handleInputChange}
-            step="0.001"
-            required
-          />
-        </div>
+          <div className="form-group">
+            <label>Small Blind (AVAX)</label>
+            <input
+              type="number"
+              name="smallBlind"
+              value={formData.smallBlind}
+              onChange={handleInputChange}
+              step="0.001"
+              required
+            />
+          </div>
 
-        <div className="form-group">
-          <label>Minimum Bet (AVAX)</label>
-          <input
-            type="number"
-            name="minBet"
-            value={formData.minBet}
-            onChange={handleInputChange}
-            step="0.001"
-            required
-          />
-        </div>
+          <div className="form-group">
+            <label>Big Blind (AVAX)</label>
+            <input
+              type="number"
+              name="bigBlind"
+              value={formData.bigBlind}
+              onChange={handleInputChange}
+              step="0.001"
+              required
+            />
+          </div>
 
-        <div className="form-group">
-          <label>Maximum Bet (AVAX)</label>
-          <input
-            type="number"
-            name="maxBet"
-            value={formData.maxBet}
-            onChange={handleInputChange}
-            step="0.001"
-            required
-          />
-        </div>
+          <div className="form-group">
+            <label>Minimum Bet (AVAX)</label>
+            <input
+              type="number"
+              name="minBet"
+              value={formData.minBet}
+              onChange={handleInputChange}
+              step="0.001"
+              required
+            />
+          </div>
 
-        <button type="submit" className="create-button">
-          Create Table
-        </button>
-      </form>
+          <div className="form-group">
+            <label>Maximum Bet (AVAX)</label>
+            <input
+              type="number"
+              name="maxBet"
+              value={formData.maxBet}
+              onChange={handleInputChange}
+              step="0.001"
+              required
+            />
+          </div>
+
+          <button type="submit" className="create-button">
+            Create Table
+          </button>
+        </form>
+      )}
     </div>
   );
 }

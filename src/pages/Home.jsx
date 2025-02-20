@@ -5,6 +5,131 @@ import { useContractInteraction } from '../hooks/useContractInteraction';
 import { Link } from 'react-router-dom';
 import { ethers } from 'ethers';
 import '../styles/Home.css';
+import blackjackIcon from '../assets/home/blackjack.svg';
+import pokerIcon from '../assets/home/poker.svg';
+import rouletteIcon from '../assets/home/roulette.svg';
+import balatroIcon from '../assets/home/balatro.svg';
+
+const GameCarousel = () => {
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const timerRef = useRef(null);
+  
+  const games = [
+    {
+      title: 'Blackjack',
+      description: 'Classic casino card game. Beat the dealer to 21!',
+      path: '/blackjack',
+      image: blackjackIcon
+    },
+    {
+      title: 'Poker',
+      description: 'Texas Hold\'em poker tables. Show your best hand!',
+      path: '/poker',
+      image: pokerIcon
+    },
+    {
+      title: 'Roulette',
+      description: 'Place your bets and spin the wheel!',
+      path: '/roulette',
+      image: rouletteIcon
+    },
+    {
+      title: 'Balatro',
+      description: 'Unique poker-style roguelike game',
+      path: '/balatro',
+      image: balatroIcon
+    }
+  ];
+
+  const resetTimer = () => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+    }
+    timerRef.current = setInterval(() => {
+      setCurrentSlide(prev => (prev + 1) % games.length);
+    }, 10000);
+  };
+
+  useEffect(() => {
+    resetTimer();
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
+  }, [games.length]);
+
+  const nextSlide = () => {
+    setCurrentSlide(prev => (prev + 1) % games.length);
+    resetTimer();
+  };
+
+  const prevSlide = () => {
+    setCurrentSlide(prev => (prev - 1 + games.length) % games.length);
+    resetTimer();
+  };
+
+  const handleDotClick = (index) => {
+    setCurrentSlide(index);
+    resetTimer();
+  };
+
+  return (
+    <div className="game-carousel">
+      <button 
+        className="carousel-button prev" 
+        onClick={prevSlide}
+      >
+        ‹
+      </button>
+      
+      <div className="carousel-container">
+        {games.map((game, index) => (
+          <div
+            key={game.title}
+            className={`carousel-slide ${index === currentSlide ? 'active' : ''}`}
+          >
+            <div className="game-card">
+              <div className="game-image" style={{ backgroundImage: `url(${game.image})` }} />
+              <div className="game-info">
+                <h3>{game.title}</h3>
+                <p>{game.description}</p>
+                <div className="button-group">
+                  {game.title === 'Balatro' ? (
+                    <span className="coming-soon-button">Coming Soon</span>
+                  ) : game.title === 'Poker' ? (
+                    <>
+                      <span className="see-demo-button">See Demo</span>
+                    </>
+                  ) : (
+                    <Link to={game.path} className="play-button">Play Now</Link>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+      
+      <button 
+        className="carousel-button next" 
+        onClick={nextSlide}
+      >
+        ›
+      </button>
+      
+      <div className="carousel-dots">
+        {games.map((_, index) => (
+          <button
+            key={index}
+            className={`dot ${index === currentSlide ? 'active' : ''}`}
+            onClick={() => handleDotClick(index)}
+          />
+        ))}
+      </div>
+    </div>
+  );
+};
 
 function Home() {
   const { account, treasuryContract } = useWeb3();
@@ -309,15 +434,7 @@ function Home() {
             </Link>
           </div>
         ) : account && hasAccount ? (
-          <div className="game-selection">
-            <h2>Choose Your Game</h2>
-            <Link to="/poker" className="game-button">
-              Play Poker
-            </Link>
-            <Link to="/blackjack" className="game-button">
-              Play Blackjack
-            </Link>
-          </div>
+          <GameCarousel />
         ) : (
           <div className="connect-prompt">
             <h2>Connect Your Wallet</h2>

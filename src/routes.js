@@ -8,6 +8,7 @@ import PokerLobby from './pages/poker/index';
 import CreatePokerTable from './pages/poker/create';
 import PokerTable from './pages/poker/table';
 import Leaderboard from './pages/Leaderboard';
+import Demo from './pages/Demo';
 
 const AppRoutes = () => {
   return (
@@ -16,6 +17,7 @@ const AppRoutes = () => {
       <Route path="/blackjack" element={<Blackjack />} />
       <Route path="/balatro" element={<Balatro />} />
       <Route path="/roulette" element={<Roulette />} />
+      <Route path="/demo" element={<Demo />} />
       <Route path="/poker" element={<PokerLobby />} />
       <Route path="/poker/create" element={<CreatePokerTable />} />
       <Route path="/poker/table/:tableId" element={<PokerTable />} />
