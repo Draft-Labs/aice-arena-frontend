@@ -501,7 +501,6 @@
 }
 
 .carousel-button:hover {
-  background: rgba(6, 242, 219, 0.2);
   box-shadow: 0 0 15px rgba(6, 242, 219, 0.4);
   transform: translateY(0);
 }
