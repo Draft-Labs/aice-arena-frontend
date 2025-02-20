@@ -1,3 +1,4 @@
+/* global BigInt */
 import { useCallback } from 'react';
 import { useWeb3 } from '../context/Web3Context';
 import { ethers } from 'ethers';
@@ -295,8 +296,8 @@ export function useContractInteraction() {
         // Convert bet amount to Wei (this is the total bet amount for all numbers)
         const totalBetAmountWei = ethers.parseEther(betAmount);
         
-        // Calculate individual bet amount per number
-        const individualBetAmountWei = totalBetAmountWei / BigInt(numbersArray.length);
+        // Calculate individual bet amount per number using ethers.getBigInt
+        const individualBetAmountWei = totalBetAmountWei / ethers.getBigInt(numbersArray.length);
 
         console.log('Bet amounts:', {
             totalBetAmount: betAmount,
