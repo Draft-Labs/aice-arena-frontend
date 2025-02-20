@@ -89,7 +89,7 @@ function Roulette() {
       }
 
       // Calculate total bet amount in ETH
-      const totalBetAmount = selectedBetSize * selectedNumbers.length;
+      const totalBetAmount = (selectedBetSize * selectedNumbers.length).toString();
 
       // Calculate gas limit based on number of selected numbers
       const baseGas = 500000;
@@ -103,7 +103,7 @@ function Roulette() {
         gasLimit
       });
 
-      const success = await placeRouletteBet(selectedNumbers, totalBetAmount.toString(), gasLimit);
+      const success = await placeRouletteBet(selectedNumbers, totalBetAmount, gasLimit);
       
       if (success) {
         const result = Math.floor(Math.random() * 37);

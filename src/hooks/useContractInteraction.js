@@ -292,8 +292,18 @@ export function useContractInteraction() {
         // Ensure numbers is an array
         const numbersArray = Array.isArray(numbers) ? numbers : [numbers];
         
-        // Convert bet amount to Wei
-        const betAmountWei = ethers.parseEther(betAmount);
+        // Convert bet amount to Wei (this is the total bet amount for all numbers)
+        const totalBetAmountWei = ethers.parseEther(betAmount);
+        
+        // Calculate individual bet amount per number
+        const individualBetAmountWei = totalBetAmountWei / BigInt(numbersArray.length);
+
+        console.log('Bet amounts:', {
+            totalBetAmount: betAmount,
+            totalBetAmountWei: totalBetAmountWei.toString(),
+            numbersCount: numbersArray.length,
+            individualBetAmountWei: individualBetAmountWei.toString()
+        });
 
         // Convert numbers to ethers BigNumber array
         const processedNumbers = numbersArray.map(num => 
@@ -303,14 +313,6 @@ export function useContractInteraction() {
         // Place bet without sending ETH value
         const tx = await rouletteContract.placeBet(processedNumbers, {
             gasLimit: gasLimit || 500000
-        });
-        
-        console.log('Transaction sent:', {
-            hash: tx.hash,
-            data: tx.data,
-            gasLimit: tx.gasLimit,
-            betAmount,
-            betAmountWei: betAmountWei.toString()
         });
 
         await tx.wait();
