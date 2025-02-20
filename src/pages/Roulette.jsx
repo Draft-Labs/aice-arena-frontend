@@ -88,26 +88,24 @@ function Roulette() {
         throw new Error('Please select at least one number');
       }
 
-      // Calculate total bet amount
-      const totalBetAmount = (selectedBetSize * selectedNumbers.length).toString();
+      // Calculate total bet amount in ETH
+      const totalBetAmount = selectedBetSize * selectedNumbers.length;
 
       // Calculate gas limit based on number of selected numbers
-      const baseGas = 500000;  // Increased base gas significantly
-      const gasPerNumber = 100000;  // Increased per-number gas
+      const baseGas = 500000;
+      const gasPerNumber = 100000;
       const gasLimit = baseGas + (selectedNumbers.length * gasPerNumber);
 
-      console.log('Placing bet with gas limit:', {
-        baseGas,
-        gasPerNumber,
-        totalGasLimit: gasLimit,
-        selectedNumbers: selectedNumbers.length
+      console.log('Placing bet:', {
+        selectedNumbers,
+        betSize: selectedBetSize,
+        totalBetAmount,
+        gasLimit
       });
 
-      // Place bet with selected numbers and dynamic gas limit
-      const success = await placeRouletteBet(selectedNumbers, totalBetAmount, gasLimit);
+      const success = await placeRouletteBet(selectedNumbers, totalBetAmount.toString(), gasLimit);
       
       if (success) {
-        // Note: In production, the result would come from the blockchain event
         const result = Math.floor(Math.random() * 37);
         const won = selectedNumbers.includes(result);
         setGameResult({

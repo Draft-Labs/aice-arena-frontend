@@ -291,6 +291,9 @@ export function useContractInteraction() {
 
         // Ensure numbers is an array
         const numbersArray = Array.isArray(numbers) ? numbers : [numbers];
+        
+        // Convert bet amount to Wei
+        const betAmountWei = ethers.parseEther(betAmount);
 
         // Convert numbers to ethers BigNumber array
         const processedNumbers = numbersArray.map(num => 
@@ -306,6 +309,8 @@ export function useContractInteraction() {
             hash: tx.hash,
             data: tx.data,
             gasLimit: tx.gasLimit,
+            betAmount,
+            betAmountWei: betAmountWei.toString()
         });
 
         await tx.wait();
