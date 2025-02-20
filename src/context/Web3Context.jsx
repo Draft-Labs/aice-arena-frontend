@@ -138,32 +138,19 @@ export function Web3Provider({ children }) {
 
   const switchToFuji = async () => {
     try {
-      // First try to switch to the network
-      try {
-        await window.ethereum.request({
-          method: 'wallet_switchEthereumChain',
-          params: [{ chainId: FUJI_CONFIG.chainId }],
-        });
-      } catch (switchError) {
-        // This error code indicates that the chain has not been added to MetaMask
-        if (switchError.code === 4902) {
-          await window.ethereum.request({
-            method: 'wallet_addEthereumChain',
-            params: [FUJI_CONFIG],
-          });
-        } else {
-          throw switchError;
-        }
-      }
+      await window.ethereum.request({
+        method: 'wallet_addEthereumChain',
+        params: [FUJI_CONFIG],
+      });
+      
+      await window.ethereum.request({
+        method: 'wallet_switchEthereumChain',
+        params: [{ chainId: FUJI_CONFIG.chainId }],
+      });
 
-      // Verify we're on the correct network
-      const currentChainId = await window.ethereum.request({ method: 'eth_chainId' });
-      if (currentChainId !== FUJI_CONFIG.chainId) {
-        throw new Error('Failed to switch to Fuji network');
-      }
     } catch (error) {
       console.error('Error switching to Fuji:', error);
-      throw error;
+      throw new Error('Failed to switch to Fuji network. Please add Fuji network to MetaMask manually.');
     }
   };
 
