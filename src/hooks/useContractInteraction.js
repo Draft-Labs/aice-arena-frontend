@@ -313,9 +313,9 @@ export function useContractInteraction() {
             console.log('Processing number at index 0:', {
                 original: { value: num, type: typeof num },
                 parsed,
-                bigInt: { value: BigInt(num).toString(), type: 'bigint' }
+                bigInt: { value: window.BigInt(num).toString(), type: 'bigint' }
             });
-            return BigInt(num);
+            return window.BigInt(num);
         });
 
         console.log('Transformed array details:', {
