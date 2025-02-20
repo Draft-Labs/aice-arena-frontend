@@ -3,8 +3,6 @@ import { ethers } from 'ethers';
 import BlackjackJSON from '../contracts/Blackjack.json';
 import TreasuryJSON from '../contracts/HouseTreasury.json';
 import RouletteJSON from '../contracts/Roulette.json';
-import PokerJSON from '../contracts/Poker.json';
-import BalatroJSON from '../contracts/Balatro.json';
 import { FUJI_CONFIG } from '../config/networks';
 
 const Web3Context = createContext();
@@ -26,8 +24,6 @@ export function Web3Provider({ children }) {
   const [blackjackContract, setBlackjackContract] = useState(null);
   const [treasuryContract, setTreasuryContract] = useState(null);
   const [rouletteContract, setRouletteContract] = useState(null);
-  const [pokerContract, setPokerContract] = useState(null);
-  const [balatroContract, setBalatroContract] = useState(null);
   const [account, setAccount] = useState(null);
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -65,18 +61,14 @@ export function Web3Provider({ children }) {
       const signer = await provider.getSigner();
 
       // Get contract addresses
-      const blackjackAddress = process.env.REACT_APP_FUJI_BLACKJACK_ADDRESS;
-      const treasuryAddress = process.env.REACT_APP_FUJI_TREASURY_ADDRESS;
-      const rouletteAddress = process.env.REACT_APP_FUJI_ROULETTE_ADDRESS;
-      const pokerAddress = process.env.REACT_APP_FUJI_POKER_ADDRESS;
-      const balatroAddress = process.env.REACT_APP_FUJI_BALATRO_ADDRESS;
+      const blackjackAddress = "0x75189f668a08693430632Be3a1f38a2Fbe5038F5";
+      const treasuryAddress = "0x875F9bC922006Ec89ce55212Fb351f4b3FAfa109";
+      const rouletteAddress = "0xcFf96B0578816b96Aec75b3DAb6A185aA9bC2E23";
 
       console.log('Contract addresses:', {
-        blackjack: process.env.REACT_APP_FUJI_BLACKJACK_ADDRESS,
-        treasury: process.env.REACT_APP_FUJI_TREASURY_ADDRESS,
-        roulette: process.env.REACT_APP_FUJI_ROULETTE_ADDRESS,
-        poker: process.env.REACT_APP_FUJI_POKER_ADDRESS,
-        balatro: process.env.REACT_APP_FUJI_BALATRO_ADDRESS
+        blackjack: blackjackAddress,
+        treasury: treasuryAddress,
+        roulette: rouletteAddress,
       });
 
       // Create contract instances
@@ -95,16 +87,6 @@ export function Web3Provider({ children }) {
           rouletteAddress,
           RouletteJSON.abi,
           signer
-        ) : null,
-        poker: pokerAddress ? new ethers.Contract(
-          pokerAddress,
-          PokerJSON.abi,
-          signer
-        ) : null,
-        balatro: balatroAddress ? new ethers.Contract(
-          balatroAddress,
-          BalatroJSON.abi,
-          signer
         ) : null
       };
 
@@ -113,8 +95,6 @@ export function Web3Provider({ children }) {
       setBlackjackContract(contracts.blackjack);
       setTreasuryContract(contracts.treasury);
       setRouletteContract(contracts.roulette);
-      setPokerContract(contracts.poker);
-      setBalatroContract(contracts.balatro);
       setError(null);
 
     } catch (err) {
@@ -131,8 +111,6 @@ export function Web3Provider({ children }) {
     setBlackjackContract(null);
     setTreasuryContract(null);
     setRouletteContract(null);
-    setPokerContract(null);
-    setBalatroContract(null);
     setError(null);
   };
 
@@ -168,8 +146,6 @@ export function Web3Provider({ children }) {
           setBlackjackContract(null);
           setTreasuryContract(null);
           setRouletteContract(null);
-          setPokerContract(null);
-          setBalatroContract(null);
         }
       });
 
@@ -191,8 +167,6 @@ export function Web3Provider({ children }) {
     blackjackContract,
     treasuryContract,
     rouletteContract,
-    pokerContract,
-    balatroContract,
     account,
     error,
     isLoading,
