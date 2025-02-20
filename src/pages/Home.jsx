@@ -24,7 +24,7 @@ const GameCarousel = () => {
     {
       title: 'Poker',
       description: 'Texas Hold\'em poker tables. Show your best hand!',
-      path: '/poker',
+      path: '/demo',
       image: pokerIcon
     },
     {
@@ -99,7 +99,7 @@ const GameCarousel = () => {
                     <span className="coming-soon-button">Coming Soon</span>
                   ) : game.title === 'Poker' ? (
                     <>
-                      <span className="see-demo-button">See Demo</span>
+                      <Link to={game.path} className="play-button">See Demo</Link>
                     </>
                   ) : (
                     <Link to={game.path} className="play-button">Play Now</Link>
