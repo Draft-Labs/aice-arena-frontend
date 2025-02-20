@@ -206,6 +206,11 @@ function Navbar() {
           </div>
         )} */}
       </div>
+      <div className="scrolling-banner">
+        <div className="banner-content">
+          EARLY DEMO • EARLY DEMO • EARLY DEMO • EARLY DEMO • EARLY DEMO • EARLY DEMO • EARLY DEMO • 
+        </div>
+      </div>
     </nav>
   );
 }
