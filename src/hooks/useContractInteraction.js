@@ -479,7 +479,9 @@ export function useContractInteraction() {
 
   const spinRoulette = async () => {
     if (!rouletteContract) return;
-    const tx = await rouletteContract.spinWheel();
+    const tx = await rouletteContract.spinWheel({
+        gasLimit: 500000
+    });
     await tx.wait();
   };
 
