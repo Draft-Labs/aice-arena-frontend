@@ -40,48 +40,30 @@ export function useContractInteraction() {
 
       const betAmountWei = ethers.parseEther(amount.toString());
       
-      // Get current fee data and calculate adjusted gas price
+      // Get current fee data for Fuji
       const feeData = await provider.getFeeData();
-      const adjustedGasPrice = feeData.gasPrice * ethers.getBigInt(Math.floor(GAS_PRICE_MULTIPLIER * 100)) / ethers.getBigInt(100);
+      const maxFeePerGas = feeData.maxFeePerGas || feeData.gasPrice;
+      const maxPriorityFeePerGas = feeData.maxPriorityFeePerGas || ethers.parseUnits("2", "gwei");
 
-      // Debug contract interface
-      console.log('Contract interface details:', {
-        hasContract: !!blackjackContract,
-        hasInterface: !!blackjackContract.interface,
-        placeBetFunction: blackjackContract.interface.getFunction('placeBet'),
-        contractAddress: await blackjackContract.getAddress(),
-        account,
-        betAmountWei: betAmountWei.toString(),
-        functionData: blackjackContract.interface.encodeFunctionData('placeBet')
+      // Debug logging
+      console.log('Placing bet with params:', {
+        value: betAmountWei.toString(),
+        maxFeePerGas: maxFeePerGas?.toString(),
+        maxPriorityFeePerGas: maxPriorityFeePerGas?.toString(),
+        account
       });
 
-      // Call placeBet with properly encoded function data
-      const tx = await blackjackContract.placeBet.staticCall({
+      // Send transaction with proper gas parameters
+      const tx = await blackjackContract.placeBet({
         value: betAmountWei,
-        gasLimit: AVALANCHE_GAS_LIMIT,
-        gasPrice: adjustedGasPrice
+        maxFeePerGas,
+        maxPriorityFeePerGas,
+        gasLimit: 500000
       });
 
-      // If staticCall succeeds, send the actual transaction
-      const realTx = await blackjackContract.placeBet({
-        value: betAmountWei,
-        gasLimit: AVALANCHE_GAS_LIMIT,
-        gasPrice: adjustedGasPrice
-      });
-
-      console.log('Transaction sent:', {
-        hash: realTx.hash,
-        gasLimit: realTx.gasLimit?.toString(),
-        value: realTx.value?.toString(),
-        data: realTx.data
-      });
-
-      const receipt = await realTx.wait();
-      console.log('Transaction confirmed:', {
-        hash: receipt.hash,
-        gasUsed: receipt.gasUsed?.toString(),
-        status: receipt.status
-      });
+      console.log('Transaction sent:', tx.hash);
+      const receipt = await tx.wait();
+      console.log('Transaction confirmed:', receipt);
 
       return true;
     } catch (error) {
