@@ -104,7 +104,7 @@ function Roulette() {
       });
 
       // Place bet with selected numbers and dynamic gas limit
-      const success = await placeRouletteBet(totalBetAmount, selectedNumbers, gasLimit);
+      const success = await placeRouletteBet(selectedNumbers, totalBetAmount, gasLimit);
       
       if (success) {
         // Note: In production, the result would come from the blockchain event

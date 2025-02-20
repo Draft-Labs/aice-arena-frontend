@@ -283,30 +283,53 @@ export function useContractInteraction() {
     }
   }, [blackjackContract, account]);
 
-  const placeRouletteBet = useCallback(async (numbers, betAmount) => {
+  const placeRouletteBet = useCallback(async (betAmount, numbers, gasLimit) => {
     try {
         if (!rouletteContract || !account) {
             throw new Error('Roulette contract or account not initialized');
         }
 
-        // Calculate gas limit
-        const baseGas = 500000;
-        const gasPerNumber = 100000;
-        const gasLimit = baseGas + (numbers.length * gasPerNumber);
-
-        console.log('Contract interface details:', {
-            contractAddress: rouletteContract.target,
-            account,
-            hasContract: !!rouletteContract,
-            hasInterface: !!rouletteContract.interface,
-            placeBetFunction: rouletteContract.interface.getFunction('placeBet'),
-            betAmountWei: betAmount,
+        console.log('Raw input details:', {
+            numbers,
+            betAmount,
+            type: typeof numbers,
+            isArray: Array.isArray(numbers),
+            arrayLength: numbers.length,
+            elements: numbers,
+            firstElement: numbers[0],
+            firstElementType: typeof numbers[0],
+            elementTypes: numbers.map(n => typeof n),
             providedGasLimit: gasLimit
         });
 
+        // Convert numbers to BigInt array
+        const processedNumbers = numbers.map(num => {
+            const parsed = {
+                value: Number(num),
+                type: typeof num,
+                isInteger: Number.isInteger(Number(num)),
+                isInRange: Number(num) >= 0 && Number(num) <= 36
+            };
+            console.log('Processing number at index 0:', {
+                original: { value: num, type: typeof num },
+                parsed,
+                bigInt: { value: BigInt(num).toString(), type: 'bigint' }
+            });
+            return BigInt(num);
+        });
+
+        console.log('Transformed array details:', {
+            array: processedNumbers,
+            type: typeof processedNumbers,
+            isArray: Array.isArray(processedNumbers),
+            arrayLength: processedNumbers.length,
+            elements: processedNumbers.map(n => ({ value: n.toString(), type: typeof n })),
+            serialized: processedNumbers.map(n => n.toString()).join(',')
+        });
+
         // Place bet without sending ETH value
-        const tx = await rouletteContract.placeBet(numbers, {
-            gasLimit: gasLimit
+        const tx = await rouletteContract.placeBet(processedNumbers, {
+            gasLimit: gasLimit || 500000
         });
         
         console.log('Transaction sent:', {
