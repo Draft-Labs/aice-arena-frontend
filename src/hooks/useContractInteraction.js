@@ -489,6 +489,18 @@ export function useContractInteraction() {
     }
   };
 
+  const placeBetAndDeal = async (amount) => {
+    if (!blackjackContract) return;
+    const tx = await blackjackContract.placeBetAndDeal({ value: amount });
+    await tx.wait();
+  };
+
+  const spinRoulette = async () => {
+    if (!rouletteContract) return;
+    const tx = await rouletteContract.spinWheel();
+    await tx.wait();
+  };
+
   return {
     placeBet,
     hit,
@@ -502,5 +514,7 @@ export function useContractInteraction() {
     placeRouletteBet,
     resolveRouletteBet,
     getPlayerNetWinnings,
+    placeBetAndDeal,
+    spinRoulette,
   };
 }
