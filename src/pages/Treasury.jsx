@@ -32,7 +32,7 @@ function Treasury() {
   const [ownerAddress, setOwnerAddress] = useState(null);
 
   // Replace with your deployed treasury address
-  const TREASURY_ADDRESS = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
+  const TREASURY_ADDRESS = "0x17BBC57CcCaC1F83C2629B4B88a2d7d1CD40734B";
 
   useEffect(() => {
     const init = async () => {
