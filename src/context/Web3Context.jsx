@@ -71,6 +71,14 @@ export function Web3Provider({ children }) {
       const pokerAddress = process.env.REACT_APP_FUJI_POKER_ADDRESS;
       const balatroAddress = process.env.REACT_APP_FUJI_BALATRO_ADDRESS;
 
+      console.log('Contract addresses:', {
+        blackjack: process.env.REACT_APP_FUJI_BLACKJACK_ADDRESS,
+        treasury: process.env.REACT_APP_FUJI_TREASURY_ADDRESS,
+        roulette: process.env.REACT_APP_FUJI_ROULETTE_ADDRESS,
+        poker: process.env.REACT_APP_FUJI_POKER_ADDRESS,
+        balatro: process.env.REACT_APP_FUJI_BALATRO_ADDRESS
+      });
+
       // Create contract instances
       const contracts = {
         blackjack: blackjackAddress ? new ethers.Contract(
@@ -130,10 +138,29 @@ export function Web3Provider({ children }) {
 
   const switchToFuji = async () => {
     try {
-      await window.ethereum.request({
-        method: 'wallet_addEthereumChain',
-        params: [FUJI_CONFIG],
-      });
+      // First try to switch to the network
+      try {
+        await window.ethereum.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: FUJI_CONFIG.chainId }],
+        });
+      } catch (switchError) {
+        // This error code indicates that the chain has not been added to MetaMask
+        if (switchError.code === 4902) {
+          await window.ethereum.request({
+            method: 'wallet_addEthereumChain',
+            params: [FUJI_CONFIG],
+          });
+        } else {
+          throw switchError;
+        }
+      }
+
+      // Verify we're on the correct network
+      const currentChainId = await window.ethereum.request({ method: 'eth_chainId' });
+      if (currentChainId !== FUJI_CONFIG.chainId) {
+        throw new Error('Failed to switch to Fuji network');
+      }
     } catch (error) {
       console.error('Error switching to Fuji:', error);
       throw error;
