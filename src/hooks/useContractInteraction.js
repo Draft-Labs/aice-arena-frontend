@@ -283,49 +283,19 @@ export function useContractInteraction() {
     }
   }, [blackjackContract, account]);
 
-  const placeRouletteBet = useCallback(async (betAmount, numbers, gasLimit) => {
+  const placeRouletteBet = useCallback(async (numbers, betAmount, gasLimit) => {
     try {
         if (!rouletteContract || !account) {
             throw new Error('Roulette contract or account not initialized');
         }
 
-        console.log('Raw input details:', {
-            numbers,
-            betAmount,
-            type: typeof numbers,
-            isArray: Array.isArray(numbers),
-            arrayLength: numbers.length,
-            elements: numbers,
-            firstElement: numbers[0],
-            firstElementType: typeof numbers[0],
-            elementTypes: numbers.map(n => typeof n),
-            providedGasLimit: gasLimit
-        });
+        // Ensure numbers is an array
+        const numbersArray = Array.isArray(numbers) ? numbers : [numbers];
 
-        // Convert numbers to BigInt array
-        const processedNumbers = numbers.map(num => {
-            const parsed = {
-                value: Number(num),
-                type: typeof num,
-                isInteger: Number.isInteger(Number(num)),
-                isInRange: Number(num) >= 0 && Number(num) <= 36
-            };
-            console.log('Processing number at index 0:', {
-                original: { value: num, type: typeof num },
-                parsed,
-                bigInt: { value: window.BigInt(num).toString(), type: 'bigint' }
-            });
-            return window.BigInt(num);
-        });
-
-        console.log('Transformed array details:', {
-            array: processedNumbers,
-            type: typeof processedNumbers,
-            isArray: Array.isArray(processedNumbers),
-            arrayLength: processedNumbers.length,
-            elements: processedNumbers.map(n => ({ value: n.toString(), type: typeof n })),
-            serialized: processedNumbers.map(n => n.toString()).join(',')
-        });
+        // Convert numbers to ethers BigNumber array
+        const processedNumbers = numbersArray.map(num => 
+            ethers.getBigInt(num.toString())
+        );
 
         // Place bet without sending ETH value
         const tx = await rouletteContract.placeBet(processedNumbers, {
