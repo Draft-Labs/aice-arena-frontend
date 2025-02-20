@@ -140,23 +140,17 @@ function Navbar() {
             Blackjack
           </Link>
           <Link 
-            to="/balatro" 
-            className={`nav-link ${location.pathname === '/balatro' ? 'active' : ''}`}
-          >
-            Balatro
-          </Link>
-          <Link 
             to="/roulette" 
             className={`nav-link ${location.pathname === '/roulette' ? 'active' : ''}`}
 
           >
             Roulette
           </Link>
-          <Link 
-            to="/poker" 
-            className={`nav-link ${location.pathname === '/poker' ? 'active' : ''}`}
+          <Link
+            to="/demo"
+            className={`nav-link ${location.pathname === '/demo' ? 'active' : ''}`}
           >
-            Poker
+            Demo
           </Link>
           <Link 
             to="/leaderboard" 
