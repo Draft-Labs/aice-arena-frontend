@@ -209,11 +209,16 @@
           "internalType": "uint8[]",
           "name": "numbers",
           "type": "uint8[]"
+        },
+        {
+          "internalType": "uint256",
+          "name": "totalBetAmount",
+          "type": "uint256"
         }
       ],
       "name": "placeBet",
       "outputs": [],
-      "stateMutability": "payable",
+      "stateMutability": "nonpayable",
       "type": "function"
     },
     {
@@ -264,14 +269,8 @@
       "type": "function"
     },
     {
-      "inputs": [
-        {
-          "internalType": "uint8",
-          "name": "result",
-          "type": "uint8"
-        }
-      ],
-      "name": "spin",
+      "inputs": [],
+      "name": "spinWheel",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
