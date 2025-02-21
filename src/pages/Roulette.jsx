@@ -2,13 +2,16 @@ import { useState, useEffect } from 'react';
 import { useWeb3 } from '../context/Web3Context';
 import { useContractInteraction } from '../hooks/useContractInteraction';
 import '../styles/Roulette.css';
+import { ethers } from 'ethers';
+import RouletteJSON from '../contracts/Roulette.json';
 
 function Roulette() {
   const { 
     account, 
     isLoading, 
     error: web3Error, 
-    connectWallet 
+    connectWallet,
+    handleSpinWheel
   } = useWeb3();
   
   const { placeRouletteBet, getAccountBalance, checkTreasuryAccount } = useContractInteraction();
@@ -18,6 +21,8 @@ function Roulette() {
   const [hasActiveAccount, setHasActiveAccount] = useState(false);
   const [gameResult, setGameResult] = useState(null);
   const [selectedBetSize, setSelectedBetSize] = useState(0.1);
+  const [eventLogs, setEventLogs] = useState([]);
+  const [hasActiveBets, setHasActiveBets] = useState(false);
   
   const betSizes = [0.1, 0.5, 1, 5];
 
@@ -68,13 +73,30 @@ function Roulette() {
     setSelectedNumbers(numbers);
   };
 
+  const getRouletteContract = () => {
+    if (!window.ethereum) return null;
+    const provider = new ethers.BrowserProvider(window.ethereum);
+    const signer = provider.getSigner();
+    return new ethers.Contract(
+      process.env.REACT_APP_ROULETTE_ADDRESS,
+      RouletteJSON.abi,
+      signer
+    );
+  };
+
   const handlePlaceBet = async () => {
     try {
       setTransactionError(null);
+      setEventLogs([]);
       
       if (!account) {
         await connectWallet();
         return;
+      }
+
+      const rouletteContract = getRouletteContract();
+      if (!rouletteContract) {
+        throw new Error('Failed to initialize contract');
       }
 
       // Check if player has an active account first
@@ -103,18 +125,25 @@ function Roulette() {
         gasLimit
       });
 
-      const success = await placeRouletteBet(selectedNumbers, totalBetAmount.toString(), gasLimit);
+      console.log('Placing bet transaction...');
+      const tx = await placeRouletteBet(selectedNumbers, totalBetAmount.toString(), gasLimit);
+      console.log('Transaction hash:', tx.hash);
       
-      if (success) {
-        const result = Math.floor(Math.random() * 37);
-        const won = selectedNumbers.includes(result);
-        setGameResult({
-          number: result,
-          won,
-          payout: won ? selectedBetSize * 36 : 0
-        });
-        setSelectedNumbers([]);
-      }
+      const receipt = await tx.wait();
+      console.log('Transaction receipt:', receipt);
+
+      // Log all events from receipt
+      receipt.logs.forEach(log => {
+        try {
+          const event = rouletteContract.interface.parseLog(log);
+          console.log('Parsed event:', event.name, event.args);
+        } catch (e) {
+          console.log('Could not parse log:', log);
+        }
+      });
+
+      setSelectedNumbers([]);
+      setHasActiveBets(true);
 
     } catch (err) {
       console.error("Error placing bet:", err);
@@ -150,6 +179,57 @@ function Roulette() {
 
     fetchBalance();
   }, [account, getAccountBalance, gameResult]);
+
+  useEffect(() => {
+    if (!account) return;
+
+    const rouletteContract = getRouletteContract();
+    
+    // Listen for all relevant events
+    const betPlacedFilter = rouletteContract.filters.BetPlaced(account);
+    const spinResultFilter = rouletteContract.filters.SpinResult();
+    const gameResultFilter = rouletteContract.filters.GameResult();
+    const payoutFilter = rouletteContract.filters.Payout(account);
+
+    const logEvent = (eventName, data) => {
+      console.log(`${eventName} Event:`, data);
+      setEventLogs(prev => [...prev, { eventName, data, timestamp: new Date() }]);
+    };
+
+    rouletteContract.on(betPlacedFilter, (player, amount, number) => {
+      logEvent('BetPlaced', {
+        player,
+        amount: ethers.formatEther(amount),
+        number
+      });
+    });
+
+    rouletteContract.on(spinResultFilter, (result) => {
+      logEvent('SpinResult', {
+        number: result
+      });
+    });
+
+    rouletteContract.on(gameResultFilter, (result, payout, won) => {
+      logEvent('GameResult', {
+        result,
+        payout: ethers.formatEther(payout),
+        won
+      });
+    });
+
+    rouletteContract.on(payoutFilter, (player, amount) => {
+      logEvent('Payout', {
+        player,
+        amount: ethers.formatEther(amount)
+      });
+    });
+
+    return () => {
+      // Cleanup listeners
+      rouletteContract.removeAllListeners();
+    };
+  }, [account]);
 
   if (isLoading) return <div>Loading...</div>;
   if (web3Error) return <div>Error: {web3Error}</div>;
@@ -273,16 +353,24 @@ function Roulette() {
             </div>
           </div>
 
-          <div className="betting-controls">
+          <div className="action-buttons">
             <button 
+              className="place-bet-button"
               onClick={handlePlaceBet}
               disabled={selectedNumbers.length === 0}
             >
               Place Bet
             </button>
             <button 
+              className="spin-button"
+              onClick={handleSpinWheel}
+              disabled={!hasActiveBets}
+            >
+              Spin Wheel
+            </button>
+            <button 
+              className="clear-button"
               onClick={handleClearBoard}
-              disabled={selectedNumbers.length === 0}
             >
               Clear Board
             </button>
@@ -305,6 +393,16 @@ function Roulette() {
               Error: {transactionError}
             </div>
           )}
+
+          <div className="event-logs">
+            <h3>Transaction Logs:</h3>
+            {eventLogs.map((log, index) => (
+              <div key={index} className="log-entry">
+                <strong>{log.eventName}</strong>
+                <pre>{JSON.stringify(log.data, null, 2)}</pre>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>

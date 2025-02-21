@@ -27,6 +27,8 @@ export function Web3Provider({ children }) {
   const [account, setAccount] = useState(null);
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [gameResult, setGameResult] = useState(null);
+  const [transactionError, setTransactionError] = useState(null);
 
   const connectWallet = async () => {
     try {
@@ -132,6 +134,53 @@ export function Web3Provider({ children }) {
     }
   };
 
+  const handleSpinWheel = async () => {
+    try {
+      setTransactionError(null);
+      
+      if (!rouletteContract) {
+        throw new Error('Failed to initialize contract');
+      }
+
+      console.log('Spinning wheel...');
+      const tx = await rouletteContract.spinWheel({
+        gasLimit: 500000
+      });
+      console.log('Spin transaction hash:', tx.hash);
+      
+      const receipt = await tx.wait();
+      
+      // Parse events from receipt
+      for (const log of receipt.logs) {
+        try {
+          const parsedLog = rouletteContract.interface.parseLog(log);
+          if (parsedLog && parsedLog.name === 'GameResult') {
+            setGameResult({
+              number: parsedLog.args.result,
+              won: parsedLog.args.won,
+              payout: ethers.formatEther(parsedLog.args.payout)
+            });
+          }
+        } catch (e) {
+          console.log('Could not parse log:', log);
+        }
+      }
+
+    } catch (error) {
+      console.error('Error spinning wheel:', error);
+      setTransactionError(error.message);
+    }
+  };
+
+  const getRouletteContract = () => {
+    if (!provider) return null;
+    return new ethers.Contract(
+      process.env.REACT_APP_ROULETTE_ADDRESS,
+      RouletteJSON.abi,
+      provider.getSigner()
+    );
+  };
+
   useEffect(() => {
     // Initial connection attempt
     connectWallet();
@@ -172,7 +221,10 @@ export function Web3Provider({ children }) {
     isLoading,
     connectWallet,
     disconnectWallet,
-    switchToFuji
+    switchToFuji,
+    gameResult,
+    transactionError,
+    handleSpinWheel
   };
 
   return (
