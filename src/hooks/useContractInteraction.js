@@ -292,21 +292,25 @@ export function useContractInteraction() {
 
         // Ensure numbers is an array
         const numbersArray = Array.isArray(numbers) ? numbers : [numbers];
+        
+        // Convert bet amount to Wei
+        const betAmountWei = ethers.parseEther(betAmount);
 
         // Convert numbers to ethers BigNumber array
         const processedNumbers = numbersArray.map(num => 
             ethers.getBigInt(num.toString())
         );
 
-        // Place bet without sending ETH value
-        const tx = await rouletteContract.placeBet(processedNumbers, {
-            gasLimit: gasLimit || 500000
+        console.log('Placing bet with:', {
+            numbers: processedNumbers,
+            betAmountWei: betAmountWei.toString(),
+            gasLimit
         });
-        
-        console.log('Transaction sent:', {
-            hash: tx.hash,
-            data: tx.data,
-            gasLimit: tx.gasLimit,
+
+        // Place bet with ETH value
+        const tx = await rouletteContract.placeBet(processedNumbers, {
+            value: betAmountWei,
+            gasLimit: gasLimit || 500000
         });
 
         await tx.wait();

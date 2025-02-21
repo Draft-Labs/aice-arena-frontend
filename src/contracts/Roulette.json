@@ -209,16 +209,11 @@
           "internalType": "uint8[]",
           "name": "numbers",
           "type": "uint8[]"
-        },
-        {
-          "internalType": "uint256",
-          "name": "totalBetAmount",
-          "type": "uint256"
         }
       ],
       "name": "placeBet",
       "outputs": [],
-      "stateMutability": "nonpayable",
+      "stateMutability": "payable",
       "type": "function"
     },
     {
