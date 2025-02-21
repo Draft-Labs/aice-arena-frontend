@@ -312,7 +312,7 @@ export function useContractInteraction() {
         );
 
         // Place bet without sending ETH value
-        const tx = await rouletteContract.placeBet(processedNumbers, totalBetAmountWei, {
+        const tx = await rouletteContract.placeBet(processedNumbers, {
             gasLimit: gasLimit || 500000
         });
 
