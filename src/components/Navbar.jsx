@@ -133,7 +133,7 @@ function Navbar() {
           </Link>
         </div>
         <div className="navbar-links">
-          <Link 
+          {/* <Link 
             to="/blackjack" 
             className={`nav-link ${location.pathname === '/blackjack' ? 'active' : ''}`}
           >
@@ -145,19 +145,19 @@ function Navbar() {
 
           >
             Roulette
-          </Link>
+          </Link> */}
           <Link
             to="/demo"
             className={`nav-link ${location.pathname === '/demo' ? 'active' : ''}`}
           >
             Demo
           </Link>
-          <Link 
+          {/* <Link 
             to="/leaderboard" 
             className={`nav-link ${location.pathname === '/leaderboard' ? 'active' : ''}`}
           >
             Leaderboard
-          </Link>
+          </Link> */}
           <Link 
             to="/account" 
             className={`nav-link ${location.pathname === '/account' ? 'active' : ''}`}

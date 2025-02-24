@@ -18,7 +18,7 @@ const GameCarousel = () => {
     {
       title: 'Blackjack',
       description: 'Classic casino card game. Beat the dealer to 21!',
-      path: '/blackjack',
+      path: '/demo',
       image: blackjackIcon
     },
     {
@@ -30,13 +30,13 @@ const GameCarousel = () => {
     {
       title: 'Roulette',
       description: 'Place your bets and spin the wheel!',
-      path: '/roulette',
+      path: '/demo',
       image: rouletteIcon
     },
     {
       title: 'Balatro',
       description: 'Unique poker-style roguelike game',
-      path: '/balatro',
+      path: '/demo',
       image: balatroIcon
     }
   ];
@@ -97,12 +97,10 @@ const GameCarousel = () => {
                 <div className="button-group">
                   {game.title === 'Balatro' ? (
                     <span className="coming-soon-button">Coming Soon</span>
-                  ) : game.title === 'Poker' ? (
+                  ) : (
                     <>
                       <Link to={game.path} className="play-button">See Demo</Link>
                     </>
-                  ) : (
-                    <Link to={game.path} className="play-button">Play Now</Link>
                   )}
                 </div>
               </div>
