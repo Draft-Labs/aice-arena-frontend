@@ -9,6 +9,7 @@
   backdrop-filter: blur(10px);
   border: 1px solid #06F2DB;
   color: white;
+  margin-top: auto;
 }
 
 .account-container h1 {

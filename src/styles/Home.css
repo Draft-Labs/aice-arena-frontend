@@ -322,6 +322,10 @@
   text-align: center;
 }
 
+.main-content.has-carousel {
+  margin-top: auto;
+}
+
 .house-info {
   background: rgba(255, 255, 255, 0.1);
   padding: 2rem;

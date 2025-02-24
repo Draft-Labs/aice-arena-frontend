@@ -415,7 +415,7 @@ function Home() {
         </div>
         {renderChatBox()}
       </div>
-      <div className="main-content">
+      <div className={`main-content ${account && hasAccount ? 'has-carousel' : ''}`}>
         <h1>Welcome to Aice Arena</h1>
         
         <div className="house-info">
