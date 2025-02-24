@@ -7,17 +7,6 @@ import { FUJI_CONFIG } from '../config/networks';
 
 const Web3Context = createContext();
 
-const HARDHAT_CONFIG = {
-  chainId: '0x7A69', // 31337 in hex
-  chainName: 'Hardhat Network',
-  nativeCurrency: {
-    name: 'ETH',
-    symbol: 'ETH',
-    decimals: 18
-  },
-  rpcUrls: ['http://127.0.0.1:8545'],
-};
-
 export function Web3Provider({ children }) {
   const [provider, setProvider] = useState(null);
   const [signer, setSigner] = useState(null);
@@ -29,6 +18,7 @@ export function Web3Provider({ children }) {
   const [isLoading, setIsLoading] = useState(true);
   const [gameResult, setGameResult] = useState(null);
   const [transactionError, setTransactionError] = useState(null);
+  const [networkStatus, setNetworkStatus] = useState('disconnected');
 
   const connectWallet = async () => {
     try {
@@ -118,18 +108,32 @@ export function Web3Provider({ children }) {
 
   const switchToFuji = async () => {
     try {
+      const currentChainId = await window.ethereum.request({ method: 'eth_chainId' });
+      console.log('Current Chain ID:', currentChainId);
+      
+      if (currentChainId === FUJI_CONFIG.chainId) {
+        console.log('Already on Fuji network');
+        return;
+      }
+
+      console.log('Attempting to add Fuji network...');
       await window.ethereum.request({
         method: 'wallet_addEthereumChain',
         params: [FUJI_CONFIG],
       });
       
+      console.log('Attempting to switch to Fuji network...');
       await window.ethereum.request({
         method: 'wallet_switchEthereumChain',
         params: [{ chainId: FUJI_CONFIG.chainId }],
       });
 
     } catch (error) {
-      console.error('Error switching to Fuji:', error);
+      console.error('Detailed switch error:', {
+        message: error.message,
+        code: error.code,
+        data: error.data
+      });
       throw new Error('Failed to switch to Fuji network. Please add Fuji network to MetaMask manually.');
     }
   };
@@ -224,7 +228,8 @@ export function Web3Provider({ children }) {
     switchToFuji,
     gameResult,
     transactionError,
-    handleSpinWheel
+    handleSpinWheel,
+    networkStatus
   };
 
   return (

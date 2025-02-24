@@ -107,7 +107,7 @@ function Navbar() {
         }
 
         const chainId = await window.ethereum.request({ method: 'eth_chainId' });
-        setNetworkStatus(chainId === '0x7A69' ? 'connected' : 'wrong-network');
+        setNetworkStatus(chainId === '0xA869' ? 'connected' : 'wrong-network');
       } catch (error) {
         console.error('Error checking network:', error);
         setNetworkStatus('error');

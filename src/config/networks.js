@@ -6,6 +6,6 @@ export const FUJI_CONFIG = {
     symbol: 'AVAX',
     decimals: 18
   },
-  rpcUrls: ['​https://api.avax-test.network/ext/bc/C/rpc'],
-  blockExplorerUrls: ['https://subnets-test.avax.network/']
+  rpcUrls: ['https://api.avax-test.network/ext/bc/C/rpc'],
+  blockExplorerUrls: ['https://testnet.snowtrace.io/']
 }; 
