@@ -4,6 +4,7 @@ import BlackjackJSON from '../contracts/Blackjack.json';
 import TreasuryJSON from '../contracts/HouseTreasury.json';
 import RouletteJSON from '../contracts/Roulette.json';
 import { FUJI_CONFIG } from '../config/networks';
+import getEnvironmentConfig from '../config/environment';
 
 const Web3Context = createContext();
 
@@ -49,13 +50,14 @@ export function Web3Provider({ children }) {
       // Add delay before creating provider
       await new Promise(resolve => setTimeout(resolve, 1000));
 
+      const config = getEnvironmentConfig();
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
 
-      // Get contract addresses
-      const treasuryAddress = "0x95A227831C0223e18fEa754C053927ED1C745E06";
-      const blackjackAddress = "0x30A9561318b57f4a38E79B183AEb08d12573A1b6";
-      const rouletteAddress = "0xbb014ABABF7B8ba4eC1de8a4c7eB7F056c217e97";
+      // Get contract addresses from environment config
+      const treasuryAddress = config.contracts.treasury;
+      const blackjackAddress = config.contracts.blackjack;
+      const rouletteAddress = config.contracts.roulette;
 
       console.log('Contract addresses:', {
         blackjack: blackjackAddress,
