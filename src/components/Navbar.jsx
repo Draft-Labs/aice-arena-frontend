@@ -107,7 +107,7 @@ function Navbar() {
         }
 
         const chainId = await window.ethereum.request({ method: 'eth_chainId' });
-        setNetworkStatus(chainId === '0x7A69' ? 'connected' : 'wrong-network');
+        setNetworkStatus(chainId === '0xA869' ? 'connected' : 'wrong-network');
       } catch (error) {
         console.error('Error checking network:', error);
         setNetworkStatus('error');
@@ -133,17 +133,11 @@ function Navbar() {
           </Link>
         </div>
         <div className="navbar-links">
-          <Link 
+          {/* <Link 
             to="/blackjack" 
             className={`nav-link ${location.pathname === '/blackjack' ? 'active' : ''}`}
           >
             Blackjack
-          </Link>
-          <Link 
-            to="/balatro" 
-            className={`nav-link ${location.pathname === '/balatro' ? 'active' : ''}`}
-          >
-            Balatro
           </Link>
           <Link 
             to="/roulette" 
@@ -151,19 +145,19 @@ function Navbar() {
 
           >
             Roulette
-          </Link>
-          <Link 
-            to="/poker" 
-            className={`nav-link ${location.pathname === '/poker' ? 'active' : ''}`}
+          </Link> */}
+          <Link
+            to="/demo"
+            className={`nav-link ${location.pathname === '/demo' ? 'active' : ''}`}
           >
-            Poker
+            Demo
           </Link>
-          <Link 
+          {/* <Link 
             to="/leaderboard" 
             className={`nav-link ${location.pathname === '/leaderboard' ? 'active' : ''}`}
           >
             Leaderboard
-          </Link>
+          </Link> */}
           <Link 
             to="/account" 
             className={`nav-link ${location.pathname === '/account' ? 'active' : ''}`}

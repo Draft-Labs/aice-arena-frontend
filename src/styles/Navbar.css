@@ -136,6 +136,7 @@
 .dropdown-menu.show {
   max-height: 200px;
   opacity: 1;
+  z-index: 1000;
 }
 
 .dropdown-menu button {

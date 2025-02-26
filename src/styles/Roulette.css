@@ -203,21 +203,50 @@
 }
 
 .game-result {
-  margin-top: 20px;
-  padding: 20px;
+  margin: 20px 0;
+  padding: 15px;
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.1);
   text-align: center;
 }
 
-.game-result .win {
-  color: #4CAF50;
-  font-weight: bold;
+.result.win {
+  background-color: rgba(0, 255, 0, 0.1);
+  border: 1px solid #00ff00;
 }
 
-.game-result .loss {
-  color: #f44336;
-  font-weight: bold;
+.result.loss {
+  background-color: rgba(255, 0, 0, 0.1);
+  border: 1px solid #ff0000;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin: 20px 0;
+}
+
+.spin-button {
+  background-color: #4CAF50;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.spin-button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+.clear-button {
+  background-color: #f44336;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
 }
 
 .error-message {
@@ -232,4 +261,25 @@
 .connect-wallet, .open-account {
   text-align: center;
   margin-top: 3rem;
+}
+
+.event-logs {
+  margin-top: 20px;
+  padding: 10px;
+  background: #f5f5f5;
+  border-radius: 5px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.log-entry {
+  margin: 10px 0;
+  padding: 5px;
+  border-bottom: 1px solid #ddd;
+}
+
+.log-entry pre {
+  margin: 5px 0;
+  white-space: pre-wrap;
+  word-wrap: break-word;
 }

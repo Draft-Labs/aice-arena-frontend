@@ -1,3 +1,4 @@
+/* global BigInt */
 import { useCallback } from 'react';
 import { useWeb3 } from '../context/Web3Context';
 import { ethers } from 'ethers';
@@ -40,48 +41,30 @@ export function useContractInteraction() {
 
       const betAmountWei = ethers.parseEther(amount.toString());
       
-      // Get current fee data and calculate adjusted gas price
+      // Get current fee data for Fuji
       const feeData = await provider.getFeeData();
-      const adjustedGasPrice = feeData.gasPrice * ethers.getBigInt(Math.floor(GAS_PRICE_MULTIPLIER * 100)) / ethers.getBigInt(100);
+      const maxFeePerGas = feeData.maxFeePerGas || feeData.gasPrice;
+      const maxPriorityFeePerGas = feeData.maxPriorityFeePerGas || ethers.parseUnits("2", "gwei");
 
-      // Debug contract interface
-      console.log('Contract interface details:', {
-        hasContract: !!blackjackContract,
-        hasInterface: !!blackjackContract.interface,
-        placeBetFunction: blackjackContract.interface.getFunction('placeBet'),
-        contractAddress: await blackjackContract.getAddress(),
-        account,
-        betAmountWei: betAmountWei.toString(),
-        functionData: blackjackContract.interface.encodeFunctionData('placeBet')
+      // Debug logging
+      console.log('Placing bet with params:', {
+        value: betAmountWei.toString(),
+        maxFeePerGas: maxFeePerGas?.toString(),
+        maxPriorityFeePerGas: maxPriorityFeePerGas?.toString(),
+        account
       });
 
-      // Call placeBet with properly encoded function data
-      const tx = await blackjackContract.placeBet.staticCall({
+      // Send transaction with proper gas parameters
+      const tx = await blackjackContract.placeBet({
         value: betAmountWei,
-        gasLimit: AVALANCHE_GAS_LIMIT,
-        gasPrice: adjustedGasPrice
+        maxFeePerGas,
+        maxPriorityFeePerGas,
+        gasLimit: 500000
       });
 
-      // If staticCall succeeds, send the actual transaction
-      const realTx = await blackjackContract.placeBet({
-        value: betAmountWei,
-        gasLimit: AVALANCHE_GAS_LIMIT,
-        gasPrice: adjustedGasPrice
-      });
-
-      console.log('Transaction sent:', {
-        hash: realTx.hash,
-        gasLimit: realTx.gasLimit?.toString(),
-        value: realTx.value?.toString(),
-        data: realTx.data
-      });
-
-      const receipt = await realTx.wait();
-      console.log('Transaction confirmed:', {
-        hash: receipt.hash,
-        gasUsed: receipt.gasUsed?.toString(),
-        status: receipt.status
-      });
+      console.log('Transaction sent:', tx.hash);
+      const receipt = await tx.wait();
+      console.log('Transaction confirmed:', receipt);
 
       return true;
     } catch (error) {
@@ -301,143 +284,42 @@ export function useContractInteraction() {
     }
   }, [blackjackContract, account]);
 
-  const placeRouletteBet = useCallback(async (amount, numbers, gasLimit) => {
+  const placeRouletteBet = useCallback(async (numbers, betAmount, gasLimit) => {
     try {
-      if (!rouletteContract || !account) {
-        throw new Error('Contract or account not initialized');
-      }
+        if (!rouletteContract || !account) {
+            throw new Error('Roulette contract or account not initialized');
+        }
 
-      const betAmountWei = ethers.parseEther(amount.toString());
-      
-      // Debug input values in more detail
-      console.log('Raw input details:', {
-        numbers,
-        type: typeof numbers,
-        isArray: Array.isArray(numbers),
-        arrayLength: numbers.length,
-        firstElement: numbers[0],
-        firstElementType: typeof numbers[0],
-        arrayConstructor: numbers.constructor.name,
-        elements: [...numbers],
-        elementTypes: numbers.map(n => typeof n),
-        providedGasLimit: gasLimit
-      });
-
-      // Convert numbers to uint8 array and validate
-      const numbersArray = [];
-      for (let i = 0; i < numbers.length; i++) {
-        const num = numbers[i];
-        const originalValue = num;
-        const parsedValue = Number(num);
-        const bigIntValue = ethers.getBigInt(parsedValue);
+        // Ensure numbers is an array
+        const numbersArray = Array.isArray(numbers) ? numbers : [numbers];
         
-        console.log(`Processing number at index ${i}:`, {
-          original: {
-            value: originalValue,
-            type: typeof originalValue,
-            constructor: originalValue.constructor.name
-          },
-          parsed: {
-            value: parsedValue,
-            type: typeof parsedValue,
-            constructor: parsedValue.constructor.name,
-            isInteger: Number.isInteger(parsedValue),
-            isInRange: parsedValue >= 0 && parsedValue <= 36
-          },
-          bigInt: {
-            value: bigIntValue.toString(),
-            type: typeof bigIntValue,
-            constructor: bigIntValue.constructor.name
-          }
+        // Convert bet amount to Wei
+        const betAmountWei = ethers.parseEther(betAmount);
+
+        // Convert numbers to ethers BigNumber array
+        const processedNumbers = numbersArray.map(num => 
+            ethers.getBigInt(num.toString())
+        );
+
+        console.log('Placing bet with:', {
+            numbers: processedNumbers,
+            betAmountWei: betAmountWei.toString(),
+            gasLimit
         });
 
-        if (parsedValue < 0 || parsedValue > 36 || !Number.isInteger(parsedValue)) {
-          throw new Error(`Invalid roulette number at index ${i}: ${parsedValue}`);
-        }
-        
-        numbersArray.push(bigIntValue);
-      }
+        // Place bet with ETH value
+        const tx = await rouletteContract.placeBet(processedNumbers, {
+            value: betAmountWei,
+            gasLimit: gasLimit || 500000
+        });
 
-      // Debug transformed array in detail
-      console.log('Transformed array details:', {
-        array: numbersArray,
-        type: typeof numbersArray,
-        isArray: Array.isArray(numbersArray),
-        arrayLength: numbersArray.length,
-        arrayConstructor: numbersArray.constructor.name,
-        elements: numbersArray.map(n => ({
-          value: n.toString(),
-          type: typeof n,
-          constructor: n.constructor.name
-        })),
-        serialized: numbersArray.map(n => n.toString()).join(',')
-      });
-
-      // Debug contract interface
-      console.log('Contract interface details:', {
-        hasContract: !!rouletteContract,
-        hasInterface: !!rouletteContract.interface,
-        placeBetFunction: rouletteContract.interface.getFunction('placeBet'),
-        contractAddress: await rouletteContract.getAddress(),
-        account,
-        betAmountWei: betAmountWei.toString(),
-        providedGasLimit: gasLimit
-      });
-
-      // Ensure gas limit is a BigInt and at least 500000
-      const finalGasLimit = ethers.getBigInt(Math.max(Number(gasLimit || 500000), 500000));
-
-      // Create transaction parameters
-      const txParams = {
-        value: betAmountWei,
-        gasLimit: finalGasLimit
-      };
-      
-      console.log('Transaction parameters:', {
-        numbers: numbersArray.map(n => n.toString()),
-        params: {
-          value: txParams.value.toString(),
-          gasLimit: txParams.gasLimit.toString()
-        },
-        encodedData: rouletteContract.interface.encodeFunctionData('placeBet', [numbersArray])
-      });
-
-      // Place bet directly through the contract
-      const tx = await rouletteContract.placeBet(
-        numbersArray,
-        txParams
-      );
-
-      console.log('Transaction sent:', {
-        hash: tx.hash,
-        gasLimit: tx.gasLimit?.toString(),
-        value: tx.value?.toString(),
-        data: tx.data
-      });
-
-      const receipt = await tx.wait();
-      console.log('Transaction confirmed:', {
-        hash: receipt.hash,
-        gasUsed: receipt.gasUsed?.toString(),
-        status: receipt.status
-      });
-
-      return {
-        success: true,
-        txHash: tx.hash
-      };
-
+        await tx.wait();
+        return true;
     } catch (error) {
-      console.error('Error placing roulette bet:', {
-        error,
-        message: error.message,
-        code: error.code,
-        stack: error.stack,
-        data: error.data
-      });
-      throw error;
+        console.error('Error placing roulette bet:', error);
+        throw error;
     }
-  }, [rouletteContract, account]);
+}, [rouletteContract, account]);
 
   const resolveRouletteBet = useCallback(async (spinResult) => {
     try {
@@ -489,6 +371,20 @@ export function useContractInteraction() {
     }
   };
 
+  const placeBetAndDeal = async (amount) => {
+    if (!blackjackContract) return;
+    const tx = await blackjackContract.placeBetAndDeal({ value: amount });
+    await tx.wait();
+  };
+
+  const spinRoulette = async () => {
+    if (!rouletteContract) return;
+    const tx = await rouletteContract.spinWheel({
+        gasLimit: 500000
+    });
+    await tx.wait();
+  };
+
   return {
     placeBet,
     hit,
@@ -502,5 +398,7 @@ export function useContractInteraction() {
     placeRouletteBet,
     resolveRouletteBet,
     getPlayerNetWinnings,
+    placeBetAndDeal,
+    spinRoulette,
   };
 }

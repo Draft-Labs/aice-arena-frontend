@@ -56,40 +56,48 @@
   background: rgba(0, 0, 0, 0.5);
   padding: 1.5rem;
   border-radius: 10px;
-  text-align: center;
   margin-bottom: 2rem;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  gap: 2rem;
+  align-items: flex-start;
 }
 
-.balance-display h2 {
+.balance-info {
+  flex: 1;
+  text-align: left;
+}
+
+.account-balance-info {
+  text-align: center;
+  width: 50%;
+}
+
+.account-balance-info h2 {
   color: #06F2DB;
   margin-bottom: 1rem;
   font-family: 'Elnath', sans-serif;
-}
+} 
 
-.balance-display p {
+.account-balance-info p {
   font-size: 2rem;
   color: #ffffff;
   font-weight: bold;
 }
 
-/* Transaction section */
-.transaction-section {
+.transaction-controls-container {
   display: flex;
-  gap: 2rem;
-  margin-top: 2rem;
-  max-width: 1200px;
-  margin-left: auto;
-  margin-right: auto;
+  flex-direction: column;
+  gap: 1.5rem;
+  align-items: flex-end;
 }
 
 .transaction-row {
-  flex: 1;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.3);
   padding: 1.5rem;
   border-radius: 10px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  width: 100%;
 }
 
 .transaction-row h2 {
@@ -176,10 +184,6 @@ button:hover {
 
 /* Media Queries */
 @media (max-width: 768px) {
-  .transaction-section {
-    flex-direction: column;
-  }
-  
   .transaction-controls {
     max-width: 100%;
   }
@@ -187,6 +191,21 @@ button:hover {
   .account-container {
     margin: 1rem;
     padding: 1rem;
+  }
+
+  .balance-display {
+    width: 100%;
+    flex-direction: column;
+  }
+  
+  .balance-info {
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+
+  .transaction-controls-container {
+    width: 100%;
+    align-items: center;
   }
 }
 
@@ -206,10 +225,10 @@ button:hover {
 .transaction-controls {
   display: flex;
   gap: 1rem;
-  flex-direction: column;
   width: 100%;
-  max-width: 300px;
+  max-width: 400px;
   flex-direction: row-reverse;
+  justify-content: flex-end;
 }
 
 .transaction-controls input,

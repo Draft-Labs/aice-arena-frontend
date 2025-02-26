@@ -3,21 +3,10 @@ import { ethers } from 'ethers';
 import BlackjackJSON from '../contracts/Blackjack.json';
 import TreasuryJSON from '../contracts/HouseTreasury.json';
 import RouletteJSON from '../contracts/Roulette.json';
-import PokerJSON from '../contracts/Poker.json';
-import BalatroJSON from '../contracts/Balatro.json';
+import { FUJI_CONFIG } from '../config/networks';
+import getEnvironmentConfig from '../config/environment';
 
 const Web3Context = createContext();
-
-const HARDHAT_CONFIG = {
-  chainId: '0x7A69', // 31337 in hex
-  chainName: 'Hardhat Network',
-  nativeCurrency: {
-    name: 'ETH',
-    symbol: 'ETH',
-    decimals: 18
-  },
-  rpcUrls: ['http://127.0.0.1:8545'],
-};
 
 export function Web3Provider({ children }) {
   const [provider, setProvider] = useState(null);
@@ -25,11 +14,12 @@ export function Web3Provider({ children }) {
   const [blackjackContract, setBlackjackContract] = useState(null);
   const [treasuryContract, setTreasuryContract] = useState(null);
   const [rouletteContract, setRouletteContract] = useState(null);
-  const [pokerContract, setPokerContract] = useState(null);
-  const [balatroContract, setBalatroContract] = useState(null);
   const [account, setAccount] = useState(null);
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [gameResult, setGameResult] = useState(null);
+  const [transactionError, setTransactionError] = useState(null);
+  const [networkStatus, setNetworkStatus] = useState('disconnected');
 
   const connectWallet = async () => {
     try {
@@ -38,131 +28,85 @@ export function Web3Provider({ children }) {
       }
 
       setIsLoading(true);
+      const config = getEnvironmentConfig();
 
-      // Add delay to handle pending requests
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      try {
-        // Check if we're on the right network
-        const currentChainId = await window.ethereum.request({ method: 'eth_chainId' });
-        
-        // If not on Hardhat, prompt to switch
-        if (currentChainId !== HARDHAT_CONFIG.chainId) {
-          try {
-            // Try to switch to Hardhat
-            await window.ethereum.request({
-              method: 'wallet_switchEthereumChain',
-              params: [{ chainId: HARDHAT_CONFIG.chainId }],
-            });
-            
-            // Add delay after network switch
-            await new Promise(resolve => setTimeout(resolve, 1500));
-            
-          } catch (switchError) {
-            if (switchError.code === 4902) {
-              try {
-                await window.ethereum.request({
-                  method: 'wallet_addEthereumChain',
-                  params: [HARDHAT_CONFIG],
-                });
-              } catch (addError) {
-                console.error('Add network error:', addError);
-                throw new Error('Failed to add Hardhat network. Please add it manually to your wallet.');
-              }
-            } else {
-              console.error('Switch network error:', switchError);
-              throw new Error('Failed to switch to Hardhat network. Please switch manually in your wallet.');
-            }
-          }
-        }
-
-        // Request account access
-        const accounts = await window.ethereum.request({
-          method: 'eth_requestAccounts'
-        });
-        
-        if (!accounts || accounts.length === 0) {
-          throw new Error('No accounts found');
-        }
-
-        const account = accounts[0];
-        setAccount(account);
-
-        // Add delay before creating provider
-        await new Promise(resolve => setTimeout(resolve, 1000));
-
-        const provider = new ethers.BrowserProvider(window.ethereum);
-        const signer = await provider.getSigner();
-
-        // Verify we're on Hardhat
-        const network = await provider.getNetwork();
-        console.log('Current network:', {
-          chainId: network.chainId,
-          name: network.name
-        });
-
-        // Get contract addresses
-        const blackjackAddress = "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512";
-        const treasuryAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
-        const rouletteAddress = "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0";
-        const pokerAddress = "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9";
-        const balatroAddress = process.env.REACT_APP_BALATRO_ADDRESS;
-
-        // Log contract addresses for debugging
-        console.log('Contract addresses:', {
-          blackjack: blackjackAddress,
-          treasury: treasuryAddress,
-          roulette: rouletteAddress,
-          poker: pokerAddress,
-          balatro: balatroAddress
-        });
-
-        // Only create contract instances if addresses are available
-        const contracts = {
-          blackjack: blackjackAddress ? new ethers.Contract(
-            blackjackAddress,
-            BlackjackJSON.abi,
-            signer
-          ) : null,
-          treasury: treasuryAddress ? new ethers.Contract(
-            treasuryAddress,
-            TreasuryJSON.abi,
-            signer
-          ) : null,
-          roulette: rouletteAddress ? new ethers.Contract(
-            rouletteAddress,
-            RouletteJSON.abi,
-            signer
-          ) : null,
-          poker: pokerAddress ? new ethers.Contract(
-            pokerAddress,
-            PokerJSON.abi,
-            signer
-          ) : null,
-          balatro: balatroAddress ? new ethers.Contract(
-            balatroAddress,
-            BalatroJSON.abi,
-            signer
-          ) : null
-        };
-
-        setProvider(provider);
-        setSigner(signer);
-        setBlackjackContract(contracts.blackjack);
-        setTreasuryContract(contracts.treasury);
-        setRouletteContract(contracts.roulette);
-        setPokerContract(contracts.poker);
-        setBalatroContract(contracts.balatro);
-        setError(null);
-
-      } catch (requestError) {
-        console.error('Request error:', requestError);
-        if (requestError.code === -32002) {
-          setError('Please open your wallet and accept the connection request');
-          return;
-        }
-        throw requestError;
+      // Switch to appropriate network
+      if (config.network === 'fuji') {
+        await switchToFuji();
+      } else {
+        await switchToLocal();
       }
+
+      // Request account access
+      const accounts = await window.ethereum.request({
+        method: 'eth_requestAccounts'
+      });
+      
+      if (!accounts || accounts.length === 0) {
+        throw new Error('No accounts found');
+      }
+
+      const account = accounts[0];
+      setAccount(account);
+
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+
+      // Verify we're on the correct network
+      const network = await provider.getNetwork();
+      const expectedChainId = config.network === 'fuji' ? 43113 : 31337;
+      
+      // Convert both chain IDs to numbers for comparison
+      const currentChainId = Number(network.chainId);
+      
+      if (currentChainId !== expectedChainId) {
+        throw new Error(`Wrong network. Expected chainId: ${expectedChainId}, got: ${currentChainId}`);
+      }
+
+      // Get contract addresses from environment config
+      const treasuryAddress = config.contracts.treasury;
+      const blackjackAddress = config.contracts.blackjack;
+      const rouletteAddress = config.contracts.roulette;
+
+      console.log('Contract addresses:', {
+        blackjack: blackjackAddress,
+        treasury: treasuryAddress,
+        roulette: rouletteAddress,
+      });
+
+      // After line 67, add these debug logs
+      console.log('Environment config:', config);
+      console.log('Contract addresses from config:', {
+        treasury: treasuryAddress,
+        blackjack: blackjackAddress,
+        roulette: rouletteAddress
+      });
+
+      // Create contract instances
+      const contracts = {
+        blackjack: blackjackAddress ? new ethers.Contract(
+          blackjackAddress,
+          BlackjackJSON.abi,
+          signer
+        ) : null,
+        treasury: treasuryAddress ? new ethers.Contract(
+          treasuryAddress,
+          TreasuryJSON.abi,
+          signer
+        ) : null,
+        roulette: rouletteAddress ? new ethers.Contract(
+          rouletteAddress,
+          RouletteJSON.abi,
+          signer
+        ) : null
+      };
+
+      setProvider(provider);
+      setSigner(signer);
+      setBlackjackContract(contracts.blackjack);
+      setTreasuryContract(contracts.treasury);
+      setRouletteContract(contracts.roulette);
+      setError(null);
 
     } catch (err) {
       console.error('Connection error:', err);
@@ -178,9 +122,129 @@ export function Web3Provider({ children }) {
     setBlackjackContract(null);
     setTreasuryContract(null);
     setRouletteContract(null);
-    setPokerContract(null);
-    setBalatroContract(null);
     setError(null);
+  };
+
+  const switchToFuji = async () => {
+    try {
+      const currentChainId = await window.ethereum.request({ method: 'eth_chainId' });
+      console.log('Current Chain ID:', currentChainId);
+      
+      if (currentChainId === FUJI_CONFIG.chainId) {
+        console.log('Already on Fuji network');
+        return;
+      }
+
+      console.log('Attempting to add Fuji network...');
+      await window.ethereum.request({
+        method: 'wallet_addEthereumChain',
+        params: [FUJI_CONFIG],
+      });
+      
+      console.log('Attempting to switch to Fuji network...');
+      await window.ethereum.request({
+        method: 'wallet_switchEthereumChain',
+        params: [{ chainId: FUJI_CONFIG.chainId }],
+      });
+
+    } catch (error) {
+      console.error('Detailed switch error:', {
+        message: error.message,
+        code: error.code,
+        data: error.data
+      });
+      throw new Error('Failed to switch to Fuji network. Please add Fuji network to MetaMask manually.');
+    }
+  };
+
+  const switchToLocal = async () => {
+    try {
+      const localConfig = {
+        chainId: '0x7A69', // 31337 in hex
+        chainName: 'Hardhat Local',
+        nativeCurrency: {
+          name: 'ETH',
+          symbol: 'ETH',
+          decimals: 18
+        },
+        rpcUrls: ['http://127.0.0.1:8545']
+      };
+
+      const currentChainId = await window.ethereum.request({ method: 'eth_chainId' });
+      
+      if (currentChainId === localConfig.chainId) {
+        console.log('Already on local network');
+        return;
+      }
+
+      console.log('Attempting to switch to local network...');
+      try {
+        await window.ethereum.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: localConfig.chainId }],
+        });
+      } catch (switchError) {
+        // This error code indicates that the chain has not been added to MetaMask.
+        if (switchError.code === 4902) {
+          await window.ethereum.request({
+            method: 'wallet_addEthereumChain',
+            params: [localConfig],
+          });
+        } else {
+          throw switchError;
+        }
+      }
+    } catch (error) {
+      console.error('Detailed switch error:', error);
+      throw new Error('Failed to switch to local network');
+    }
+  };
+
+  const handleSpinWheel = async () => {
+    try {
+      setTransactionError(null);
+      
+      if (!rouletteContract) {
+        throw new Error('Failed to initialize contract');
+      }
+
+      console.log('Spinning wheel...');
+      const tx = await rouletteContract.spinWheel({
+        gasLimit: 500000
+      });
+      console.log('Spin transaction hash:', tx.hash);
+      
+      const receipt = await tx.wait();
+      
+      // Parse events from receipt
+      for (const log of receipt.logs) {
+        try {
+          const parsedLog = rouletteContract.interface.parseLog(log);
+          if (parsedLog && parsedLog.name === 'GameResult') {
+            setGameResult({
+              number: parsedLog.args.result,
+              won: parsedLog.args.won,
+              payout: ethers.formatEther(parsedLog.args.payout)
+            });
+          }
+        } catch (e) {
+          console.log('Could not parse log:', log);
+        }
+      }
+
+    } catch (error) {
+      console.error('Error spinning wheel:', error);
+      setTransactionError(error.message);
+    }
+  };
+
+  const getRouletteContract = () => {
+    if (!provider) return null;
+    return new ethers.Contract(
+      process.env.REACT_APP_ROULETTE_ADDRESS,
+      RouletteJSON.abi,
+      provider.getSigner()
+    );
   };
 
   useEffect(() => {
@@ -197,8 +261,6 @@ export function Web3Provider({ children }) {
           setBlackjackContract(null);
           setTreasuryContract(null);
           setRouletteContract(null);
-          setPokerContract(null);
-          setBalatroContract(null);
         }
       });
 
@@ -220,13 +282,17 @@ export function Web3Provider({ children }) {
     blackjackContract,
     treasuryContract,
     rouletteContract,
-    pokerContract,
-    balatroContract,
     account,
     error,
     isLoading,
     connectWallet,
-    disconnectWallet
+    disconnectWallet,
+    switchToFuji,
+    switchToLocal,
+    gameResult,
+    transactionError,
+    handleSpinWheel,
+    networkStatus
   };
 
   return (

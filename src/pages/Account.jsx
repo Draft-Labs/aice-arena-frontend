@@ -448,42 +448,42 @@ function Account() {
 
           <div className="account-controls">
             <div className="balance-display">
-              <h2>Current Balance</h2>
-              <p>{currentBalance} AVAX</p>
-            </div>
-
-            <div className="transaction-section">
-              <div className="transaction-row">
-                <h2>Deposit to Account</h2>
-                <div className="transaction-controls">
-                  <button onClick={handleDeposit}>
-                    Deposit
-                  </button>
-                  <input
-                    type="number"
-                    min="0.01"
-                    step="0.01"
-                    value={depositAmount}
-                    onChange={(e) => setDepositAmount(e.target.value)}
-                    placeholder="Deposit amount"
-                  />
-                </div>
+              <div className="account-balance-info">
+                <h2>Current Balance</h2>
+                <p>{currentBalance} AVAX</p>
               </div>
+              
+              <div className="transaction-controls-container">
+                <div className="transaction-row">
+                  <div className="transaction-controls">
+                    <button onClick={handleDeposit}>
+                      Deposit
+                    </button>
+                    <input
+                      type="number"
+                      min="0.01"
+                      step="0.01"
+                      value={depositAmount}
+                      onChange={(e) => setDepositAmount(e.target.value)}
+                      placeholder="Deposit amount"
+                    />
+                  </div>
+                </div>
 
-              <div className="transaction-row">
-                <h2>Withdraw from Account</h2>
-                <div className="transaction-controls">
-                  <button onClick={handleWithdraw}>
-                    Withdraw
-                  </button>
-                  <input
-                    type="number"
-                    min="0.01"
-                    step="0.01"
-                    value={withdrawAmount}
-                    onChange={(e) => setWithdrawAmount(e.target.value)}
-                    placeholder="Withdraw amount"
-                  />
+                <div className="transaction-row">
+                  <div className="transaction-controls">
+                    <button onClick={handleWithdraw}>
+                      Withdraw
+                    </button>
+                    <input
+                      type="number"
+                      min="0.01"
+                      step="0.01"
+                      value={withdrawAmount}
+                      onChange={(e) => setWithdrawAmount(e.target.value)}
+                      placeholder="Withdraw amount"
+                    />
+                  </div>
                 </div>
               </div>
             </div>

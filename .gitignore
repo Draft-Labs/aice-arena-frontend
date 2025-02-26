@@ -7,6 +7,8 @@
 
 # environment
 .env
+.env.fuji
+.env.local
 
 # testing
 /coverage
