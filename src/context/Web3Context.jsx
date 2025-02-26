@@ -28,12 +28,14 @@ export function Web3Provider({ children }) {
       }
 
       setIsLoading(true);
+      const config = getEnvironmentConfig();
 
-      // Switch to Fuji network
-      await switchToFuji();
-
-      // Add delay to handle pending requests
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Switch to appropriate network
+      if (config.network === 'fuji') {
+        await switchToFuji();
+      } else {
+        await switchToLocal();
+      }
 
       // Request account access
       const accounts = await window.ethereum.request({
@@ -47,12 +49,19 @@ export function Web3Provider({ children }) {
       const account = accounts[0];
       setAccount(account);
 
-      // Add delay before creating provider
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      const config = getEnvironmentConfig();
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
+
+      // Verify we're on the correct network
+      const network = await provider.getNetwork();
+      const expectedChainId = config.network === 'fuji' ? 43113 : 31337;
+      
+      // Convert both chain IDs to numbers for comparison
+      const currentChainId = Number(network.chainId);
+      
+      if (currentChainId !== expectedChainId) {
+        throw new Error(`Wrong network. Expected chainId: ${expectedChainId}, got: ${currentChainId}`);
+      }
 
       // Get contract addresses from environment config
       const treasuryAddress = config.contracts.treasury;
@@ -63,6 +72,14 @@ export function Web3Provider({ children }) {
         blackjack: blackjackAddress,
         treasury: treasuryAddress,
         roulette: rouletteAddress,
+      });
+
+      // After line 67, add these debug logs
+      console.log('Environment config:', config);
+      console.log('Contract addresses from config:', {
+        treasury: treasuryAddress,
+        blackjack: blackjackAddress,
+        roulette: rouletteAddress
       });
 
       // Create contract instances
@@ -137,6 +154,49 @@ export function Web3Provider({ children }) {
         data: error.data
       });
       throw new Error('Failed to switch to Fuji network. Please add Fuji network to MetaMask manually.');
+    }
+  };
+
+  const switchToLocal = async () => {
+    try {
+      const localConfig = {
+        chainId: '0x7A69', // 31337 in hex
+        chainName: 'Hardhat Local',
+        nativeCurrency: {
+          name: 'ETH',
+          symbol: 'ETH',
+          decimals: 18
+        },
+        rpcUrls: ['http://127.0.0.1:8545']
+      };
+
+      const currentChainId = await window.ethereum.request({ method: 'eth_chainId' });
+      
+      if (currentChainId === localConfig.chainId) {
+        console.log('Already on local network');
+        return;
+      }
+
+      console.log('Attempting to switch to local network...');
+      try {
+        await window.ethereum.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: localConfig.chainId }],
+        });
+      } catch (switchError) {
+        // This error code indicates that the chain has not been added to MetaMask.
+        if (switchError.code === 4902) {
+          await window.ethereum.request({
+            method: 'wallet_addEthereumChain',
+            params: [localConfig],
+          });
+        } else {
+          throw switchError;
+        }
+      }
+    } catch (error) {
+      console.error('Detailed switch error:', error);
+      throw new Error('Failed to switch to local network');
     }
   };
 
@@ -228,6 +288,7 @@ export function Web3Provider({ children }) {
     connectWallet,
     disconnectWallet,
     switchToFuji,
+    switchToLocal,
     gameResult,
     transactionError,
     handleSpinWheel,
