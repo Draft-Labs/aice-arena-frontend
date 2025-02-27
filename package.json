@@ -23,6 +23,7 @@
     "start:local": "cross-env REACT_APP_ENV=local react-scripts start",
     "start:fuji": "cross-env REACT_APP_ENV=fuji react-scripts start",
     "build": "react-scripts build",
+    "build:fuji": "env-cmd -f .env.fuji react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
