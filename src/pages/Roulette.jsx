@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useWeb3 } from '../context/Web3Context';
 import { useContractInteraction } from '../hooks/useContractInteraction';
 import '../styles/Roulette.css';
@@ -11,8 +11,11 @@ function Roulette() {
     error: web3Error, 
     connectWallet,
     rouletteContract,
-    gameResult,
-    setGameResult
+    gameResult, // Get gameResult from context
+    setGameResult, // Get setGameResult from context to reset it
+    resetBetState, // Get the new resetBetState function
+    handleSpinWheel, // Get the handleSpinWheel function from context
+    checkGameResultForTransaction // Add this line
   } = useWeb3();
   
   const { placeRouletteBet, getAccountBalance, checkTreasuryAccount } = useContractInteraction();
@@ -21,6 +24,8 @@ function Roulette() {
   const [casinoBalance, setCasinoBalance] = useState('0');
   const [hasActiveAccount, setHasActiveAccount] = useState(false);
   const [selectedBetSize, setSelectedBetSize] = useState(0.1);
+  const [betInProgress, setBetInProgress] = useState(false);
+  const [testingInProgress, setTestingInProgress] = useState(false);
   
   const betSizes = [0.1, 0.5, 1, 5];
 
@@ -74,6 +79,10 @@ function Roulette() {
   const handlePlaceBet = async () => {
     try {
       setTransactionError(null);
+      // Reset the game result state in the context
+      resetBetState();
+      // Set bet in progress locally
+      setBetInProgress(true);
       
       if (!account) {
         await connectWallet();
@@ -83,6 +92,7 @@ function Roulette() {
       const isActive = await checkTreasuryAccount();
       if (!isActive) {
         setTransactionError('Please open an account first');
+        setBetInProgress(false);
         return;
       }
 
@@ -107,16 +117,19 @@ function Roulette() {
       
       if (success) {
         try {
-          // Clear any existing game result before starting a new one
-          setGameResult(null);
+          // After placing bet, call the backend API to spin the wheel
+          console.log('Bet placed successfully, requesting backend to spin wheel...');
           
-          // Make sure you're using the correct URL - this should point to your backend
+          // Generate a random number between 0 and 36 for the backend to use
+          const randomNumber = Math.floor(Math.random() * 37);
+          
+          // Call the backend API to spin the wheel with the house wallet
           const response = await fetch('http://localhost:3001/resolve-roulette-bet', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               player: account,
-              spinResult: Math.floor(Math.random() * 37), // Random number between 0-36
+              spinResult: randomNumber, 
               nonce: Date.now()
             })
           });
@@ -129,24 +142,148 @@ function Roulette() {
           if (!resultData.success) {
             throw new Error(resultData.error || 'Failed to resolve bet');
           }
-
-          // The game result will be set by the event listeners in Web3Context
+          
+          console.log('Backend spin response:', resultData);
+          
+          // We'll get the game result from contract events
+          // The backend will trigger the spin and events will be emitted
+          
           // Clear selected numbers after successful bet
           setSelectedNumbers([]);
-        } catch (apiError) {
-          console.error("Error resolving bet:", apiError);
-          setTransactionError(`API error: ${apiError.message}`);
+        } catch (spinError) {
+          console.error("Error with backend spin:", spinError);
+          setTransactionError(`Backend error: ${spinError.message}`);
+          setBetInProgress(false);
         }
+      } else {
+        setBetInProgress(false);
+        setTransactionError('Failed to place bet. Please try again.');
       }
     } catch (err) {
       console.error("Error placing bet:", err);
       setTransactionError(err.message);
+      setBetInProgress(false);
     }
   };
 
   const handleClearBoard = () => {
     setSelectedNumbers([]);
   };
+
+  const handleNewBet = () => {
+    // Reset the game result and bet state
+    resetBetState();
+  };
+
+  // Update the test function to test backend API
+  const testSpin = async () => {
+    try {
+      // Prevent multiple rapid test clicks
+      if (testingInProgress) {
+        alert('Test already in progress. Please wait.');
+        return;
+      }
+
+      setTestingInProgress(true);
+      console.log('Testing backend spin API...');
+      
+      if (!account) {
+        console.error('Account not connected');
+        alert('Please connect your wallet first');
+        setTestingInProgress(false);
+        return;
+      }
+      
+      // Generate a random number between 0 and 36 for the backend to use
+      const randomNumber = Math.floor(Math.random() * 37);
+      console.log(`Test using random number: ${randomNumber}`);
+      
+      // Generate a unique nonce for this test
+      const nonce = Date.now();
+      
+      // Call the backend API to spin the wheel with the house wallet
+      const response = await fetch('http://localhost:3001/resolve-roulette-bet', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          player: account,
+          spinResult: randomNumber, 
+          nonce: nonce
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Server error: ${response.status}`);
+      }
+
+      const resultData = await response.json();
+      console.log('Backend test response:', resultData);
+      
+      // For debugging: show transaction hash so we can correlate with events
+      if (resultData.txHash) {
+        console.log('Transaction hash from backend:', resultData.txHash);
+        console.log('Watch for GameResult events with this transaction hash');
+        
+        // Directly check for the transaction results
+        checkGameResultForTransaction(resultData.txHash);
+      }
+      
+      alert(`Spin test sent to backend with number ${randomNumber}.\nCheck console for results.`);
+      
+    } catch (error) {
+      console.error('Test spin failed:', error);
+      alert(`Test failed: ${error.message}`);
+    } finally {
+      // Set a timeout before allowing another test to prevent rapid clicks
+      setTimeout(() => {
+        setTestingInProgress(false);
+      }, 3000);
+    }
+  };
+
+  // Update the useEffect that reacts to gameResult with a useRef-based solution
+  const processedResultRef = useRef(null);
+  
+  useEffect(() => {
+    if (gameResult && gameResult.number !== undefined) {
+      setBetInProgress(false);
+      
+      // Check if this is the same result we've already processed
+      if (processedResultRef.current === gameResult.number) {
+        return; // Skip if we've already processed this result
+      }
+      
+      console.log("Game result received from context:", gameResult);
+      
+      // Only process if we have selected numbers
+      if (selectedNumbers.length > 0) {
+        // Check if the result number is in the selected numbers
+        const won = selectedNumbers.includes(gameResult.number);
+        
+        // If won, calculate payout (36x the bet amount for the winning number)
+        const payout = won ? (selectedBetSize * 36).toFixed(2) : "0.0";
+        
+        console.log(`Player ${won ? 'won' : 'lost'} - Result: ${gameResult.number}, Selected: ${selectedNumbers.join(',')}`);
+        
+        // Store this result number to avoid processing it again
+        processedResultRef.current = gameResult.number;
+        
+        // Update the game result with win status and payout
+        setGameResult(prev => ({
+          ...prev,
+          won: won,
+          payout: payout
+        }));
+      }
+    }
+  }, [gameResult, selectedNumbers, selectedBetSize, setGameResult]);
+
+  // Reset processedResultRef when starting a new bet
+  useEffect(() => {
+    if (!gameResult) {
+      processedResultRef.current = null;
+    }
+  }, [gameResult]);
 
   useEffect(() => {
     const checkAccount = async () => {
@@ -166,12 +303,14 @@ function Roulette() {
           setCasinoBalance(balance);
         } catch (err) {
           console.error('Error fetching balance:', err);
+          // Set a fallback balance or show an error message
+          setCasinoBalance('Error fetching balance');
         }
       }
     };
 
     fetchBalance();
-  }, [account, getAccountBalance, gameResult]);
+  }, [account, getAccountBalance]);
 
   if (isLoading) return <div>Loading...</div>;
   if (web3Error) return <div>Error: {web3Error}</div>;
@@ -298,36 +437,122 @@ function Roulette() {
           <div className="betting-controls">
             <button 
               onClick={handlePlaceBet}
-              disabled={selectedNumbers.length === 0}
+              disabled={selectedNumbers.length === 0 || betInProgress || gameResult}
             >
-              Place Bet
+              {betInProgress ? 'Bet in Progress...' : 'Place Bet'}
             </button>
             <button 
               onClick={handleClearBoard}
-              disabled={selectedNumbers.length === 0}
+              disabled={selectedNumbers.length === 0 || betInProgress}
             >
               Clear Board
             </button>
+            {/* Add debug button for testing */}
+            <button 
+              onClick={testSpin}
+              style={{ backgroundColor: '#ff9800', marginLeft: '10px' }}
+            >
+              Test Spin
+            </button>
           </div>
 
-          {gameResult !== null && (
-            <div className="game-result">
-              <h2>Result: {gameResult.number}</h2>
-              <pre>{JSON.stringify(gameResult, null, 2)}</pre>
+          {/* Make game result more prominent with additional styling */}
+          {gameResult ? (
+            <div className="game-result" style={{
+              border: `4px solid ${gameResult.won ? '#4CAF50' : '#f44336'}`,
+              borderRadius: '8px',
+              padding: '20px',
+              margin: '20px 0',
+              backgroundColor: gameResult.won ? '#f0fff0' : '#fff0f0',
+              boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
+              position: 'relative',
+              zIndex: 100
+            }}>
+              <h2 style={{ color: '#333', marginBottom: '15px', fontSize: '24px' }}>
+                Result: {gameResult.number !== undefined ? gameResult.number : 'Loading...'}
+              </h2>
               {gameResult.won ? (
-                <p className="win">You won {gameResult.payout} AVAX!</p>
+                <p className="win" style={{ color: 'green', fontSize: '20px', fontWeight: 'bold' }}>
+                  You won {gameResult.payout} AVAX!
+                </p>
               ) : (
-                <p className="loss">Better luck next time!</p>
+                <p className="loss" style={{ color: 'red', fontSize: '20px', fontWeight: 'bold' }}>
+                  Better luck next time!
+                </p>
               )}
-              <button onClick={() => setGameResult(null)}>New Bet</button>
+              <button 
+                onClick={handleNewBet}
+                style={{
+                  backgroundColor: '#4CAF50',
+                  color: 'white',
+                  padding: '10px 20px',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  marginTop: '10px',
+                  fontSize: '16px'
+                }}
+              >
+                New Bet
+              </button>
+            </div>
+          ) : betInProgress ? (
+            <div style={{ margin: '20px 0', padding: '10px', backgroundColor: '#f5f5f5', border: '1px solid #ddd', borderRadius: '4px' }}>
+              <p style={{ textAlign: 'center', fontWeight: 'bold' }}>Processing your bet...</p>
+            </div>
+          ) : (
+            <div style={{ margin: '20px 0', padding: '10px', border: '1px dashed #ccc' }}>
+              <p>Select numbers and place a bet to play</p>
             </div>
           )}
 
           {transactionError && (
-            <div className="error-message">
-              Error: {transactionError}
+            <div className="error-message" style={{
+              backgroundColor: '#ffebee',
+              color: '#d32f2f',
+              padding: '15px',
+              borderRadius: '4px',
+              margin: '20px 0',
+              border: '1px solid #ef9a9a',
+              fontWeight: 'bold',
+              fontSize: '16px'
+            }}>
+              <div style={{ marginBottom: '5px' }}>⚠️ Error:</div>
+              {transactionError}
             </div>
           )}
+
+          {/* Debug section */}
+          <div style={{ 
+            margin: '20px 0', 
+            padding: '15px', 
+            border: '1px dashed #ccc', 
+            borderRadius: '4px',
+            backgroundColor: '#f5f5f5'
+          }}>
+            <h3>Developer Tools</h3>
+            <p>Contract Address: {rouletteContract ? rouletteContract.target : 'Not connected'}</p>
+            <button 
+              onClick={async () => {
+                if (rouletteContract) {
+                  console.log('Contract methods:', Object.keys(rouletteContract.functions));
+                  alert('Check console for contract methods');
+                } else {
+                  alert('Contract not connected');
+                }
+              }}
+              style={{ marginRight: '10px' }}
+            >
+              Log Contract Methods
+            </button>
+            <button 
+              onClick={testSpin}
+              disabled={testingInProgress}
+              style={{ backgroundColor: testingInProgress ? '#ccc' : '#ff9800' }}
+            >
+              {testingInProgress ? 'Testing...' : 'Test Spin Function'}
+            </button>
+          </div>
         </div>
       )}
     </div>
