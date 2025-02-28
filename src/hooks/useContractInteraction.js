@@ -321,45 +321,6 @@ export function useContractInteraction() {
     }
 }, [rouletteContract, account]);
 
-  const resolveRouletteBet = useCallback(async (spinResult) => {
-    try {
-      if (!rouletteContract || !account) {
-        throw new Error('Contract or account not initialized');
-      }
-
-      console.log('Resolving roulette bet...', {
-        spinResult,
-        account
-      });
-
-      // Send resolution request to backend
-      const response = await fetch('http://localhost:3001/resolve-roulette-bet', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          player: account,
-          spinResult,
-          nonce: Date.now()
-        })
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to resolve bet');
-      }
-
-      const result = await response.json();
-      console.log('Bet resolved:', result);
-
-      return result;
-    } catch (error) {
-      console.error('Error resolving roulette bet:', error);
-      throw error;
-    }
-  }, [rouletteContract, account]);
-
   const getPlayerNetWinnings = async (playerAddress) => {
     try {
       if (!treasuryContract) return 0;
@@ -396,7 +357,6 @@ export function useContractInteraction() {
     checkTreasuryAccount,
     submitGameResult,
     placeRouletteBet,
-    resolveRouletteBet,
     getPlayerNetWinnings,
     placeBetAndDeal,
     spinRoulette,

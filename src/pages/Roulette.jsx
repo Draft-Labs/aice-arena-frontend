@@ -2,13 +2,17 @@ import { useState, useEffect } from 'react';
 import { useWeb3 } from '../context/Web3Context';
 import { useContractInteraction } from '../hooks/useContractInteraction';
 import '../styles/Roulette.css';
+import { ethers } from 'ethers';
 
 function Roulette() {
   const { 
     account, 
     isLoading, 
     error: web3Error, 
-    connectWallet 
+    connectWallet,
+    rouletteContract,
+    gameResult,
+    setGameResult
   } = useWeb3();
   
   const { placeRouletteBet, getAccountBalance, checkTreasuryAccount } = useContractInteraction();
@@ -16,7 +20,6 @@ function Roulette() {
   const [transactionError, setTransactionError] = useState(null);
   const [casinoBalance, setCasinoBalance] = useState('0');
   const [hasActiveAccount, setHasActiveAccount] = useState(false);
-  const [gameResult, setGameResult] = useState(null);
   const [selectedBetSize, setSelectedBetSize] = useState(0.1);
   
   const betSizes = [0.1, 0.5, 1, 5];
@@ -77,7 +80,6 @@ function Roulette() {
         return;
       }
 
-      // Check if player has an active account first
       const isActive = await checkTreasuryAccount();
       if (!isActive) {
         setTransactionError('Please open an account first');
@@ -88,34 +90,54 @@ function Roulette() {
         throw new Error('Please select at least one number');
       }
 
-      // Calculate total bet amount in ETH
-      const totalBetAmount = selectedBetSize * selectedNumbers.length;
-
-      // Calculate gas limit based on number of selected numbers
-      const baseGas = 500000;
-      const gasPerNumber = 100000;
-      const gasLimit = baseGas + (selectedNumbers.length * gasPerNumber);
-
       console.log('Placing bet:', {
         selectedNumbers,
         betSize: selectedBetSize,
-        totalBetAmount,
-        gasLimit
+        totalBetAmount: selectedNumbers.length * selectedBetSize,
+        gasLimit: 500000 + (selectedNumbers.length * 100000)
       });
 
+      // Calculate gas limit based on number of bets
+      const baseGas = 500000;
+      const gasPerNumber = 100000;
+      const gasLimit = baseGas + (selectedNumbers.length * gasPerNumber);
+      
+      const totalBetAmount = selectedBetSize * selectedNumbers.length;
       const success = await placeRouletteBet(selectedNumbers, totalBetAmount.toString(), gasLimit);
       
       if (success) {
-        const result = Math.floor(Math.random() * 37);
-        const won = selectedNumbers.includes(result);
-        setGameResult({
-          number: result,
-          won,
-          payout: won ? selectedBetSize * 36 : 0
-        });
-        setSelectedNumbers([]);
-      }
+        try {
+          // Clear any existing game result before starting a new one
+          setGameResult(null);
+          
+          // Make sure you're using the correct URL - this should point to your backend
+          const response = await fetch('http://localhost:3001/resolve-roulette-bet', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              player: account,
+              spinResult: Math.floor(Math.random() * 37), // Random number between 0-36
+              nonce: Date.now()
+            })
+          });
 
+          if (!response.ok) {
+            throw new Error(`Server error: ${response.status}`);
+          }
+
+          const resultData = await response.json();
+          if (!resultData.success) {
+            throw new Error(resultData.error || 'Failed to resolve bet');
+          }
+
+          // The game result will be set by the event listeners in Web3Context
+          // Clear selected numbers after successful bet
+          setSelectedNumbers([]);
+        } catch (apiError) {
+          console.error("Error resolving bet:", apiError);
+          setTransactionError(`API error: ${apiError.message}`);
+        }
+      }
     } catch (err) {
       console.error("Error placing bet:", err);
       setTransactionError(err.message);
@@ -291,6 +313,7 @@ function Roulette() {
           {gameResult !== null && (
             <div className="game-result">
               <h2>Result: {gameResult.number}</h2>
+              <pre>{JSON.stringify(gameResult, null, 2)}</pre>
               {gameResult.won ? (
                 <p className="win">You won {gameResult.payout} AVAX!</p>
               ) : (

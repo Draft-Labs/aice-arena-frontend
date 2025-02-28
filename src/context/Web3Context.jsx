@@ -276,6 +276,35 @@ export function Web3Provider({ children }) {
     };
   }, []);
 
+  useEffect(() => {
+    if (rouletteContract) {
+      const handleSpinResult = (number) => {
+        console.log('Spin result:', number);
+        setGameResult(prev => ({
+          ...prev,
+          number: Number(number)
+        }));
+      };
+
+      const handleGameResult = (result, payout, won) => {
+        console.log('Game result:', { result, payout, won });
+        setGameResult({
+          number: Number(result),
+          won,
+          payout: ethers.formatEther(payout)
+        });
+      };
+
+      rouletteContract.on('SpinResult', handleSpinResult);
+      rouletteContract.on('GameResult', handleGameResult);
+
+      return () => {
+        rouletteContract.off('SpinResult', handleSpinResult);
+        rouletteContract.off('GameResult', handleGameResult);
+      };
+    }
+  }, [rouletteContract]);
+
   const value = {
     provider,
     signer,
@@ -290,6 +319,7 @@ export function Web3Provider({ children }) {
     switchToFuji,
     switchToLocal,
     gameResult,
+    setGameResult,
     transactionError,
     handleSpinWheel,
     networkStatus

@@ -264,8 +264,14 @@
       "type": "function"
     },
     {
-      "inputs": [],
-      "name": "spinWheel",
+      "inputs": [
+        {
+          "internalType": "uint8",
+          "name": "result",
+          "type": "uint8"
+        }
+      ],
+      "name": "spin",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
