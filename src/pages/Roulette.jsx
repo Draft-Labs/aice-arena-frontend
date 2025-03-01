@@ -348,61 +348,26 @@ function Roulette() {
           </button>
         </div>
       ) : (
-        <div className="game-and-history-container" style={{
-          display: 'flex',
-          flexDirection: 'row',
-          alignItems: 'flex-start',
-          gap: '20px',
-          width: '100%'
-        }}>
+        <div className="game-and-history-container">
           {/* Bet History Section */}
-          <div className="bet-history-section" style={{
-            width: '300px',
-            minWidth: '300px',
-            backgroundColor: '#f8f8f8',
-            padding: '15px',
-            borderRadius: '8px',
-            boxShadow: '0 2px 5px rgba(0,0,0,0.1)'
-          }}>
-            <h2 style={{ borderBottom: '2px solid #ddd', paddingBottom: '10px', marginBottom: '15px' }}>Bet History</h2>
+          <div className="bet-history-section">
+            <h2 className="bet-history-title">Bet History</h2>
             
             {gameResult && (
-              <div className="latest-result" style={{
-                border: `4px solid ${gameResult.won ? '#4CAF50' : '#f44336'}`,
-                borderRadius: '8px',
-                padding: '15px',
-                marginBottom: '20px',
-                backgroundColor: gameResult.won ? '#f0fff0' : '#fff0f0',
-                boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
-                animation: 'fadeIn 0.5s'
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <h3 style={{ fontSize: '18px', margin: '0' }}>Current Result</h3>
-                  <div style={{ fontSize: '12px', color: '#666' }}>{new Date().toLocaleTimeString()}</div>
+              <div className="latest-result">
+                <div className="latest-result-header">
+                  <h3 className="latest-result-title">Current Result</h3>
+                  <div className="latest-result-time">{new Date().toLocaleTimeString()}</div>
                 </div>
-                <h2 style={{ fontSize: '24px', margin: '10px 0', color: '#333' }}>
+                <h2 className="latest-result-number">
                   Result: {gameResult.number}
                 </h2>
-                <p style={{ 
-                  fontWeight: 'bold', 
-                  fontSize: '18px',
-                  color: gameResult.won ? 'green' : 'red',
-                  margin: '10px 0'
-                }}>
+                <p className={`latest-result-outcome ${gameResult.won ? 'win' : 'loss'}`}>
                   {gameResult.won ? `You won ${gameResult.payout} AVAX!` : 'Better luck next time!'}
                 </p>
                 <button 
                   onClick={handleNewBet}
-                  style={{
-                    backgroundColor: '#4CAF50',
-                    color: 'white',
-                    padding: '10px 20px',
-                    border: 'none',
-                    borderRadius: '4px',
-                    cursor: 'pointer',
-                    width: '100%',
-                    fontSize: '16px'
-                  }}
+                  className="new-bet-button"
                 >
                   New Bet
                 </button>
@@ -410,26 +375,15 @@ function Roulette() {
             )}
             
             {betHistory.length === 0 && !gameResult ? (
-              <p style={{ color: '#888', fontStyle: 'italic', textAlign: 'center' }}>No betting history yet</p>
+              <p className="no-history-message">No betting history yet</p>
             ) : (
               betHistory.map(item => (
-                <div key={item.id} className="history-item" style={{
-                  border: `3px solid ${item.won ? '#4CAF50' : '#f44336'}`,
-                  borderRadius: '8px',
-                  padding: '15px',
-                  marginBottom: '15px',
-                  backgroundColor: item.won ? '#f0fff0' : '#fff0f0',
-                  boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
-                }}>
-                  <div style={{ fontSize: '12px', color: '#666', marginBottom: '5px' }}>{item.timestamp}</div>
-                  <h3 style={{ fontSize: '18px', margin: '5px 0' }}>Result: {item.result}</h3>
-                  <p style={{ fontSize: '14px', margin: '5px 0' }}>Selected: {item.selectedNumbers.join(', ')}</p>
-                  <p style={{ fontSize: '14px', margin: '5px 0' }}>Bet: {item.betAmount} AVAX</p>
-                  <p style={{ 
-                    fontWeight: 'bold', 
-                    color: item.won ? 'green' : 'red',
-                    margin: '5px 0'
-                  }}>
+                <div key={item.id} className="history-item">
+                  <div className="history-item-time">{item.timestamp}</div>
+                  <h3 className="history-item-result">Result: {item.result}</h3>
+                  <p className="history-item-details">Selected: {item.selectedNumbers.join(', ')}</p>
+                  <p className="history-item-details">Bet: {item.betAmount} AVAX</p>
+                  <p className={`history-item-outcome ${item.won ? 'win' : 'loss'}`}>
                     {item.won ? `Won ${item.payout} AVAX` : 'Lost'}
                   </p>
                 </div>
@@ -438,7 +392,7 @@ function Roulette() {
           </div>
           
           {/* Main Game Container */}
-          <div className="game-container" style={{ flex: 1 }}>
+          <div className="game-container">
             <div className="bet-sizes">
               {betSizes.map(size => (
                 <button
@@ -545,10 +499,7 @@ function Roulette() {
               <button 
                 onClick={handlePlaceBet}
                 disabled={selectedNumbers.length === 0 || betInProgress || gameResult}
-                style={{
-                  backgroundColor: (selectedNumbers.length === 0 || betInProgress || gameResult) ? '#ccc' : '#4CAF50',
-                  cursor: (selectedNumbers.length === 0 || betInProgress || gameResult) ? 'not-allowed' : 'pointer'
-                }}
+                className={`place-bet-button ${selectedNumbers.length === 0 || betInProgress || gameResult ? 'disabled' : ''}`}
               >
                 {betInProgress ? 'Bet in Progress...' : 'Place Bet'}
               </button>
@@ -561,10 +512,7 @@ function Roulette() {
               {gameResult && (
                 <button 
                   onClick={handleNewBet}
-                  style={{
-                    backgroundColor: '#4CAF50',
-                    marginLeft: '10px'
-                  }}
+                  className="new-bet-button"
                 >
                   New Bet
                 </button>
@@ -572,39 +520,24 @@ function Roulette() {
             </div>
 
             {betInProgress ? (
-              <div style={{ margin: '20px 0', padding: '15px', backgroundColor: '#f5f5f5', border: '1px solid #ddd', borderRadius: '4px' }}>
-                <p style={{ textAlign: 'center', fontWeight: 'bold' }}>Processing your bet...</p>
+              <div className="bet-in-progress">
+                <p>Processing your bet...</p>
               </div>
             ) : !gameResult ? (
-              <div style={{ margin: '20px 0', padding: '15px', border: '1px dashed #ccc', textAlign: 'center' }}>
+              <div className="bet-instructions">
                 <p>Select numbers and place a bet to play</p>
               </div>
             ) : null}
 
             {transactionError && (
-              <div className="error-message" style={{
-                backgroundColor: '#ffebee',
-                color: '#d32f2f',
-                padding: '15px',
-                borderRadius: '4px',
-                margin: '20px 0',
-                border: '1px solid #ef9a9a',
-                fontWeight: 'bold',
-                fontSize: '16px'
-              }}>
-                <div style={{ marginBottom: '5px' }}>⚠️ Error:</div>
+              <div className="error-container">
+                <div className="error-title">⚠️ Error:</div>
                 {transactionError}
               </div>
             )}
 
-            {/* Debug section
-            <div style={{ 
-              margin: '20px 0', 
-              padding: '15px', 
-              border: '1px dashed #ccc', 
-              borderRadius: '4px',
-              backgroundColor: '#f5f5f5'
-            }}>
+            {/* Debug section */}
+            {/*<div className="debug-section">
               <h3>Developer Tools</h3>
               <p>Contract Address: {rouletteContract ? rouletteContract.target : 'Not connected'}</p>
               <button 
@@ -616,14 +549,14 @@ function Roulette() {
                     alert('Contract not connected');
                   }
                 }}
-                style={{ marginRight: '10px' }}
+                className="debug-button"
               >
                 Log Contract Methods
               </button>
               <button 
                 onClick={testSpin}
                 disabled={testingInProgress}
-                style={{ backgroundColor: testingInProgress ? '#ccc' : '#ff9800' }}
+                className={`test-spin-button ${testingInProgress ? 'disabled' : ''}`}
               >
                 {testingInProgress ? 'Testing...' : 'Test Spin Function'}
               </button>
