@@ -283,3 +283,184 @@
   white-space: pre-wrap;
   word-wrap: break-word;
 }
+
+@media (max-width: 1800px) {
+  .roulette-container {
+    padding: 1.5rem;
+    max-width: 95%;
+  }
+  
+  .numbers-grid {
+    grid-template-columns: 60px repeat(12, minmax(55px, 1fr));
+    grid-template-rows: repeat(3, 65px);
+    gap: 6px;
+    padding: 1rem;
+  }
+  
+  .number.zero {
+    width: 60px;
+  }
+  
+  .number {
+    font-size: 1.1rem;
+  }
+}
+
+@media (max-width: 1400px) {
+  .game-and-history-container {
+    gap: 15px;
+  }
+  
+  .bet-history-section {
+    width: 250px;
+    min-width: 250px;
+    padding: 12px;
+  }
+  
+  .numbers-grid {
+    grid-template-columns: 50px repeat(12, minmax(45px, 1fr));
+    grid-template-rows: repeat(3, 55px);
+    gap: 5px;
+  }
+  
+  .number.zero {
+    width: 50px;
+  }
+  
+  .number {
+    font-size: 1rem;
+  }
+  
+  .special-bets-grid {
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  }
+  
+  .special-bet-button {
+    padding: 10px 8px;
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 1024px) {
+  .game-and-history-container {
+    flex-direction: column;
+  }
+  
+  .bet-history-section {
+    width: 100%;
+    min-width: 100%;
+    margin-bottom: 20px;
+    order: 2; /* Move history below the game board on small screens */
+  }
+  
+  .game-container {
+    width: 100%;
+    order: 1; /* Keep game board on top on small screens */
+  }
+  
+  .numbers-grid {
+    grid-template-columns: 45px repeat(12, minmax(40px, 1fr));
+    grid-template-rows: repeat(3, 50px);
+    gap: 4px;
+    padding: 0.8rem;
+  }
+  
+  .number.zero {
+    width: 45px;
+  }
+  
+  .number {
+    font-size: 0.9rem;
+  }
+  
+  .betting-controls {
+    flex-wrap: wrap;
+  }
+  
+  .betting-controls button {
+    flex: 1 0 40%;
+    padding: 8px 12px;
+    font-size: 0.9rem;
+  }
+  
+  .bet-sizes {
+    flex-wrap: wrap;
+  }
+  
+  .bet-size {
+    padding: 0.6rem 1rem;
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .roulette-container {
+    padding: 1rem;
+  }
+  
+  .roulette-container h1 {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+  }
+  
+  .numbers-grid {
+    grid-template-columns: 35px repeat(6, 1fr);
+    grid-template-rows: repeat(6, 40px);
+    gap: 3px;
+    padding: 0.5rem;
+    overflow-x: auto;
+  }
+  
+  /* Adjust zero to span all rows */
+  .number.zero {
+    width: 35px;
+    grid-row: 1 / span 6;
+  }
+  
+  /* Reposition the rest of the numbers */
+  .number:not(.zero):nth-child(2) { grid-column: 2; grid-row: 1; }
+  .number:not(.zero):nth-child(3) { grid-column: 3; grid-row: 1; }
+  .number:not(.zero):nth-child(4) { grid-column: 4; grid-row: 1; }
+  .number:not(.zero):nth-child(5) { grid-column: 5; grid-row: 1; }
+  .number:not(.zero):nth-child(6) { grid-column: 6; grid-row: 1; }
+  .number:not(.zero):nth-child(7) { grid-column: 7; grid-row: 1; }
+  
+  .special-bets-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .betting-controls button {
+    flex: 1 0 100%;
+    margin: 5px 0;
+  }
+  
+  /* Stack the current-bet-info items */
+  .current-bet-info p {
+    margin: 0.8rem 0;
+    font-size: 0.9rem;
+  }
+  
+  /* Make history items more compact */
+  .history-item, .latest-result {
+    padding: 10px;
+  }
+  
+  .history-item h3, .latest-result h2 {
+    font-size: 1rem;
+  }
+  
+  .history-item p, .latest-result p {
+    font-size: 0.8rem;
+    margin: 3px 0;
+  }
+}
+
+/* Add animation for the latest result */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.latest-result {
+  animation: fadeIn 0.5s ease-in-out;
+}

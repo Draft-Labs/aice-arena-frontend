@@ -417,12 +417,10 @@ function Home() {
       </div>
       <div className={`main-content ${account && hasAccount ? 'has-carousel' : ''}`}>
         <h1>Welcome to Aice Arena</h1>
-        
         <div className="house-info">
           <h2>House Treasury</h2>
-          <div className="treasury-amount">{houseFunds} AVAX</div>
+          <div className="treasury-amount">{parseFloat(houseFunds).toFixed(2)} AVAX</div>
         </div>
-
         {account && !hasAccount ? (
           <div className="account-prompt">
             <h2>Get Started</h2>

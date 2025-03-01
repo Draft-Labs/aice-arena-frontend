@@ -32,6 +32,9 @@ function Roulette() {
   // Define red numbers for visual purposes only
   const redNumbers = [1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36];
 
+  // Add a new state for bet history
+  const [betHistory, setBetHistory] = useState([]);
+
   const handleNumberClick = (number) => {
     setSelectedNumbers(prev => {
       return prev.includes(number) 
@@ -274,6 +277,20 @@ function Roulette() {
           won: won,
           payout: payout
         }));
+        
+        // Add to bet history (with timestamp and selected numbers)
+        const historyItem = {
+          id: Date.now(),
+          timestamp: new Date().toLocaleTimeString(),
+          result: gameResult.number,
+          selectedNumbers: [...selectedNumbers],
+          won: won,
+          payout: payout,
+          betAmount: (selectedBetSize * selectedNumbers.length).toFixed(2)
+        };
+        
+        // Add new item to start of array and keep only last 3
+        setBetHistory(prev => [historyItem, ...prev].slice(0, 3));
       }
     }
   }, [gameResult, selectedNumbers, selectedBetSize, setGameResult]);
@@ -331,227 +348,286 @@ function Roulette() {
           </button>
         </div>
       ) : (
-        <div className="game-container">
-          <div className="bet-sizes">
-            {betSizes.map(size => (
-              <button
-                key={size}
-                className={`bet-size ${selectedBetSize === size ? 'selected' : ''}`}
-                onClick={() => setSelectedBetSize(size)}
-              >
-                {size} AVAX
-              </button>
-            ))}
-          </div>
-
-          <div className="current-bet-info">
-            <p>Selected Numbers: {selectedNumbers.length > 0 ? selectedNumbers.join(', ') : 'None'}</p>
-            <p>Total Bet: {selectedNumbers.length > 0 ? `${(selectedBetSize * selectedNumbers.length).toFixed(2)} AVAX` : 'None'}</p>
-            <p>Potential Win (per number): {selectedNumbers.length > 0 ? `${(selectedBetSize * 36).toFixed(2)} AVAX` : 'None'}</p>
-          </div>
-
-          <div className="roulette-board">
-            <div className="numbers-grid">
-              <div 
-                className={`number zero ${selectedNumbers.includes(0) ? 'selected' : ''}`}
-                onClick={() => handleNumberClick(0)}
-              >
-                0
+        <div className="game-and-history-container" style={{
+          display: 'flex',
+          flexDirection: 'row',
+          alignItems: 'flex-start',
+          gap: '20px',
+          width: '100%'
+        }}>
+          {/* Bet History Section */}
+          <div className="bet-history-section" style={{
+            width: '300px',
+            minWidth: '300px',
+            backgroundColor: '#f8f8f8',
+            padding: '15px',
+            borderRadius: '8px',
+            boxShadow: '0 2px 5px rgba(0,0,0,0.1)'
+          }}>
+            <h2 style={{ borderBottom: '2px solid #ddd', paddingBottom: '10px', marginBottom: '15px' }}>Bet History</h2>
+            
+            {gameResult && (
+              <div className="latest-result" style={{
+                border: `4px solid ${gameResult.won ? '#4CAF50' : '#f44336'}`,
+                borderRadius: '8px',
+                padding: '15px',
+                marginBottom: '20px',
+                backgroundColor: gameResult.won ? '#f0fff0' : '#fff0f0',
+                boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
+                animation: 'fadeIn 0.5s'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <h3 style={{ fontSize: '18px', margin: '0' }}>Current Result</h3>
+                  <div style={{ fontSize: '12px', color: '#666' }}>{new Date().toLocaleTimeString()}</div>
+                </div>
+                <h2 style={{ fontSize: '24px', margin: '10px 0', color: '#333' }}>
+                  Result: {gameResult.number}
+                </h2>
+                <p style={{ 
+                  fontWeight: 'bold', 
+                  fontSize: '18px',
+                  color: gameResult.won ? 'green' : 'red',
+                  margin: '10px 0'
+                }}>
+                  {gameResult.won ? `You won ${gameResult.payout} AVAX!` : 'Better luck next time!'}
+                </p>
+                <button 
+                  onClick={handleNewBet}
+                  style={{
+                    backgroundColor: '#4CAF50',
+                    color: 'white',
+                    padding: '10px 20px',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    width: '100%',
+                    fontSize: '16px'
+                  }}
+                >
+                  New Bet
+                </button>
               </div>
-              {[...Array(36)].map((_, i) => {
-                const number = i + 1;
-                return (
-                  <div
-                    key={number}
-                    className={`number ${
-                      selectedNumbers.includes(number) ? 'selected' : ''
-                    } ${redNumbers.includes(number) ? 'red' : 'black'}`}
-                    onClick={() => handleNumberClick(number)}
-                  >
-                    {number}
-                  </div>
-                );
-              })}
+            )}
+            
+            {betHistory.length === 0 && !gameResult ? (
+              <p style={{ color: '#888', fontStyle: 'italic', textAlign: 'center' }}>No betting history yet</p>
+            ) : (
+              betHistory.map(item => (
+                <div key={item.id} className="history-item" style={{
+                  border: `3px solid ${item.won ? '#4CAF50' : '#f44336'}`,
+                  borderRadius: '8px',
+                  padding: '15px',
+                  marginBottom: '15px',
+                  backgroundColor: item.won ? '#f0fff0' : '#fff0f0',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+                }}>
+                  <div style={{ fontSize: '12px', color: '#666', marginBottom: '5px' }}>{item.timestamp}</div>
+                  <h3 style={{ fontSize: '18px', margin: '5px 0' }}>Result: {item.result}</h3>
+                  <p style={{ fontSize: '14px', margin: '5px 0' }}>Selected: {item.selectedNumbers.join(', ')}</p>
+                  <p style={{ fontSize: '14px', margin: '5px 0' }}>Bet: {item.betAmount} AVAX</p>
+                  <p style={{ 
+                    fontWeight: 'bold', 
+                    color: item.won ? 'green' : 'red',
+                    margin: '5px 0'
+                  }}>
+                    {item.won ? `Won ${item.payout} AVAX` : 'Lost'}
+                  </p>
+                </div>
+              ))
+            )}
+          </div>
+          
+          {/* Main Game Container */}
+          <div className="game-container" style={{ flex: 1 }}>
+            <div className="bet-sizes">
+              {betSizes.map(size => (
+                <button
+                  key={size}
+                  className={`bet-size ${selectedBetSize === size ? 'selected' : ''}`}
+                  onClick={() => setSelectedBetSize(size)}
+                >
+                  {size} AVAX
+                </button>
+              ))}
             </div>
-          </div>
 
-          <div className="special-bets">
-            <div className="special-bets-grid">
-              <button 
-                className={`special-bet-button ${selectedNumbers.length === 18 && selectedNumbers.every(n => n % 2 === 1) ? 'selected' : ''}`}
-                onClick={() => handleSpecialBet('odd')}
-              >
-                Odd Numbers
-              </button>
-              <button 
-                className={`special-bet-button ${selectedNumbers.length === 18 && selectedNumbers.every(n => n % 2 === 0) ? 'selected' : ''}`}
-                onClick={() => handleSpecialBet('even')}
-              >
-                Even Numbers
-              </button>
-              <button 
-                className={`special-bet-button ${selectedNumbers.length === 18 && selectedNumbers.every(n => n <= 18) ? 'selected' : ''}`}
-                onClick={() => handleSpecialBet('1-18')}
-              >
-                1 to 18
-              </button>
-              <button 
-                className={`special-bet-button ${selectedNumbers.length === 18 && selectedNumbers.every(n => n > 18) ? 'selected' : ''}`}
-                onClick={() => handleSpecialBet('19-36')}
-              >
-                19 to 36
-              </button>
-              <button 
-                className={`special-bet-button ${selectedNumbers.length === 12 && selectedNumbers.every(n => n <= 12) ? 'selected' : ''}`}
-                onClick={() => handleSpecialBet('1-12')}
-              >
-                1st 12
-              </button>
-              <button 
-                className={`special-bet-button ${selectedNumbers.length === 12 && selectedNumbers.every(n => n > 12 && n <= 24) ? 'selected' : ''}`}
-                onClick={() => handleSpecialBet('13-24')}
-              >
-                2nd 12
-              </button>
-              <button 
-                className={`special-bet-button ${selectedNumbers.length === 12 && selectedNumbers.every(n => n > 24) ? 'selected' : ''}`}
-                onClick={() => handleSpecialBet('25-36')}
-              >
-                3rd 12
-              </button>
-              <button 
-                className={`special-bet-button ${selectedNumbers.length === 18 && selectedNumbers.every(n => redNumbers.includes(n)) ? 'selected' : ''}`}
-                onClick={() => handleSpecialBet('red')}
-              >
-                Red
-              </button>
-              <button 
-                className={`special-bet-button ${selectedNumbers.length === 18 && selectedNumbers.every(n => !redNumbers.includes(n) && n !== 0) ? 'selected' : ''}`}
-                onClick={() => handleSpecialBet('black')}
-              >
-                Black
-              </button>
+            <div className="current-bet-info">
+              <p>Selected Numbers: {selectedNumbers.length > 0 ? selectedNumbers.join(', ') : 'None'}</p>
+              <p>Total Bet: {selectedNumbers.length > 0 ? `${(selectedBetSize * selectedNumbers.length).toFixed(2)} AVAX` : 'None'}</p>
+              <p>Potential Win (per number): {selectedNumbers.length > 0 ? `${(selectedBetSize * 36).toFixed(2)} AVAX` : 'None'}</p>
             </div>
-          </div>
 
-          <div className="betting-controls">
-            <button 
-              onClick={handlePlaceBet}
-              disabled={selectedNumbers.length === 0 || betInProgress || gameResult}
-            >
-              {betInProgress ? 'Bet in Progress...' : 'Place Bet'}
-            </button>
-            <button 
-              onClick={handleClearBoard}
-              disabled={selectedNumbers.length === 0 || betInProgress}
-            >
-              Clear Board
-            </button>
-            {/* Add debug button for testing */}
-            <button 
-              onClick={testSpin}
-              style={{ backgroundColor: '#ff9800', marginLeft: '10px' }}
-            >
-              Test Spin
-            </button>
-          </div>
+            <div className="roulette-board">
+              <div className="numbers-grid">
+                <div 
+                  className={`number zero ${selectedNumbers.includes(0) ? 'selected' : ''}`}
+                  onClick={() => handleNumberClick(0)}
+                >
+                  0
+                </div>
+                {[...Array(36)].map((_, i) => {
+                  const number = i + 1;
+                  return (
+                    <div
+                      key={number}
+                      className={`number ${
+                        selectedNumbers.includes(number) ? 'selected' : ''
+                      } ${redNumbers.includes(number) ? 'red' : 'black'}`}
+                      onClick={() => handleNumberClick(number)}
+                    >
+                      {number}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
 
-          {/* Make game result more prominent with additional styling */}
-          {gameResult ? (
-            <div className="game-result" style={{
-              border: `4px solid ${gameResult.won ? '#4CAF50' : '#f44336'}`,
-              borderRadius: '8px',
-              padding: '20px',
-              margin: '20px 0',
-              backgroundColor: gameResult.won ? '#f0fff0' : '#fff0f0',
-              boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
-              position: 'relative',
-              zIndex: 100
-            }}>
-              <h2 style={{ color: '#333', marginBottom: '15px', fontSize: '24px' }}>
-                Result: {gameResult.number !== undefined ? gameResult.number : 'Loading...'}
-              </h2>
-              {gameResult.won ? (
-                <p className="win" style={{ color: 'green', fontSize: '20px', fontWeight: 'bold' }}>
-                  You won {gameResult.payout} AVAX!
-                </p>
-              ) : (
-                <p className="loss" style={{ color: 'red', fontSize: '20px', fontWeight: 'bold' }}>
-                  Better luck next time!
-                </p>
-              )}
+            <div className="special-bets">
+              <div className="special-bets-grid">
+                <button 
+                  className={`special-bet-button ${selectedNumbers.length === 18 && selectedNumbers.every(n => n % 2 === 1) ? 'selected' : ''}`}
+                  onClick={() => handleSpecialBet('odd')}
+                >
+                  Odd Numbers
+                </button>
+                <button 
+                  className={`special-bet-button ${selectedNumbers.length === 18 && selectedNumbers.every(n => n % 2 === 0) ? 'selected' : ''}`}
+                  onClick={() => handleSpecialBet('even')}
+                >
+                  Even Numbers
+                </button>
+                <button 
+                  className={`special-bet-button ${selectedNumbers.length === 18 && selectedNumbers.every(n => n <= 18) ? 'selected' : ''}`}
+                  onClick={() => handleSpecialBet('1-18')}
+                >
+                  1 to 18
+                </button>
+                <button 
+                  className={`special-bet-button ${selectedNumbers.length === 18 && selectedNumbers.every(n => n > 18) ? 'selected' : ''}`}
+                  onClick={() => handleSpecialBet('19-36')}
+                >
+                  19 to 36
+                </button>
+                <button 
+                  className={`special-bet-button ${selectedNumbers.length === 12 && selectedNumbers.every(n => n <= 12) ? 'selected' : ''}`}
+                  onClick={() => handleSpecialBet('1-12')}
+                >
+                  1st 12
+                </button>
+                <button 
+                  className={`special-bet-button ${selectedNumbers.length === 12 && selectedNumbers.every(n => n > 12 && n <= 24) ? 'selected' : ''}`}
+                  onClick={() => handleSpecialBet('13-24')}
+                >
+                  2nd 12
+                </button>
+                <button 
+                  className={`special-bet-button ${selectedNumbers.length === 12 && selectedNumbers.every(n => n > 24) ? 'selected' : ''}`}
+                  onClick={() => handleSpecialBet('25-36')}
+                >
+                  3rd 12
+                </button>
+                <button 
+                  className={`special-bet-button ${selectedNumbers.length === 18 && selectedNumbers.every(n => redNumbers.includes(n)) ? 'selected' : ''}`}
+                  onClick={() => handleSpecialBet('red')}
+                >
+                  Red
+                </button>
+                <button 
+                  className={`special-bet-button ${selectedNumbers.length === 18 && selectedNumbers.every(n => !redNumbers.includes(n) && n !== 0) ? 'selected' : ''}`}
+                  onClick={() => handleSpecialBet('black')}
+                >
+                  Black
+                </button>
+              </div>
+            </div>
+
+            <div className="betting-controls">
               <button 
-                onClick={handleNewBet}
+                onClick={handlePlaceBet}
+                disabled={selectedNumbers.length === 0 || betInProgress || gameResult}
                 style={{
-                  backgroundColor: '#4CAF50',
-                  color: 'white',
-                  padding: '10px 20px',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  marginTop: '10px',
-                  fontSize: '16px'
+                  backgroundColor: (selectedNumbers.length === 0 || betInProgress || gameResult) ? '#ccc' : '#4CAF50',
+                  cursor: (selectedNumbers.length === 0 || betInProgress || gameResult) ? 'not-allowed' : 'pointer'
                 }}
               >
-                New Bet
+                {betInProgress ? 'Bet in Progress...' : 'Place Bet'}
               </button>
+              <button 
+                onClick={handleClearBoard}
+                disabled={selectedNumbers.length === 0 || betInProgress}
+              >
+                Clear Board
+              </button>
+              {gameResult && (
+                <button 
+                  onClick={handleNewBet}
+                  style={{
+                    backgroundColor: '#4CAF50',
+                    marginLeft: '10px'
+                  }}
+                >
+                  New Bet
+                </button>
+              )}
             </div>
-          ) : betInProgress ? (
-            <div style={{ margin: '20px 0', padding: '10px', backgroundColor: '#f5f5f5', border: '1px solid #ddd', borderRadius: '4px' }}>
-              <p style={{ textAlign: 'center', fontWeight: 'bold' }}>Processing your bet...</p>
-            </div>
-          ) : (
-            <div style={{ margin: '20px 0', padding: '10px', border: '1px dashed #ccc' }}>
-              <p>Select numbers and place a bet to play</p>
-            </div>
-          )}
 
-          {transactionError && (
-            <div className="error-message" style={{
-              backgroundColor: '#ffebee',
-              color: '#d32f2f',
-              padding: '15px',
+            {betInProgress ? (
+              <div style={{ margin: '20px 0', padding: '15px', backgroundColor: '#f5f5f5', border: '1px solid #ddd', borderRadius: '4px' }}>
+                <p style={{ textAlign: 'center', fontWeight: 'bold' }}>Processing your bet...</p>
+              </div>
+            ) : !gameResult ? (
+              <div style={{ margin: '20px 0', padding: '15px', border: '1px dashed #ccc', textAlign: 'center' }}>
+                <p>Select numbers and place a bet to play</p>
+              </div>
+            ) : null}
+
+            {transactionError && (
+              <div className="error-message" style={{
+                backgroundColor: '#ffebee',
+                color: '#d32f2f',
+                padding: '15px',
+                borderRadius: '4px',
+                margin: '20px 0',
+                border: '1px solid #ef9a9a',
+                fontWeight: 'bold',
+                fontSize: '16px'
+              }}>
+                <div style={{ marginBottom: '5px' }}>⚠️ Error:</div>
+                {transactionError}
+              </div>
+            )}
+
+            {/* Debug section
+            <div style={{ 
+              margin: '20px 0', 
+              padding: '15px', 
+              border: '1px dashed #ccc', 
               borderRadius: '4px',
-              margin: '20px 0',
-              border: '1px solid #ef9a9a',
-              fontWeight: 'bold',
-              fontSize: '16px'
+              backgroundColor: '#f5f5f5'
             }}>
-              <div style={{ marginBottom: '5px' }}>⚠️ Error:</div>
-              {transactionError}
-            </div>
-          )}
-
-          {/* Debug section */}
-          <div style={{ 
-            margin: '20px 0', 
-            padding: '15px', 
-            border: '1px dashed #ccc', 
-            borderRadius: '4px',
-            backgroundColor: '#f5f5f5'
-          }}>
-            <h3>Developer Tools</h3>
-            <p>Contract Address: {rouletteContract ? rouletteContract.target : 'Not connected'}</p>
-            <button 
-              onClick={async () => {
-                if (rouletteContract) {
-                  console.log('Contract methods:', Object.keys(rouletteContract.functions));
-                  alert('Check console for contract methods');
-                } else {
-                  alert('Contract not connected');
-                }
-              }}
-              style={{ marginRight: '10px' }}
-            >
-              Log Contract Methods
-            </button>
-            <button 
-              onClick={testSpin}
-              disabled={testingInProgress}
-              style={{ backgroundColor: testingInProgress ? '#ccc' : '#ff9800' }}
-            >
-              {testingInProgress ? 'Testing...' : 'Test Spin Function'}
-            </button>
+              <h3>Developer Tools</h3>
+              <p>Contract Address: {rouletteContract ? rouletteContract.target : 'Not connected'}</p>
+              <button 
+                onClick={async () => {
+                  if (rouletteContract) {
+                    console.log('Contract methods:', Object.keys(rouletteContract.functions));
+                    alert('Check console for contract methods');
+                  } else {
+                    alert('Contract not connected');
+                  }
+                }}
+                style={{ marginRight: '10px' }}
+              >
+                Log Contract Methods
+              </button>
+              <button 
+                onClick={testSpin}
+                disabled={testingInProgress}
+                style={{ backgroundColor: testingInProgress ? '#ccc' : '#ff9800' }}
+              >
+                {testingInProgress ? 'Testing...' : 'Test Spin Function'}
+              </button>
+            </div>*/}
           </div>
         </div>
       )}
