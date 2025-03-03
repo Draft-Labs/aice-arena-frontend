@@ -5,6 +5,7 @@ import Blackjack from './pages/Blackjack';
 import Balatro from './pages/Balatro';
 import Roulette from './pages/Roulette';
 import PokerLobby from './pages/poker/index';
+import PhaserGame from "./pages/PhaserGame";
 import CreatePokerTable from './pages/poker/create';
 import PokerTable from './pages/poker/table';
 import Leaderboard from './pages/Leaderboard';

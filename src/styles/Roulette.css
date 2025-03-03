@@ -1,6 +1,6 @@
 .roulette-container {
   width: 100%;
-  max-width: 1200px;
+  max-width: 1800px;
   margin: 0 auto;
   padding: 2rem;
   background: rgba(255, 255, 255, 0.1);
@@ -14,6 +14,7 @@
   left: 50%;
   transform: translate(-50%, -50%);
   min-height: min-content;
+  overflow-y: auto;
 }
 
 .roulette-container h1 {
@@ -30,6 +31,7 @@
   border-radius: 10px;
   margin-bottom: 2rem;
   text-align: center;
+  overflow-y: auto;
 }
 
 .balance-info {
@@ -289,7 +291,7 @@
   word-wrap: break-word;
 }
 
-/* History items and latest result styles - moved outside media queries */
+/* History items and latest result styles */
 .history-item, .latest-result {
   padding: 15px;
   background-color: rgba(255, 255, 255, 0.1);
@@ -300,6 +302,11 @@
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   animation: fadeIn 0.5s;
   color: white;
+}
+
+/* Hide the first history item when latest-result exists */
+.bet-history-section .latest-result ~ .history-item:first-of-type {
+  display: none;
 }
 
 .history-item.win, .latest-result.win {
@@ -457,19 +464,19 @@
 @media (max-width: 1024px) {
   .game-and-history-container {
     flex-direction: column;
+    height: auto;
+    overflow-y: visible;
   }
   
   .bet-history-section {
     width: 100%;
-    min-width: 100%;
-    margin-bottom: 20px;
-    order: 2; /* Move history below the game board on small screens */
-    background-color: transparent !important;
+    max-height: 400px;
+    order: 2;
   }
   
   .game-container {
     width: 100%;
-    order: 1; /* Keep game board on top on small screens */
+    order: 1;
   }
   
   .numbers-grid {
@@ -564,6 +571,8 @@
   align-items: flex-start;
   gap: 20px;
   width: 100%;
+  height: calc(100% - 4rem);
+  overflow: hidden;
 }
 
 .bet-history-section {
@@ -572,6 +581,9 @@
   padding: 15px;
   border-radius: 8px;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  max-height: 100%;
+  overflow-y: auto;
+  flex-shrink: 0;
 }
 
 .bet-history-title {

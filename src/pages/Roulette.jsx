@@ -174,8 +174,25 @@ function Roulette() {
   };
 
   const handleNewBet = () => {
+    // Add the current gameResult to history before resetting
+    if (gameResult) {
+      const historyItem = {
+        id: Date.now(),
+        timestamp: new Date().toLocaleTimeString(),
+        result: gameResult.number,
+        selectedNumbers: gameResult.selectedNumbers,  // Use stored selected numbers
+        won: gameResult.won,
+        payout: gameResult.payout,
+        betAmount: gameResult.betAmount  // Use stored bet amount
+      };
+      
+      // Add new item to start of array and keep only last 3
+      setBetHistory(prev => [historyItem, ...prev].slice(0, 3));
+    }
+    
     // Reset the game result and bet state
     resetBetState();
+    setSelectedNumbers([]);
   };
 
   // Update the test function to test backend API
@@ -244,7 +261,7 @@ function Roulette() {
     }
   };
 
-  // Update the useEffect that reacts to gameResult with a useRef-based solution
+  // Update the useEffect that reacts to gameResult
   const processedResultRef = useRef(null);
   
   useEffect(() => {
@@ -265,32 +282,21 @@ function Roulette() {
         
         // If won, calculate payout (36x the bet amount for the winning number)
         const payout = won ? (selectedBetSize * 36).toFixed(2) : "0.0";
+        const betAmount = (selectedBetSize * selectedNumbers.length).toFixed(2);
         
         console.log(`Player ${won ? 'won' : 'lost'} - Result: ${gameResult.number}, Selected: ${selectedNumbers.join(',')}`);
         
         // Store this result number to avoid processing it again
         processedResultRef.current = gameResult.number;
         
-        // Update the game result with win status and payout
+        // Update the game result with win status, payout, and bet amount
         setGameResult(prev => ({
           ...prev,
           won: won,
-          payout: payout
-        }));
-        
-        // Add to bet history (with timestamp and selected numbers)
-        const historyItem = {
-          id: Date.now(),
-          timestamp: new Date().toLocaleTimeString(),
-          result: gameResult.number,
-          selectedNumbers: [...selectedNumbers],
-          won: won,
           payout: payout,
-          betAmount: (selectedBetSize * selectedNumbers.length).toFixed(2)
-        };
-        
-        // Add new item to start of array and keep only last 3
-        setBetHistory(prev => [historyItem, ...prev].slice(0, 3));
+          betAmount: betAmount,
+          selectedNumbers: [...selectedNumbers]  // Store selected numbers too
+        }));
       }
     }
   }, [gameResult, selectedNumbers, selectedBetSize, setGameResult]);
