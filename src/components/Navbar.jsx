@@ -164,6 +164,12 @@ function Navbar() {
             Leaderboard
           </Link>
           <Link 
+            to="/phaser" 
+            className={`nav-link ${location.pathname === '/phaser' ? 'active' : ''}`}
+          >
+            Phaser
+          </Link>
+          <Link 
             to="/account" 
             className={`nav-link ${location.pathname === '/account' ? 'active' : ''}`}
           >

@@ -22,6 +22,7 @@ const AppRoutes = () => {
       <Route path="/poker/create" element={<CreatePokerTable />} />
       <Route path="/poker/table/:tableId" element={<PokerTable />} />
       <Route path="/leaderboard" element={<Leaderboard />} />
+      <Route path="/phaser" element={<PhaserGame />} />
       <Route path="/" element={<Home />} />
     </Routes>
   );
