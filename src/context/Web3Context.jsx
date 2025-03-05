@@ -361,10 +361,11 @@ export function Web3Provider({ children }) {
   // Update the useEffect to listen for SpinResult instead of GameResult
   useEffect(() => {
     if (rouletteContract) {
-      console.log('Setting up spin result event listener in Web3Context');
+      console.log('Setting up event listeners in Web3Context');
 
-      // Setup listener for SpinResult event
+      // Listen for both SpinResult and GameResult events
       try {
+        // Setting up SpinResult listener
         rouletteContract.on('SpinResult', (result, event) => {
           console.log('SpinResult event detected:', { result, event });
           
@@ -383,27 +384,37 @@ export function Web3Provider({ children }) {
           // Convert result to a number
           const resultNum = Number(result);
           
-          // Since the contract only emits the result number, we need to determine
-          // if the player won and what the payout is based on the selected numbers
-          // This will be handled in the UI component for now, or could be enhanced later
-          
-          console.log('Setting game result:', { 
-            number: resultNum,
-            txHash
-          });
-
-          // Set the game result in state
+          // Set initial game result with just the number
           setGameResult({
             number: resultNum,
-            // We don't have win/loss status or payout in this event
             won: false,
             payout: "0.0"
           });
         });
         
-        console.log('SpinResult event listener set up successfully');
+        // Setting up GameResult listener to get win/loss info
+        rouletteContract.on('GameResult', (result, payout, won, event) => {
+          console.log('GameResult event detected:', { result, payout, won, event });
+          
+          // Only update if this is for the current user
+          // Note: This event doesn't have the player address indexed, so we need to check
+          //       if this transaction has already been processed with a SpinResult
+          const txHash = event.log.transactionHash;
+          if (processedTransactions.current.has(txHash)) {
+            // This is from the same transaction, so update the result with won/payout info
+            if (won) {
+              setGameResult(prev => ({
+                ...prev,
+                won: true,
+                payout: ethers.formatEther(payout)
+              }));
+            }
+          }
+        });
+        
+        console.log('Event listeners set up successfully');
       } catch (err) {
-        console.error('Error setting up SpinResult listener:', err);
+        console.error('Error setting up event listeners:', err);
       }
 
       // Cleanup function 

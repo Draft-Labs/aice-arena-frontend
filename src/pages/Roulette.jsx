@@ -107,7 +107,6 @@ function Roulette() {
         selectedNumbers,
         betSize: selectedBetSize,
         totalBetAmount: selectedNumbers.length * selectedBetSize,
-        gasLimit: 500000 + (selectedNumbers.length * 100000)
       });
 
       // Calculate gas limit based on number of bets
@@ -116,52 +115,38 @@ function Roulette() {
       const gasLimit = baseGas + (selectedNumbers.length * gasPerNumber);
       
       const totalBetAmount = selectedBetSize * selectedNumbers.length;
-      const success = await placeRouletteBet(selectedNumbers, totalBetAmount.toString(), gasLimit);
+
+      // Use toFixed(18) to limit precision, then convert to string to avoid floating point errors
+      const roundedAmount = totalBetAmount.toFixed(18);
+
+      // Parse the fixed string value to Wei
+      const totalBetAmountWei = ethers.parseEther(roundedAmount);
       
-      if (success) {
-        try {
-          // After placing bet, call the backend API to spin the wheel
-          console.log('Bet placed successfully, requesting backend to spin wheel...');
-          
-          // Generate a random number between 0 and 36 for the backend to use
-          const randomNumber = Math.floor(Math.random() * 37);
-          
-          // Call the backend API to spin the wheel with the house wallet
-          const response = await fetch('http://localhost:3001/resolve-roulette-bet', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              player: account,
-              spinResult: randomNumber, 
-              nonce: Date.now()
-            })
-          });
-
-          if (!response.ok) {
-            throw new Error(`Server error: ${response.status}`);
-          }
-
-          const resultData = await response.json();
-          if (!resultData.success) {
-            throw new Error(resultData.error || 'Failed to resolve bet');
-          }
-          
-          console.log('Backend spin response:', resultData);
-          
-          // We'll get the game result from contract events
-          // The backend will trigger the spin and events will be emitted
-          
-          // Clear selected numbers after successful bet
-          setSelectedNumbers([]);
-        } catch (spinError) {
-          console.error("Error with backend spin:", spinError);
-          setTransactionError(`Backend error: ${spinError.message}`);
-          setBetInProgress(false);
-        }
-      } else {
-        setBetInProgress(false);
-        setTransactionError('Failed to place bet. Please try again.');
+      // Call the new combined function instead of just placeBet
+      const tx = await rouletteContract.placeBetAndSpin(selectedNumbers, {
+        value: totalBetAmountWei,
+        gasLimit: gasLimit
+      });
+      
+      console.log('Transaction sent:', tx.hash);
+      
+      // Wait for the transaction receipt
+      const receipt = await tx.wait();
+      console.log('Transaction confirmed:', receipt);
+      
+      // The transaction will emit events that our listener will catch,
+      // so the game result will be updated automatically
+      
+      // Clear selected numbers after successful bet
+      setSelectedNumbers([]);
+      
+      // Update balance after bet
+      if (getAccountBalance) {
+        const newBalance = await getAccountBalance();
+        console.log('Updated balance:', newBalance);
       }
+      
+      setBetInProgress(false);
     } catch (err) {
       console.error("Error placing bet:", err);
       setTransactionError(err.message);

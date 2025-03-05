@@ -131,7 +131,8 @@ const GameCarousel = () => {
 
 function Home() {
   const { account, treasuryContract } = useWeb3();
-  const { chatHistory, isLoading, error, sendMessage } = useOpenAI();
+  const openAI = useOpenAI();
+  const { chatHistory, isLoading, error, sendMessage } = openAI;
   const { checkTreasuryAccount } = useContractInteraction();
   const [houseFunds, setHouseFunds] = useState('0');
   const [hasAccount, setHasAccount] = useState(false);
