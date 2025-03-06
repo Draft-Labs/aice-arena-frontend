@@ -36,6 +36,11 @@ function Roulette() {
   const [betHistory, setBetHistory] = useState([]);
 
   const handleNumberClick = (number) => {
+    // If there's a game result (bet has resolved), trigger handleNewBet first
+    if (gameResult) {
+      handleNewBet();
+    }
+    
     setSelectedNumbers(prev => {
       return prev.includes(number) 
         ? prev.filter(n => n !== number)
@@ -44,6 +49,11 @@ function Roulette() {
   };
 
   const handleSpecialBet = (type) => {
+    // If there's a game result (bet has resolved), trigger handleNewBet first
+    if (gameResult) {
+      handleNewBet();
+    }
+    
     let numbers = [];
     switch (type) {
       case 'odd':
@@ -76,6 +86,7 @@ function Roulette() {
       default:
         return;
     }
+    
     setSelectedNumbers(numbers);
   };
 
@@ -114,13 +125,8 @@ function Roulette() {
       const gasPerNumber = 100000;
       const gasLimit = baseGas + (selectedNumbers.length * gasPerNumber);
       
-      const totalBetAmount = selectedBetSize * selectedNumbers.length;
-
-      // Use toFixed(18) to limit precision, then convert to string to avoid floating point errors
-      const roundedAmount = totalBetAmount.toFixed(18);
-
-      // Parse the fixed string value to Wei
-      const totalBetAmountWei = ethers.parseEther(roundedAmount);
+      const totalBetAmount = parseFloat((selectedBetSize * selectedNumbers.length).toFixed(5));
+      const totalBetAmountWei = ethers.parseEther(totalBetAmount.toString());
       
       // Call the new combined function instead of just placeBet
       const tx = await rouletteContract.placeBetAndSpin(selectedNumbers, {
@@ -165,7 +171,8 @@ function Roulette() {
         id: Date.now(),
         timestamp: new Date().toLocaleTimeString(),
         result: gameResult.number,
-        selectedNumbers: gameResult.selectedNumbers,  // Use stored selected numbers
+        // Ensure selectedNumbers is always an array, even if undefined in gameResult
+        selectedNumbers: gameResult.selectedNumbers || [],
         won: gameResult.won,
         payout: gameResult.payout,
         betAmount: gameResult.betAmount  // Use stored bet amount
@@ -372,7 +379,9 @@ function Roulette() {
                 <div key={item.id} className="history-item">
                   <div className="history-item-time">{item.timestamp}</div>
                   <h3 className="history-item-result">Result: {item.result}</h3>
-                  <p className="history-item-details">Selected: {item.selectedNumbers.join(', ')}</p>
+                  <p className="history-item-details">
+                    Selected: {Array.isArray(item.selectedNumbers) ? item.selectedNumbers.join(', ') : 'None'}
+                  </p>
                   <p className="history-item-details">Bet: {item.betAmount} AVAX</p>
                   <p className={`history-item-outcome ${item.won ? 'win' : 'loss'}`}>
                     {item.won ? `Won ${item.payout} AVAX` : 'Lost'}
