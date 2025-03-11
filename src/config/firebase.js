@@ -6,7 +6,12 @@ import {
   getDoc,
   updateDoc,
   onSnapshot,
-  serverTimestamp
+  serverTimestamp,
+  collection,
+  addDoc,
+  query,
+  orderBy,
+  limit
 } from 'firebase/firestore';
 import { getAuth, signInAnonymously } from 'firebase/auth';
 import { toast } from 'react-toastify';
@@ -168,5 +173,90 @@ export const getCurrentTurnData = async (tableId) => {
   } catch (error) {
     console.error('Error getting current turn data:', error);
     return null;
+  }
+};
+
+// NEW FUNCTION: Record a player's move
+export const recordPlayerMove = async (tableId, moveData) => {
+  try {
+    await ensureAuthenticated();
+    
+    // First get the table document to check if it exists
+    const tableRef = doc(db, 'pokerTables', tableId.toString());
+    const tableDoc = await getDoc(tableRef);
+    
+    // Create a unique move ID using current time and player address
+    const moveId = `${Date.now()}-${moveData.playerAddress.slice(0, 6)}`;
+    
+    // Create a move object with all needed data
+    const move = {
+      moveId: moveId,
+      playerAddress: moveData.playerAddress,
+      playerName: moveData.playerName || moveData.playerAddress.slice(0, 8) + '...',
+      action: moveData.action,
+      amount: moveData.amount || null,
+      timestamp: serverTimestamp(),
+      position: moveData.position || 0
+    };
+    
+    if (tableDoc.exists()) {
+      // Update the table with the latest move
+      await updateDoc(tableRef, {
+        latestMove: move
+      });
+    } else {
+      // Create the table document if it doesn't exist
+      await setDoc(tableRef, {
+        name: `Table ${tableId}`,
+        createdAt: new Date().toISOString(),
+        latestMove: move
+      });
+    }
+    
+    // Also add to move history collection
+    const movesCollectionRef = collection(db, 'pokerTables', tableId.toString(), 'moves');
+    await addDoc(movesCollectionRef, move);
+    
+    console.log('Player move recorded:', { tableId, moveId, ...moveData });
+    return true;
+  } catch (error) {
+    console.error('Error recording player move:', error);
+    throw error;
+  }
+};
+
+// NEW FUNCTION: Subscribe to player moves
+export const subscribeMoveUpdates = (tableId, callback) => {
+  try {
+    const tableRef = doc(db, 'pokerTables', tableId.toString());
+    let lastMoveId = null;
+    
+    // Set up real-time listener for move changes
+    const unsubscribe = onSnapshot(tableRef, (doc) => {
+      if (doc.exists()) {
+        const data = doc.data();
+        if (data.latestMove) {
+          // Check if this is a new move by comparing moveId
+          if (data.latestMove.moveId !== lastMoveId) {
+            // Store the current moveId to avoid duplicate processing
+            lastMoveId = data.latestMove.moveId;
+            console.log('New move detected with ID:', lastMoveId);
+            
+            // Call callback with move data
+            callback(data.latestMove);
+          } else {
+            console.log('Ignoring duplicate move update for ID:', lastMoveId);
+          }
+        }
+      }
+    }, (error) => {
+      console.error('Error subscribing to move updates:', error);
+    });
+    
+    // Return the unsubscribe function to clean up the listener
+    return unsubscribe;
+  } catch (error) {
+    console.error('Error setting up move subscription:', error);
+    return () => {}; // Return empty function as fallback
   }
 };

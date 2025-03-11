@@ -1,17 +1,36 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useWeb3 } from '../../context/Web3Context';
 import { ethers } from 'ethers';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import '../../styles/Poker.css';
-import { getTableName, updateCurrentTurn, subscribeTurnUpdates, getCurrentTurnData } from '../../config/firebase';
+import { getTableName, updateCurrentTurn, subscribeTurnUpdates, getCurrentTurnData, recordPlayerMove, subscribeMoveUpdates } from '../../config/firebase';
 import { API_BASE_URL } from '../../config/constants';
 import { db } from '../../config/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { MdKeyboardDoubleArrowRight, MdKeyboardDoubleArrowUp, MdKeyboardDoubleArrowDown } from "react-icons/md";
 import tableBackground from '../../assets/table.svg';
 import { useContractInteraction } from '../../hooks/useContractInteraction';
+
+// Add this new component for the move indicator
+const MoveIndicator = ({ move }) => {
+  if (!move) return null;
+
+  const actionClass = move.action.toLowerCase();
+  
+  return (
+    <div className="move-indicator-container">
+      <div className={`move-indicator ${actionClass}`}>
+        <div className="player-name">{move.playerName}</div>
+        {move.action.toUpperCase()}
+        {move.amount && (
+          <span className="move-amount">{move.amount} AVAX</span>
+        )}
+      </div>
+    </div>
+  );
+};
 
 function PokerTable() {
   const navigate = useNavigate();
@@ -417,7 +436,68 @@ function PokerTable() {
     }
   };
 
-  // Update the handleAction function
+  // Add new state for move indicators
+  const [currentMove, setCurrentMove] = useState(null);
+  const moveTimeoutRef = useRef(null);
+  
+  // Add a ref to track moves we've already seen to prevent duplicates
+  const processedMovesRef = useRef(new Set());
+  
+  // Add a useEffect to subscribe to move updates from Firebase
+  useEffect(() => {
+    if (!tableId) return;
+    
+    console.log('Setting up Firebase move subscription for table', tableId);
+    
+    // Subscribe to move updates
+    const unsubscribe = subscribeMoveUpdates(tableId, (moveData) => {
+      console.log('Move update from Firebase:', moveData);
+      
+      // Check if we've already processed this move
+      if (!moveData.moveId) {
+        console.log('Ignoring move without ID');
+        return;
+      }
+      
+      // If we've already seen this move, don't show it again
+      if (processedMovesRef.current.has(moveData.moveId)) {
+        console.log('Ignoring duplicate move:', moveData.moveId);
+        return;
+      }
+      
+      // Add the move ID to our processed set
+      processedMovesRef.current.add(moveData.moveId);
+      console.log('Processing new move:', moveData.moveId);
+      
+      // Clear any existing timeout
+      if (moveTimeoutRef.current) {
+        clearTimeout(moveTimeoutRef.current);
+      }
+      
+      // Set the current move to display the indicator
+      setCurrentMove(moveData);
+      
+      // Set a timeout to clear the move after animation completes
+      moveTimeoutRef.current = setTimeout(() => {
+        setCurrentMove(null);
+      }, 1600); // Slightly longer than the animation duration
+    });
+    
+    return () => {
+      console.log('Cleaning up Firebase move subscription');
+      unsubscribe();
+      
+      // Clear any existing timeout
+      if (moveTimeoutRef.current) {
+        clearTimeout(moveTimeoutRef.current);
+      }
+      
+      // Clear the processed moves set
+      processedMovesRef.current.clear();
+    };
+  }, [tableId]);
+
+  // Update handleAction to record moves in Firebase
   const handleAction = async (action, amount = '0') => {
     try {
       if (!pokerContract || !account || !tableId) {
@@ -425,100 +505,208 @@ function PokerTable() {
         return;
       }
 
+      // Prevent duplicate action triggering
+      const actionKey = `${action}-${Date.now()}`;
+      if (processedMovesRef.current.has(actionKey)) {
+        console.log('Ignoring duplicate action trigger');
+        return;
+      }
+      processedMovesRef.current.add(actionKey);
+
       console.log(`Performing action: ${action}${amount !== '0' ? ` with amount ${amount}` : ''}`);
 
+      // Define transaction options with explicit gas limit to prevent estimation failures
+      const options = {
+        gasLimit: 500000 // Set a reasonable gas limit
+      };
+
       let tx;
-      switch (action.toLowerCase()) {
-        case 'fold':
-          tx = await pokerContract.fold(tableId);
-          break;
-        case 'check':
-          tx = await pokerContract.check(tableId);
-          break;
-        case 'call':
-          tx = await pokerContract.call(tableId);
-          break;
-        case 'raise':
-          if (amount === '0') {
-            toast.error("Please enter a valid raise amount");
+      try {
+        switch (action.toLowerCase()) {
+          case 'fold':
+            tx = await pokerContract.fold(tableId, options);
+            break;
+          case 'check':
+            tx = await pokerContract.check(tableId, options);
+            break;
+          case 'call':
+            tx = await pokerContract.call(tableId, options);
+            break;
+          case 'raise':
+            if (amount === '0') {
+              toast.error("Please enter a valid raise amount");
+              return;
+            }
+            tx = await pokerContract.raise(tableId, ethers.parseEther(amount), options);
+            break;
+          default:
+            toast.error("Unknown action");
             return;
+        }
+      } catch (contractError) {
+        // Interpret contract errors
+        console.error('Contract error:', contractError);
+        
+        // Try to extract more meaningful error messages
+        let errorMessage = contractError.message;
+        
+        // Extract the reverted reason string if available
+        const extractRevertReason = (error) => {
+          try {
+            // Check for nested error structures common in ethers.js
+            if (error.error && error.error.data && error.error.data.message) {
+              return error.error.data.message;
+            }
+            
+            // Check for reverted with reason pattern
+            const revertedMatch = errorMessage.match(/reverted with reason string '([^']+)'/);
+            if (revertedMatch && revertedMatch[1]) {
+              return revertedMatch[1];
+            }
+            
+            // Check for deeply nested error
+            if (error.data && error.data.cause && error.data.cause.error) {
+              const nestedMessage = error.data.cause.error.message;
+              const nestedMatch = nestedMessage.match(/reverted with reason string '([^']+)'/);
+              if (nestedMatch && nestedMatch[1]) {
+                return nestedMatch[1];
+              }
+            }
+            
+            return null;
+          } catch (e) {
+            console.error("Error while extracting revert reason:", e);
+            return null;
           }
-          tx = await pokerContract.raise(tableId, ethers.parseEther(amount));
-          break;
-        default:
-          toast.error("Unknown action");
-          return;
+        };
+        
+        // Try to extract the revert reason
+        const revertReason = extractRevertReason(contractError);
+        if (revertReason) {
+          console.log("Extracted revert reason:", revertReason);
+          
+          // Use the extracted reason
+          if (revertReason.includes("Not your turn")) {
+            errorMessage = "It's not your turn to act";
+          } else {
+            // Use the revert reason directly if we couldn't map it
+            errorMessage = revertReason;
+          }
+        } else {
+          // If no specific reason was found, use fallback messages
+          if (errorMessage.includes('execution reverted')) {
+            errorMessage = 'Action not allowed in current game state';
+          }
+          
+          if (action.toLowerCase() === 'check' && errorMessage.includes('missing revert data')) {
+            errorMessage = 'Cannot check - you need to call or raise';
+          }
+          
+          // Game state specific errors
+          if (errorMessage.includes('NotPlayerTurn')) {
+            errorMessage = 'Not your turn to act';
+          } else if (errorMessage.includes('InvalidGameState')) {
+            errorMessage = 'Invalid action for current game state';
+          } else if (errorMessage.includes('InsufficientBalance')) {
+            errorMessage = 'Insufficient balance for this action';
+          }
+        }
+        
+        toast.error(`${action.toUpperCase()} failed: ${errorMessage}`);
+        return;
       }
 
       toast.info(`${action.toUpperCase()} transaction sent!`);
       
+      // Get display name or username for the player
+      const playerName = await fetchPlayerName(account);
+      
+      // Record the move in Firebase immediately to show the animation without waiting for confirmation
+      try {
+        await recordPlayerMove(tableId, {
+          playerAddress: account,
+          playerName: playerName || account.slice(0, 8) + '...',
+          action: action,
+          amount: action.toLowerCase() === 'raise' ? amount : null
+        });
+        console.log(`Move ${action} recorded for player ${account.slice(0, 8)}...`);
+      } catch (moveError) {
+        console.error('Error recording move:', moveError);
+        // Continue with the action even if recording the move fails
+      }
+      
       // Wait for transaction to confirm
-      const receipt = await tx.wait();
-      console.log(`${action} transaction confirmed:`, receipt);
-      
-      // Force fetch table data to get the latest state
-      await fetchTableData();
-      
-      // Fetch the players at the table after the action
-      const players = await pokerContract.getTablePlayers(tableId);
-      
-      if (!players || players.length < 2) {
-        console.warn("Not enough players to determine next turn");
-        return;
+      try {
+        const receipt = await tx.wait();
+        console.log(`${action} transaction confirmed:`, receipt);
+        
+        // Force fetch table data to get the latest state
+        await fetchTableData();
+        
+        // Fetch the players at the table after the action
+        const players = await pokerContract.getTablePlayers(tableId);
+        
+        if (!players || players.length < 2) {
+          console.warn("Not enough players to determine next turn");
+          return;
+        }
+        
+        console.log("Players after action:", players.map(p => p.slice(0, 8) + '...'));
+        
+        // Find the current player's index
+        const currentPlayerIndex = players.findIndex(
+          player => player.toLowerCase() === account.toLowerCase()
+        );
+        
+        if (currentPlayerIndex === -1) {
+          console.warn("Current player not found in player list");
+          return;
+        }
+        
+        console.log("Current player index:", currentPlayerIndex);
+        
+        // Determine the next player (simple round-robin)
+        // In a real poker game, this would need to account for folded players, etc.
+        const nextPlayerIndex = (currentPlayerIndex + 1) % players.length;
+        const nextPlayerAddress = players[nextPlayerIndex];
+        
+        console.log("Next player index:", nextPlayerIndex);
+        console.log("Next player address:", nextPlayerAddress.slice(0, 8) + '...');
+        
+        // Get the current game state
+        const tableInfo = await pokerContract.getTableInfo(tableId);
+        const gameStateNum = Number(tableInfo[8]);
+        const gamePhaseStr = getGameStateString(gameStateNum);
+        
+        // Update Firebase with the next player's turn
+        await updateCurrentTurn(tableId, {
+          address: nextPlayerAddress,
+          position: nextPlayerIndex,
+          gameState: gameStateNum,
+          gamePhase: gamePhaseStr
+        });
+        
+        // Also update the local turn indicator
+        setCurrentTurn(nextPlayerAddress);
+        
+        // Update game state to reflect turn status
+        setGameState(prev => ({
+          ...prev,
+          isPlayerTurn: false, // No longer current player's turn
+          gamePhase: gamePhaseStr
+        }));
+        
+        console.log("Turn updated after action:", {
+          from: account.slice(0, 8) + '...',
+          to: nextPlayerAddress.slice(0, 8) + '...',
+          action: action
+        });
+        
+        toast.success(`${action.toUpperCase()} successful!`);
+      } catch (txError) {
+        console.error(`Transaction failed:`, txError);
+        toast.error(`${action.toUpperCase()} transaction failed. Please try again.`);
       }
-      
-      console.log("Players after action:", players.map(p => p.slice(0, 8) + '...'));
-      
-      // Find the current player's index
-      const currentPlayerIndex = players.findIndex(
-        player => player.toLowerCase() === account.toLowerCase()
-      );
-      
-      if (currentPlayerIndex === -1) {
-        console.warn("Current player not found in player list");
-        return;
-      }
-      
-      console.log("Current player index:", currentPlayerIndex);
-      
-      // Determine the next player (simple round-robin)
-      // In a real poker game, this would need to account for folded players, etc.
-      const nextPlayerIndex = (currentPlayerIndex + 1) % players.length;
-      const nextPlayerAddress = players[nextPlayerIndex];
-      
-      console.log("Next player index:", nextPlayerIndex);
-      console.log("Next player address:", nextPlayerAddress.slice(0, 8) + '...');
-      
-      // Get the current game state
-      const tableInfo = await pokerContract.getTableInfo(tableId);
-      const gameStateNum = Number(tableInfo[8]);
-      const gamePhaseStr = getGameStateString(gameStateNum);
-      
-      // Update Firebase with the next player's turn
-      await updateCurrentTurn(tableId, {
-        address: nextPlayerAddress,
-        position: nextPlayerIndex,
-        gameState: gameStateNum,
-        gamePhase: gamePhaseStr
-      });
-      
-      // Also update the local turn indicator
-      setCurrentTurn(nextPlayerAddress);
-      
-      // Update game state to reflect turn status
-      setGameState(prev => ({
-        ...prev,
-        isPlayerTurn: false, // No longer current player's turn
-        gamePhase: gamePhaseStr
-      }));
-      
-      console.log("Turn updated after action:", {
-        from: account.slice(0, 8) + '...',
-        to: nextPlayerAddress.slice(0, 8) + '...',
-        action: action
-      });
-      
-      toast.success(`${action.toUpperCase()} successful!`);
       
     } catch (error) {
       console.error(`Error in ${action}:`, error);
@@ -1391,44 +1579,59 @@ function PokerTable() {
       pot: gameState.pot
     });
     
-    // For testing purposes, enable all buttons
     return (
-      <div className="betting-controls">
+      <div className={`betting-controls ${isMyTurn ? 'my-turn' : 'not-my-turn'}`}>
+        <div className="turn-status">
+          {isMyTurn ? (
+            <div className="my-turn-indicator">It's Your Turn</div>
+          ) : (
+            <div className="waiting-indicator">Waiting for Your Turn</div>
+          )}
+        </div>
+        
         <button 
           onClick={() => handleAction('fold')}
-          className="action-button"
+          className="action-button fold"
+          disabled={!isMyTurn}
+          title={!isMyTurn ? "It's not your turn" : "Fold your hand"}
         >
-          Fold (Testing)
+          Fold
         </button>
         
         <button 
           onClick={() => handleAction('check')}
-          className="action-button"
+          className="action-button check"
+          disabled={!isMyTurn}
+          title={!isMyTurn ? "It's not your turn" : "Check (when there's no bet to call)"}
         >
-          Check (Testing)
+          Check
         </button>
         
         <button 
           onClick={() => handleAction('call')}
-          className="action-button"
+          className="action-button call"
+          disabled={!isMyTurn}
+          title={!isMyTurn ? "It's not your turn" : "Call the current bet"}
         >
-          Call {currentBet} AVAX (Testing)
+          Call {currentBet} AVAX
         </button>
         
         <div className="raise-controls">
-          <input
-            type="text"
+          <input 
+            type="number"
             value={raiseAmount}
-            onChange={(e) => {
-              const value = e.target.value.replace(/[^\d.]/g, '');
-              setRaiseAmount(value);
-            }}
+            onChange={(e) => setRaiseAmount(e.target.value)}
+            min={gameState.minRaise || 0}
+            max={gameState.maxRaise || 1}
             step="0.001"
+            disabled={!isMyTurn}
           />
           <button 
             onClick={() => handleAction('raise', raiseAmount)}
+            disabled={!isMyTurn || !raiseAmount || raiseAmount === '0'}
+            title={!isMyTurn ? "It's not your turn" : "Raise the bet"}
           >
-            Raise to {raiseAmount} AVAX (Testing)
+            Raise
           </button>
         </div>
       </div>
@@ -1575,6 +1778,23 @@ function PokerTable() {
   // Add state for the warning modal
   const [showLeaveWarning, setShowLeaveWarning] = useState(false);
 
+  // Add useEffect to notify player when it's their turn
+  useEffect(() => {
+    if (gameState.isPlayerTurn && account) {
+      // Show a notification that it's the player's turn
+      toast.info("It's your turn to act!", {
+        position: "top-center",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+      
+      console.log("Notifying player it's their turn to act");
+    }
+  }, [gameState.isPlayerTurn, account]);
+
   if (!account) {
     return <div className="poker-container">Please connect your wallet</div>;
   }
@@ -1642,6 +1862,9 @@ function PokerTable() {
             <div className="game-area">
               <div className="poker-table">
                 <img src={tableBackground} alt="Table Background" className="table-background" />
+                
+                {/* Add the move indicator here */}
+                {currentMove && <MoveIndicator move={currentMove} />}
                 
                 <div className="player-positions">
                   {Array.from({ length: maxPlayersPerTable }).map((_, i) => {
