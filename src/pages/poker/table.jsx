@@ -678,6 +678,18 @@ function PokerTable() {
         const gameStateNum = Number(tableInfo[8]);
         const gamePhaseStr = getGameStateString(gameStateNum);
         
+        // Extract the latest pot amount and update it
+        const potAmount = ethers.formatEther(tableInfo[6]);
+        console.log(`Updated pot after ${action}: ${potAmount} AVAX`);
+        
+        // Update game state with fresh pot value
+        setGameState(prev => ({
+          ...prev,
+          isPlayerTurn: false, // No longer current player's turn
+          gamePhase: gamePhaseStr,
+          pot: potAmount // Update the pot with the latest value
+        }));
+        
         // Update Firebase with the next player's turn
         await updateCurrentTurn(tableId, {
           address: nextPlayerAddress,
@@ -688,13 +700,6 @@ function PokerTable() {
         
         // Also update the local turn indicator
         setCurrentTurn(nextPlayerAddress);
-        
-        // Update game state to reflect turn status
-        setGameState(prev => ({
-          ...prev,
-          isPlayerTurn: false, // No longer current player's turn
-          gamePhase: gamePhaseStr
-        }));
         
         console.log("Turn updated after action:", {
           from: account.slice(0, 8) + '...',
@@ -716,43 +721,27 @@ function PokerTable() {
 
   // Add game state update function
   const updateGameState = async () => {
-    if (!pokerContract || !tableId) return;
-    
     try {
-      // Get table info using getTableInfo instead of tables
+      if (!pokerContract || !tableId || !account) return;
+
+      // Get table info and extract pot
       const tableInfo = await pokerContract.getTableInfo(tableId);
+      const pot = ethers.formatEther(tableInfo[6]);
+      const gameStateValue = Number(tableInfo[8]);
       
-      // Extract game state directly from tableInfo (at index 8)
-      const gameState = tableInfo[8];
+      console.log('Updating game state - Pot:', pot, 'Game state:', getGameStateString(gameStateValue));
       
-      console.log('Current game state:', {
-        raw: gameState,
-        asString: getGameStateString(Number(gameState))
-      });
-      
-      // Create a table data object from the array response
-      const tableData = {
-        minBuyIn: tableInfo[0],
-        maxBuyIn: tableInfo[1],
-        smallBlind: tableInfo[2],
-        bigBlind: tableInfo[3],
-        minBet: tableInfo[4],
-        maxBet: tableInfo[5],
-        pot: tableInfo[6],
-        playerCount: tableInfo[7],
-        gameState: tableInfo[8],
-        isActive: tableInfo[9]
-      };
-      
-      // Update state with table data
-      setGameInfo(prevInfo => ({
-        ...prevInfo,
-        pot: ethers.formatEther(tableData.pot),
-        gameState: getGameStateString(Number(gameState))
+      // Update game state with the latest pot
+      setGameState(prevState => ({
+        ...prevState,
+        pot: pot,
+        gamePhase: getGameStateString(gameStateValue)
       }));
       
-      // More logic for different game states...
-
+      // After taking actions like bet, call, etc, update the UI
+      if (gameStateValue > 1) { // If we're in an active game
+        // Other game state updates...
+      }
     } catch (err) {
       console.error('Error updating game state:', err);
     }
@@ -760,12 +749,21 @@ function PokerTable() {
 
   // Add effect to update game state periodically
   useEffect(() => {
-    if (hasJoined) {
+    if (hasJoined && pokerContract && tableId) {
+      console.log("Setting up periodic game state updates to refresh pot and game state");
+      
+      // Run immediately on component mount or joining
       updateGameState();
-      const interval = setInterval(updateGameState, 5000);
-      return () => clearInterval(interval);
+      
+      // Set a shorter interval for more responsive updates (every 3 seconds)
+      const interval = setInterval(updateGameState, 3000);
+      
+      return () => {
+        console.log("Cleaning up game state update interval");
+        clearInterval(interval);
+      };
     }
-  }, [hasJoined, pokerContract, account, tableId]);
+  }, [hasJoined, pokerContract, account, tableId, updateGameState]);
 
   // Fetch table details
   useEffect(() => {
@@ -944,6 +942,14 @@ function PokerTable() {
         gameState: gameState.toString()
       });
       
+      // Extract pot from tableInfo (at index 6) and log it
+      const potInWei = tableInfo[6];
+      const potInEther = ethers.formatEther(potInWei);
+      console.log('Current Pot:', {
+        wei: potInWei.toString(),
+        ether: potInEther
+      });
+      
       // Parse table info from the returned array
       const tableData = {
         minBuyIn: tableInfo[0],
@@ -1038,7 +1044,7 @@ function PokerTable() {
         canCheck: false,
         minRaise: ethers.formatEther(tableData.minBet),
         maxRaise: ethers.formatEther(tableData.maxBet),
-        gameState: getGameStateString(tableData.gameState)
+        gameState: getGameStateString(Number(tableData.gameState))
       });
       
       // After refreshing all player data, validate and update the current turn indicator
@@ -1591,7 +1597,7 @@ function PokerTable() {
         
         <button 
           onClick={() => handleAction('fold')}
-          className="action-button fold"
+          className="poker-action-button fold"
           disabled={!isMyTurn}
           title={!isMyTurn ? "It's not your turn" : "Fold your hand"}
         >
@@ -1600,7 +1606,7 @@ function PokerTable() {
         
         <button 
           onClick={() => handleAction('check')}
-          className="action-button check"
+          className="poker-action-button check"
           disabled={!isMyTurn}
           title={!isMyTurn ? "It's not your turn" : "Check (when there's no bet to call)"}
         >
@@ -1609,7 +1615,7 @@ function PokerTable() {
         
         <button 
           onClick={() => handleAction('call')}
-          className="action-button call"
+          className="poker-action-button call"
           disabled={!isMyTurn}
           title={!isMyTurn ? "It's not your turn" : "Call the current bet"}
         >
@@ -1795,6 +1801,37 @@ function PokerTable() {
     }
   }, [gameState.isPlayerTurn, account]);
 
+  // Add state variables for tracking pot changes
+  const [previousPot, setPreviousPot] = useState('0');
+  const [potChanged, setPotChanged] = useState(false);
+  
+  // Add a useEffect to detect pot changes and trigger animation
+  useEffect(() => {
+    if (gameState.pot !== previousPot) {
+      console.log('Pot changed from', previousPot, 'to', gameState.pot);
+      setPreviousPot(gameState.pot);
+      
+      // Only trigger animation if this isn't the initial load (previous pot was not 0)
+      if (previousPot !== '0') {
+        setPotChanged(true);
+        
+        // Reset the animation flag after animation duration
+        const timer = setTimeout(() => {
+          setPotChanged(false);
+        }, 1000); // Match the animation duration
+        
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [gameState.pot, previousPot]);
+  
+  // Find the pot display in the return JSX and update it
+  const renderPotAmount = () => (
+    <p className={`pot-amount ${potChanged ? 'pot-amount-changed' : ''}`}>
+      Pot: {gameState.pot} AVAX
+    </p>
+  );
+
   if (!account) {
     return <div className="poker-container">Please connect your wallet</div>;
   }
@@ -1812,7 +1849,7 @@ function PokerTable() {
             <div className="table-info">
               <h2>{tableName || `Poker Table #${tableId}`}</h2>
               <p>Game Phase: {gameState.gamePhase}</p>
-              <p className="pot-amount">Pot: {gameState.pot} AVAX</p>
+              {renderPotAmount()}
               <p>Players: {gameState.playerCount}/6</p>
             </div>
 
@@ -1955,7 +1992,7 @@ function PokerTable() {
             </div>
           </div>
           <div className="poker-game-controls">
-              <div className="action-buttons">
+              <div className="poker-action-buttons">
                 <button 
                   className="call-button" 
                   onClick={() => handleAction('call')}
