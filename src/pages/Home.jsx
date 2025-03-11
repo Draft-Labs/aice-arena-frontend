@@ -76,13 +76,6 @@ const GameCarousel = () => {
 
   return (
     <div className="game-carousel">
-      <button 
-        className="carousel-button prev" 
-        onClick={prevSlide}
-      >
-        ‹
-      </button>
-      
       <div className="carousel-container">
         {games.map((game, index) => (
           <div
@@ -108,13 +101,6 @@ const GameCarousel = () => {
           </div>
         ))}
       </div>
-      
-      <button 
-        className="carousel-button next" 
-        onClick={nextSlide}
-      >
-        ›
-      </button>
       
       <div className="carousel-dots">
         {games.map((_, index) => (

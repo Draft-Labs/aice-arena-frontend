@@ -54,6 +54,7 @@ export const saveTableName = async (tableId, tableName) => {
       createdAt: new Date().toISOString()
     });
     console.log('Table name saved successfully:', { tableId, tableName });
+    return true;
   } catch (error) {
     console.error('Error saving table name:', error);
     throw error;

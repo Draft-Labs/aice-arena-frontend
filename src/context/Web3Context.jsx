@@ -3,6 +3,7 @@ import { ethers } from 'ethers';
 import BlackjackJSON from '../contracts/Blackjack.json';
 import TreasuryJSON from '../contracts/HouseTreasury.json';
 import RouletteJSON from '../contracts/Roulette.json';
+import PokerMainJSON from '../contracts/PokerMain.json';
 import { FUJI_CONFIG } from '../config/networks';
 import getEnvironmentConfig from '../config/environment';
 
@@ -14,6 +15,7 @@ export function Web3Provider({ children }) {
   const [blackjackContract, setBlackjackContract] = useState(null);
   const [treasuryContract, setTreasuryContract] = useState(null);
   const [rouletteContract, setRouletteContract] = useState(null);
+  const [pokerContract, setPokerContract] = useState(null);
   const [account, setAccount] = useState(null);
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -70,11 +72,13 @@ export function Web3Provider({ children }) {
       const treasuryAddress = config.contracts.treasury;
       const blackjackAddress = config.contracts.blackjack;
       const rouletteAddress = config.contracts.roulette;
+      const pokerAddress = config.contracts.poker;
 
       console.log('Contract addresses:', {
         blackjack: blackjackAddress,
         treasury: treasuryAddress,
         roulette: rouletteAddress,
+        poker: pokerAddress,
       });
 
       // After line 67, add these debug logs
@@ -82,7 +86,8 @@ export function Web3Provider({ children }) {
       console.log('Contract addresses from config:', {
         treasury: treasuryAddress,
         blackjack: blackjackAddress,
-        roulette: rouletteAddress
+        roulette: rouletteAddress,
+        poker: pokerAddress
       });
 
       // Create contract instances
@@ -101,6 +106,11 @@ export function Web3Provider({ children }) {
           rouletteAddress,
           RouletteJSON.abi,
           signer
+        ) : null,
+        poker: pokerAddress ? new ethers.Contract(
+          pokerAddress,
+          PokerMainJSON.abi,
+          signer
         ) : null
       };
 
@@ -109,6 +119,7 @@ export function Web3Provider({ children }) {
       setBlackjackContract(contracts.blackjack);
       setTreasuryContract(contracts.treasury);
       setRouletteContract(contracts.roulette);
+      setPokerContract(contracts.poker);
       setError(null);
 
     } catch (err) {
@@ -125,6 +136,7 @@ export function Web3Provider({ children }) {
     setBlackjackContract(null);
     setTreasuryContract(null);
     setRouletteContract(null);
+    setPokerContract(null);
     setError(null);
   };
 
@@ -343,6 +355,7 @@ export function Web3Provider({ children }) {
           setBlackjackContract(null);
           setTreasuryContract(null);
           setRouletteContract(null);
+          setPokerContract(null);
         }
       });
 
@@ -434,6 +447,7 @@ export function Web3Provider({ children }) {
     blackjackContract,
     treasuryContract,
     rouletteContract,
+    pokerContract,
     account,
     error,
     isLoading,
@@ -450,7 +464,12 @@ export function Web3Provider({ children }) {
     handleSpinWheel,
     networkStatus,
     resetBetState,
-    checkGameResultForTransaction
+    checkGameResultForTransaction,
+    processedTransactions,
+    checkTransactionReceipt,
+    setNetworkStatus,
+    lastReceivedResult,
+    setLastReceivedResult
   };
 
   return (

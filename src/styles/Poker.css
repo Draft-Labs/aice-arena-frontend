@@ -367,6 +367,19 @@
   gap: 2rem;
 }
 
+.no-tables-message {
+  font-size: 1.5rem;
+  text-align: center;
+  grid-column: 1 / -1; /* Span all columns */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 150px; /* Give it some height to be visible */
+  color: rgba(6, 242, 219, 0.8);
+  font-weight: 500;
+  text-shadow: 0 0 10px rgba(6, 242, 219, 0.5);
+}
+
 .table-card {
   background: rgba(0, 0, 0, 0.3);
   border-radius: 10px;
@@ -1396,4 +1409,141 @@ h2 {
   text-align: center;
   color: #06F2DB;
   font-size: 1.2rem;
+}
+
+/* Buy-in form styles */
+.poker-container .join-form {
+  max-width: 500px;
+  margin: 2rem auto;
+  padding: 2rem;
+  background: rgba(0, 0, 0, 0.7);
+  border-radius: 15px;
+  border: 1px solid rgba(6, 242, 219, 0.4);
+  box-shadow: 0 0 20px rgba(6, 242, 219, 0.2);
+  transition: all 0.3s ease;
+}
+
+.poker-container .join-form:hover {
+  border-color: rgba(6, 242, 219, 0.6);
+  box-shadow: 0 0 30px rgba(6, 242, 219, 0.3);
+}
+
+.poker-container .join-form .form-group {
+  margin-bottom: 1.5rem;
+}
+
+.poker-container .join-form label {
+  display: block;
+  margin-bottom: 0.8rem;
+  color: #06F2DB;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.poker-container .join-form input {
+  width: 100%;
+  padding: 12px 15px;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(6, 242, 219, 0.3);
+  border-radius: 8px;
+  color: white;
+  font-size: 1.1rem;
+  transition: all 0.3s ease;
+  box-sizing: border-box;
+}
+
+.poker-container .join-form input:focus {
+  outline: none;
+  border-color: #06F2DB;
+  box-shadow: 0 0 10px rgba(6, 242, 219, 0.3);
+}
+
+.poker-container .join-form input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.poker-container .join-form button {
+  width: 100%;
+  padding: 12px;
+  margin-top: 10px;
+  background: rgba(6, 242, 219, 0.2);
+  color: #06F2DB;
+  border: 1px solid rgba(6, 242, 219, 0.5);
+  border-radius: 8px;
+  font-size: 1.1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.poker-container .join-form button:hover:not(:disabled) {
+  background: rgba(6, 242, 219, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(6, 242, 219, 0.3);
+}
+
+.poker-container .join-form button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.poker-container .balance-info {
+  text-align: center;
+  background: rgba(0, 0, 0, 0.5);
+  padding: 15px;
+  border-radius: 10px;
+  margin: 1rem auto;
+  max-width: 500px;
+  border: 1px solid rgba(6, 242, 219, 0.2);
+}
+
+.poker-container .balance-info p {
+  margin: 0;
+  font-size: 1.1rem;
+  color: white;
+}
+
+.poker-container .balance-info p strong {
+  color: #06F2DB;
+  font-weight: bold;
+}
+
+/* Make sure table info is styled for the buy-in screen */
+.poker-container > .table-info {
+  max-width: 500px;
+  margin: 1rem auto;
+  text-align: center;
+}
+
+/* Error message styling */
+.poker-container > .error-message {
+  max-width: 500px;
+  margin: 1rem auto;
+  text-align: center;
+  background: rgba(255, 0, 0, 0.1);
+  border: 1px solid rgba(255, 0, 0, 0.3);
+  color: #ff6b6b;
+  padding: 12px;
+  border-radius: 8px;
+}
+
+/* Heading styling */
+.poker-container > h2 {
+  text-align: center;
+  color: #06F2DB;
+  margin-bottom: 1.5rem;
+  font-size: 2rem;
+  text-shadow: 0 0 10px rgba(6, 242, 219, 0.5);
+}
+
+.poker-container .join-form .balance-warning {
+  color: #ff6b6b;
+  font-size: 0.9rem;
+  margin-top: 10px;
+  text-align: center;
+  padding: 8px;
+  background: rgba(255, 107, 107, 0.1);
+  border-radius: 6px;
+  border: 1px solid rgba(255, 107, 107, 0.3);
 }

@@ -7,7 +7,7 @@ const AVALANCHE_GAS_LIMIT = 8000000;
 const GAS_PRICE_MULTIPLIER = 1.5; // Multiplier for gas price to ensure transaction goes through
 
 export function useContractInteraction() {
-  const { blackjackContract, rouletteContract, treasuryContract, balatroContract, account, provider } = useWeb3();
+  const { blackjackContract, rouletteContract, treasuryContract, pokerContract, balatroContract, account, provider } = useWeb3();
 
   const calculateHandScore = (hand) => {
     let score = 0;
@@ -346,6 +346,131 @@ export function useContractInteraction() {
     await tx.wait();
   };
 
+  // Add poker-specific functions
+  const getPlayerTreasuryBalance = useCallback(async () => {
+    try {
+      if (!account) {
+        console.log('No account available for treasury balance check');
+        return '0';
+      }
+
+      // Try to get balance from treasuryContract first (more direct)
+      if (treasuryContract) {
+        try {
+          console.log('Getting balance directly from treasury for account:', account);
+          const treasuryBalance = await treasuryContract.getPlayerBalance(account);
+          console.log('Treasury balance:', treasuryBalance);
+          return ethers.formatEther(treasuryBalance);
+        } catch (treasuryError) {
+          console.warn('Error getting balance from treasury directly:', treasuryError);
+          // Continue to try poker contract as fallback
+        }
+      }
+      
+      // Fallback to pokerContract if available
+      if (pokerContract) {
+        console.log('Getting balance from poker contract for account:', account);
+        const balance = await pokerContract.getPlayerTreasuryBalance(account);
+        console.log('Poker treasury balance:', balance);
+        return ethers.formatEther(balance);
+      }
+      
+      console.warn('No contracts available to check treasury balance');
+      return '0';
+    } catch (error) {
+      console.error('Error getting player treasury balance:', error);
+      return '0';
+    }
+  }, [treasuryContract, pokerContract, account]);
+
+  const joinPokerTable = useCallback(async (tableId, buyInAmount) => {
+    try {
+      if (!pokerContract || !account) {
+        throw new Error('Poker contract or account not initialized');
+      }
+
+      const buyInWei = ethers.parseEther(buyInAmount.toString());
+      
+      // Get current fee data
+      const feeData = await provider.getFeeData();
+      
+      console.log('Joining poker table with params:', {
+        tableId,
+        buyInAmount: buyInWei.toString(),
+        account
+      });
+
+      const tx = await pokerContract.joinTable(
+        tableId,
+        buyInWei,
+        {
+          gasLimit: 500000
+        }
+      );
+
+      console.log('Transaction sent:', tx.hash);
+      const receipt = await tx.wait();
+      console.log('Transaction confirmed:', receipt);
+
+      return true;
+    } catch (error) {
+      console.error('Error joining poker table:', error);
+      throw error;
+    }
+  }, [pokerContract, account, provider]);
+
+  const leavePokerTable = useCallback(async (tableId) => {
+    try {
+      if (!pokerContract || !account) {
+        throw new Error('Poker contract or account not initialized');
+      }
+      
+      console.log('Leaving poker table:', tableId);
+
+      const tx = await pokerContract.leaveTable(tableId, {
+        gasLimit: 500000
+      });
+      
+      console.log('Transaction sent:', tx.hash);
+      const receipt = await tx.wait();
+      console.log('Transaction confirmed:', receipt);
+      
+      return true;
+    } catch (error) {
+      console.error('Error leaving poker table:', error);
+      throw error;
+    }
+  }, [pokerContract, account]);
+
+  const placePokerBet = useCallback(async (tableId, betAmount) => {
+    try {
+      if (!pokerContract || !account) {
+        throw new Error('Poker contract or account not initialized');
+      }
+
+      const betAmountWei = ethers.parseEther(betAmount.toString());
+      
+      console.log('Placing poker bet with params:', {
+        tableId,
+        betAmount: betAmountWei.toString(),
+        account
+      });
+
+      const tx = await pokerContract.placeBet(tableId, betAmountWei, {
+        gasLimit: 500000
+      });
+
+      console.log('Transaction sent:', tx.hash);
+      const receipt = await tx.wait();
+      console.log('Transaction confirmed:', receipt);
+
+      return true;
+    } catch (error) {
+      console.error('Error placing poker bet:', error);
+      throw error;
+    }
+  }, [pokerContract, account]);
+
   return {
     placeBet,
     hit,
@@ -360,5 +485,9 @@ export function useContractInteraction() {
     getPlayerNetWinnings,
     placeBetAndDeal,
     spinRoulette,
+    getPlayerTreasuryBalance,
+    joinPokerTable,
+    leavePokerTable,
+    placePokerBet
   };
 }

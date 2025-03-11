@@ -49,42 +49,56 @@ function PokerLobby() {
         console.log('Fetching tables...');
         const tables = [];
         let i = 0;
+        const maxTables = 10; // Limit the number of tables to check to avoid infinite loop
         
-        while (true) {
+        while (i < maxTables) {
           try {
             console.log('Fetching table', i);
-            const table = await pokerContract.tables(i);
-            console.log('Table data:', table);
+            // Use getTableInfo instead of tables function
+            const tableInfo = await pokerContract.getTableInfo(i);
+            console.log('Table data:', tableInfo);
             
-            // Check if the table exists and is properly initialized
-            if (!table || !table.isActive) {
-              console.log('No more tables or inactive table found at index', i);
-              break;
+            // Check if the table exists and is active
+            if (!tableInfo || !tableInfo[9]) { // isActive is at index 9
+              console.log('Table', i, 'is not active or does not exist');
+              i++;
+              continue;
             }
             
+            // Create a table object with the returned info
             tables.push({
               id: i,
-              minBuyIn: ethers.formatEther(table.minBuyIn),
-              maxBuyIn: ethers.formatEther(table.maxBuyIn),
-              smallBlind: ethers.formatEther(table.smallBlind),
-              bigBlind: ethers.formatEther(table.bigBlind),
-              playerCount: table.playerCount.toString(),
-              maxPlayers: 6,
-              isActive: table.isActive
+              minBuyIn: ethers.formatEther(tableInfo[0]), // minBuyIn
+              maxBuyIn: ethers.formatEther(tableInfo[1]), // maxBuyIn
+              smallBlind: ethers.formatEther(tableInfo[2]), // smallBlind
+              bigBlind: ethers.formatEther(tableInfo[3]), // bigBlind
+              minBet: ethers.formatEther(tableInfo[4]), // minBet
+              maxBet: ethers.formatEther(tableInfo[5]), // maxBet
+              pot: ethers.formatEther(tableInfo[6]), // pot
+              playerCount: Number(tableInfo[7]), // playerCount
+              gameState: Number(tableInfo[8]), // gameState
+              isActive: tableInfo[9] // isActive
             });
             
-            i++;
-          } catch (err) {
-            console.log('Error fetching table', i, ':', err);
-            break;
+          } catch (error) {
+            console.error('Error fetching table', i, ':', error);
+            // If we get an error, we might be at the end of the tables
+            // or the specific table might not exist
+            if (error.message.includes('invalid table') || 
+                error.message.includes('not exist') ||
+                error.message.includes('Out of gas')) {
+              console.log('No more tables exist or reached the limit');
+              break;
+            }
           }
+          i++;
         }
-
+        
         console.log('Found tables:', tables);
         setTables(tables);
-      } catch (err) {
-        console.error('Error in main fetch loop:', err);
-        setError(err.message);
+      } catch (error) {
+        console.error('Error fetching tables:', error);
+        setError(error.message);
       }
     };
 
@@ -150,19 +164,23 @@ function PokerLobby() {
           </div>
 
           <div className="tables-list">
-            {tables.map(table => (
-              <div key={table.id} className="table-card">
-                <h3>{tableNames[table.id] || `Table #${table.id}`}</h3>
-                <div className="table-info">
-                  <p>Buy-in Range: {table.minBuyIn} - {table.maxBuyIn}</p>
-                  <p>Blinds: {table.smallBlind}/{table.bigBlind}</p>
-                  <p>Players: {table.playerCount}/{table.maxPlayers}</p>
+            {tables.length === 0 ? (
+              <div className="no-tables-message">No Active Tables</div>
+            ) : (
+              tables.map(table => (
+                <div key={table.id} className="table-card">
+                  <h3>{tableNames[table.id] || `Table #${table.id}`}</h3>
+                  <div className="table-info">
+                    <p>Buy-in Range: {table.minBuyIn} - {table.maxBuyIn}</p>
+                    <p>Blinds: {table.smallBlind}/{table.bigBlind}</p>
+                    <p>Players: {table.playerCount}/6</p>
+                  </div>
+                  <button onClick={() => navigate(`/poker/table/${table.id}`)}>
+                    Join Table
+                  </button>
                 </div>
-                <button onClick={() => navigate(`/poker/table/${table.id}`)}>
-                  Join Table
-                </button>
-              </div>
-            ))}
+              ))
+            )}
           </div>
 
           {error && <div className="error-message">Error: {error}</div>}
