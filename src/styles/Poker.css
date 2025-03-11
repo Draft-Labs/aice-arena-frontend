@@ -15,7 +15,6 @@
   width: 100%;
   min-height: 100%;
   padding: 1rem;
-  margin-top: 5vh;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -132,7 +131,7 @@
 
 .chat-input button {
   padding: 0.2rem 0.8rem;
-  height: 24px;
+  height: 100%;
   background: rgba(6, 242, 219, 0.2);
   border: 1px solid rgba(6, 242, 219, 0.3);
   border-radius: 4px;
@@ -144,10 +143,6 @@
   align-items: center;
   justify-content: center;
   font-size: 0.85rem;
-}
-
-.chat-input button:hover {
-  background: rgba(6, 242, 219, 0.3);
 }
 
 .chat-input input:disabled {
@@ -211,15 +206,31 @@
   border-left: 3px solid #06F2DB;
 }
 
+.table-card .table-info {
+  background: rgba(0, 0, 0, 0.2);
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  text-align: center;
+  margin-left: auto;
+  margin-right: auto;
+  width: 100%; /* Full width within the card */
+}
+
+/* General table-info that appears throughout the app */
 .table-info {
-  flex: 0 0 auto;
   background: rgba(0, 0, 0, 0.5);
   padding: 1rem;
   border-radius: 10px;
   border: 1px solid rgba(6, 242, 219, 0.3);
   width: 90%;
   min-width: unset;
-  max-width: unset;
+  max-width: 500px;
+  margin: 0 auto; /* Center horizontally */
+  text-align: center; /* Ensure content is centered */
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* Center children horizontally */
 }
 
 .table-info h2 {
@@ -351,12 +362,10 @@
   padding: 0.5rem 1rem;
   font-size: 0.9rem;
   white-space: nowrap;
-  background: black;
   font-size: 0.8rem !important;
-}
-
-.raise-controls button:hover:not(:disabled) {
-  transform: translateY(-2px);
+  cursor: pointer;
+  font-weight: bold;
+  flex: 1;
 }
 
 .table-control-buttons {
@@ -373,22 +382,22 @@
   font-size: 0.9rem;
 }
 
-.leave-table-button {
-  background: rgba(200, 35, 51, 0.3) !important;
-}
-
-.leave-table-button:hover:not(:disabled) {
-  background: rgba(200, 35, 51, 0.5) !important;
-  transform: translateY(-2px);
-}
-
 .add-house-button {
   background: rgba(6, 242, 219, 0.1) !important;
 }
 
-.add-house-button:hover:not(:disabled) {
-  background: rgba(6, 242, 219, 0.2) !important;
-  transform: translateY(-2px);
+.tables-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: calc(100vh - 120px); /* Adjust for navbar and some padding */
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+  width: 100%;
+  position: relative;
+  z-index: 1;
 }
 
 .poker-container {
@@ -414,25 +423,31 @@
 
 /* Lobby styles */
 .create-table {
-  text-align: center;
-  margin-bottom: 2rem;
+  margin: 1.5rem 0;
+  width: 100%;
+  display: flex;
+  justify-content: center;
 }
 
 .create-table button {
-  padding: 1rem 2rem;
-  font-weight: bold;
+  padding: 0.8rem 1.5rem;
+  background: rgba(6, 242, 219, 0.2);
+  color: white;
+  border: 1px solid rgba(6, 242, 219, 0.5);
   cursor: pointer;
+  font-size: 1rem;
+  font-weight: bold;
+  transition: all 0.3s ease;
 }
 
 .tables-list {
-  background: rgba(0, 0, 0, 0.5);
-  padding: 1.5rem;
-  border-radius: 10px;
-  margin-bottom: 2rem;
-  text-align: center;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 2rem;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1.5rem;
+  margin-top: 2rem;
+  width: 100%;
+  max-width: 1200px;
 }
 
 .no-tables-message {
@@ -449,37 +464,29 @@
 }
 
 .table-card {
-  background: rgba(0, 0, 0, 0.3);
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(6, 242, 219, 0.3);
   border-radius: 10px;
   padding: 1.5rem;
-  border: 1px solid rgba(6, 242, 219, 0.3);
   transition: all 0.3s ease;
+  flex: 1;
+  min-width: 325px;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 1rem;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
 }
 
 .table-card:hover {
-  transform: translateY(-5px);
-  border-color: #06F2DB;
-  box-shadow: 0 5px 15px rgba(6, 242, 219, 0.2);
+  box-shadow: 0 8px 15px rgba(6, 242, 219, 0.2);
 }
 
 .table-card h3 {
   color: #06F2DB;
   margin: 0 0 1rem 0;
   font-family: 'Elnath', sans-serif;
-}
-
-.table-info {
-  background: rgba(0, 0, 0, 0.2);
-  padding: 1rem;
-  border-radius: 8px;
-  margin-bottom: 1rem;
-}
-
-.table-info p {
-  margin: 0.5rem 0;
-  color: #fff;
-  font-family: 'Orbitron', sans-serif;
-  font-weight: 300;
 }
 
 /* Error message */
@@ -502,23 +509,11 @@
   border-radius: 10px;
 }
 
-.connect-wallet button:hover,
-.open-account button:hover,
-.create-table button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(6, 242, 219, 0.3);
-}
-
 .table-card button {
   width: 100%;
   padding: 0.8rem;
   font-weight: bold;
   cursor: pointer;
-}
-
-.table-card button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(6, 242, 219, 0.3);
 }
 
 /* Media Queries */
@@ -763,39 +758,6 @@
   transform: translateY(-50%);
 }
 
-/* Add these styles for the dealer controls */
-.dealer-controls {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 10;
-}
-
-.start-flop-button {
-  background: #9c27b0;
-  color: white;
-  padding: 15px 30px;
-  border: none;
-  border-radius: 5px;
-  font-size: 1.2em;
-  font-weight: bold;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-}
-
-.start-flop-button:hover {
-  background: #7b1fa2;
-  transform: translateY(-2px);
-}
-
-.start-flop-button:disabled {
-  background: #666;
-  cursor: not-allowed;
-  transform: none;
-}
-
 .form-group {
   display: flex;
   flex-direction: column;
@@ -916,11 +878,14 @@
 }
 
 .table-info {
-  background: #2d2d2d;
-  padding: 20px;
-  border-radius: 10px;
-  position: sticky;
-  top: 20px;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  text-align: center;
+  margin-left: auto;
+  margin-right: auto;
+  max-width: 80%;
 }
 
 .table-info p {
@@ -1141,27 +1106,6 @@ h2 {
   font-size: 1.2em;
 }
 
-.dealer-button {
-  padding: 8px 16px;
-  margin: 4px;
-  border-radius: 4px;
-  background-color: #2196f3;
-  color: white;
-  border: none;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.dealer-button:hover:not(.disabled) {
-  background-color: #1976d2;
-}
-
-.dealer-button.disabled {
-  background-color: #ccc;
-  cursor: not-allowed;
-  opacity: 0.7;
-}
-
 .dealer-controls {
   display: flex;
   justify-content: center;
@@ -1330,11 +1274,6 @@ h2 {
   width: 100%;
 }
 
-.leave-table-button:hover:not(:disabled) {
-  background: #c82333;
-  transform: translateY(-2px);
-}
-
 .leave-table-button:disabled {
   opacity: 0.7;
   cursor: not-allowed;
@@ -1357,11 +1296,6 @@ h2 {
   border-top-color: #fff;
   border-radius: 50%;
   animation: spin 1s infinite linear;
-}
-
-.leave-table-button.pending {
-  background: #ffc107;
-  color: #000;
 }
 
 .add-house-button{
@@ -1564,17 +1498,10 @@ h2 {
   background: rgba(6, 242, 219, 0.2);
   color: #06F2DB;
   border: 1px solid rgba(6, 242, 219, 0.5);
-  border-radius: 8px;
   font-size: 1.1rem;
   font-weight: bold;
   cursor: pointer;
   transition: all 0.3s ease;
-}
-
-.poker-container .join-form button:hover:not(:disabled) {
-  background: rgba(6, 242, 219, 0.3);
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(6, 242, 219, 0.3);
 }
 
 .poker-container .join-form button:disabled {
@@ -1603,10 +1530,11 @@ h2 {
   font-weight: bold;
 }
 
-/* Make sure table info is styled for the buy-in screen */
+/* Adjust the specific case for buy-in screen */
 .poker-container > .table-info {
-  max-width: 500px;
+  /* Keep the existing values that differ from the global style */
   margin: 1rem auto;
+  background: rgba(0, 0, 0, 0.3);
   text-align: center;
 }
 
@@ -1855,16 +1783,6 @@ h2 {
   cursor: not-allowed;
 }
 
-.raise-controls button {
-  padding: 10px 15px;
-  background-color: #ffd700;
-  color: black;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  font-weight: bold;
-}
-
 .raise-controls button:disabled {
   background-color: #e6e6e6;
   color: #999;
@@ -1888,4 +1806,32 @@ h2 {
   background-repeat: no-repeat;
   background-size: contain;
   margin-right: 4px;
+}
+
+/* Fix the body to ensure full height for centering */
+body {
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+}
+
+.tables-container h1 {
+  font-size: 2.5rem;
+  color: #06F2DB;
+  margin-bottom: 2rem;
+  text-shadow: 0 0 10px rgba(6, 242, 219, 0.5);
+}
+
+.poker-lobby-container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 2rem auto;
+  padding: 2rem;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  border: 1px solid #06F2DB;
+  color: white;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
 }

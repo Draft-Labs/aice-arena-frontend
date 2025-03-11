@@ -154,18 +154,10 @@
 
 /* Buttons */
 button {
-  background: linear-gradient(45deg, #06F2DB, #0891B2);
-  color: black;
-  border: none;
   padding: 0.8rem 1.5rem;
   font-weight: bold;
   cursor: pointer;
   transition: all 0.3s ease;
-}
-
-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(6, 242, 219, 0.3);
 }
 
 .close-account-button {

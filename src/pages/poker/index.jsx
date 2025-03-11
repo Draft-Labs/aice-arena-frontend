@@ -131,7 +131,7 @@ function PokerLobby() {
 
   if (isCheckingAccount) {
     return (
-      <div className="poker-container">
+      <div className="tables-container">
         <h1>Poker Tables</h1>
         <div className="loading-container">
           <div>Loading...</div>
@@ -141,22 +141,25 @@ function PokerLobby() {
   }
 
   return (
-    <div className="poker-container">
-      <h1>Poker Tables</h1>
-
+    <div className="tables-container">
       {!account ? (
-        <div className="connect-wallet">
-          <button onClick={connectWallet}>Connect Wallet</button>
+        <div className="poker-lobby-container">
+          <div className="connect-wallet">
+            <button onClick={connectWallet}>Connect Wallet</button>
+          </div>
         </div>
       ) : !hasAccount ? (
-        <div className="open-account">
-          <p>Please open an account to play Poker</p>
-          <button onClick={() => window.location.href = '/account'}>
-            Open Account
-          </button>
+        <div className="poker-lobby-container">
+          <div className="open-account">
+            <p>Please open an account to play Poker</p>
+            <button onClick={() => window.location.href = '/account'}>
+              Open Account
+            </button>
+          </div>
         </div>
       ) : (
-        <div>
+        <div className="poker-lobby-container">
+          <h1>Poker Tables</h1>
           <div className="create-table">
             <button onClick={() => navigate('/poker/create')}>
               Create New Table

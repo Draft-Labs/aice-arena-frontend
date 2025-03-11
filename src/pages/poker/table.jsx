@@ -217,25 +217,29 @@ function PokerTable() {
                 
                 // Only update if this event is for our table
                 if (Number(eventTableId) === Number(tableId)) {
-                  setCurrentTurn(player);
-                  
-                  // Get game state to include in the Firebase update
-                  pokerContract.getTableInfo(tableId).then(tableInfo => {
-                    const gameStateNum = Number(tableInfo[8]);
-                    const gamePhaseStr = getGameStateString(gameStateNum);
+                  // Only set current turn if there are at least 2 players
+                  // We'll check players.length before setting the turn
+                  if (players.length >= 2) {
+                    setCurrentTurn(player);
                     
-                    // Update Firebase with current turn info
-                    updateCurrentTurn(tableId, {
-                      address: player,
-                      position: -1, // We don't have this info from the event
-                      gameState: gameStateNum,
-                      gamePhase: gamePhaseStr
+                    // Get game state to include in the Firebase update
+                    pokerContract.getTableInfo(tableId).then(tableInfo => {
+                      const gameStateNum = Number(tableInfo[8]);
+                      const gamePhaseStr = getGameStateString(gameStateNum);
+                      
+                      // Update Firebase with current turn info
+                      updateCurrentTurn(tableId, {
+                        address: player,
+                        position: -1, // We don't have this info from the event
+                        gameState: gameStateNum,
+                        gamePhase: gamePhaseStr
+                      }).catch(err => {
+                        console.error('Error updating Firebase with turn data:', err);
+                      });
                     }).catch(err => {
-                      console.error('Error updating Firebase with turn data:', err);
+                      console.error('Error getting table info for Firebase update:', err);
                     });
-                  }).catch(err => {
-                    console.error('Error getting table info for Firebase update:', err);
-                  });
+                  }
                 }
               }
               break;
@@ -366,7 +370,7 @@ function PokerTable() {
         console.error('Error removing event listeners:', error);
       }
     };
-  }, [pokerContract, account, getPlayerDisplayName]);
+  }, [pokerContract, account, getPlayerDisplayName, players.length]);
 
   // Add this helper function near the top of your component
   const isActionValid = async (action, tableId, account) => {
@@ -691,21 +695,23 @@ function PokerTable() {
         }));
         
         // Update Firebase with the next player's turn
-        await updateCurrentTurn(tableId, {
-          address: nextPlayerAddress,
-          position: nextPlayerIndex,
-          gameState: gameStateNum,
-          gamePhase: gamePhaseStr
-        });
-        
-        // Also update the local turn indicator
-        setCurrentTurn(nextPlayerAddress);
-        
-        console.log("Turn updated after action:", {
-          from: account.slice(0, 8) + '...',
-          to: nextPlayerAddress.slice(0, 8) + '...',
-          action: action
-        });
+        // Only update turn if there are at least 2 players
+        if (players.length >= 2) {
+          await updateCurrentTurn(tableId, {
+            address: nextPlayerAddress,
+            position: nextPlayerIndex,
+            gameState: gameStateNum,
+            gamePhase: gamePhaseStr
+          });
+          
+          // Also update the local turn indicator
+          setCurrentTurn(nextPlayerAddress);
+          
+          console.log("Turn updated after action:", {
+            from: account.slice(0, 8) + '...',
+            to: nextPlayerAddress.slice(0, 8) + '...',
+          });
+        }
         
         toast.success(`${action.toUpperCase()} successful!`);
       } catch (txError) {
@@ -869,7 +875,9 @@ function PokerTable() {
         canCheck: amountToCall === 0n,
         minRaise: ethers.formatEther(tableInfo.minBet || 0n),
         maxRaise: ethers.formatEther(tableInfo.maxBet || 0n),
-        gameState: getGameStateString(Number(tableInfo.gameState))
+        gameState: getGameStateString(Number(tableInfo.gameState)),
+        playerCount: tableInfo.playerCount,
+        gamePhase: getGamePhaseString(Number(tableInfo.gameState))
       });
 
     } catch (err) {
@@ -1044,10 +1052,15 @@ function PokerTable() {
         canCheck: false,
         minRaise: ethers.formatEther(tableData.minBet),
         maxRaise: ethers.formatEther(tableData.maxBet),
-        gameState: getGameStateString(Number(tableData.gameState))
+        gameState: getGameStateString(Number(tableData.gameState)),
+        playerCount: activePlayers.length,
+        gamePhase: getGamePhaseString(Number(tableData.gameState))
       });
+
+      if (activePlayers.length < 2) {
+        setCurrentTurn(null);
+      }
       
-      // After refreshing all player data, validate and update the current turn indicator
       // if we have at least 2 players
       if (activePlayers.length >= 2) {
         // Determine who should have the turn based on the current game state
@@ -1091,19 +1104,22 @@ function PokerTable() {
           const gamePhaseStr = getGameStateString(gameStateNum);
           
           // Update both Firebase and local state
-          updateCurrentTurn(tableId, {
-            address: currentTurnPlayer,
-            position: playerPosition,
-            gameState: gameStateNum, 
-            gamePhase: gamePhaseStr
-          }).then(() => {
-            console.log("Turn indicator synced with Firebase during data refresh");
-          }).catch(err => {
-            console.error("Failed to sync turn with Firebase:", err);
-          });
-          
-          // Also update the local state for UI rendering
-          setCurrentTurn(currentTurnPlayer);
+          // Only update if there are at least 2 players
+          if (players.length >= 2) {
+            updateCurrentTurn(tableId, {
+              address: currentTurnPlayer,
+              position: playerPosition,
+              gameState: gameStateNum, 
+              gamePhase: gamePhaseStr
+            }).then(() => {
+              console.log("Turn indicator synced with Firebase during data refresh");
+            }).catch(err => {
+              console.error("Failed to sync turn with Firebase:", err);
+            });
+            
+            // Also update the local state for UI rendering
+            setCurrentTurn(currentTurnPlayer);
+          }
         }
       }
 
@@ -1542,8 +1558,8 @@ function PokerTable() {
         const safePosition = Number(currentPosition) % players.length;
         const currentPlayerAddress = players[safePosition];
         
-        // Only update Firebase if we found a valid player address
-        if (currentPlayerAddress && currentPlayerAddress !== ethers.ZeroAddress) {
+        // Only update Firebase if we found a valid player address and there are at least 2 players
+        if (currentPlayerAddress && currentPlayerAddress !== ethers.ZeroAddress && players.length >= 2) {
           // Update Firebase with blockchain data
           updateCurrentTurn(tableId, {
             address: currentPlayerAddress,
@@ -1979,8 +1995,8 @@ function PokerTable() {
               <h2>{tableName || `Poker Table #${tableId}`}</h2>
               <p>Game Phase: {gameState.gamePhase}</p>
               {renderPotAmount()}
-              <p>Players: {gameState.playerCount}/6</p>
-            </div>
+              <p>Players: {players.length}/6</p>
+          </div>
 
             <div className="last-hand-container">
               <h3>Last Hand</h3>
@@ -1999,8 +2015,8 @@ function PokerTable() {
               ) : (
                 <p>None</p>
               )}
-            </div>
-
+        </div>
+        
             <div className="chat-box">
               <div className="chat-title">Table Chat</div>
               <div className="chat-messages" ref={chatMessagesRef}>
@@ -2020,15 +2036,15 @@ function PokerTable() {
                       {msg.timestamp && (
                         <span className="timestamp">{formatTimestamp(msg.timestamp)}</span>
                       )}
-                    </div>
+              </div>
                   ))
                 ) : (
                   <div className="chat-message">
                     <span className="sender">System:</span>
                     Welcome to the table chat! Be respectful to other players.
-                  </div>
+          </div>
                 )}
-              </div>
+        </div>
               <div className="chat-input">
                 <input 
                   type="text" 
@@ -2049,10 +2065,10 @@ function PokerTable() {
                 >
                   {isSendingMessage ? 'Sending...' : 'Send'}
                 </button>
-              </div>
+                </div>
             </div>
-          </div>
-
+            </div>
+            
           <div className="right-container">
             <div className="game-area">
               <div className="poker-table">
@@ -2066,7 +2082,8 @@ function PokerTable() {
                     const player = players.find(p => p.position === i);
                     
                     // More robust current turn checking
-                    const isCurrentTurn = player && currentTurn && 
+                    // Only show current turn indicator if there are at least 2 players
+                    const isCurrentTurn = players.length >= 2 && player && currentTurn && 
                       player.address?.toLowerCase() === currentTurn.toLowerCase();
                     
                     // Add debug output for turn indicators
@@ -2074,7 +2091,8 @@ function PokerTable() {
                       player: player?.address?.slice(0, 8) + '...',
                       isCurrentTurn,
                       currentTurn: currentTurn?.slice(0, 8) + '...',
-                      displayName: player?.displayName
+                      displayName: player?.displayName,
+                      playerCount: players.length
                     });
                     
                     return (
@@ -2083,7 +2101,7 @@ function PokerTable() {
                         className={`player-position position-${i} ${isCurrentTurn ? 'current-turn' : ''}`}
                         data-is-current-turn={isCurrentTurn ? 'true' : 'false'}
                       >
-                        {isCurrentTurn && (
+                        {players.length >= 2 && isCurrentTurn && (
                           <div className="turn-indicator">
                             Current Turn
                           </div>
@@ -2095,13 +2113,13 @@ function PokerTable() {
                               <p className="player-stack">Stack: {player.tableStake} AVAX</p>
                               <p className="player-bet">Bet: {player.currentBet} AVAX</p>
                             </>
-                          )}
-                        </div>
+            )}
+          </div>
                       </div>
                     );
                   })}
-                </div>
-
+        </div>
+        
                 <div className="card-display">
                   <div className="community-cards">
                     {communityCards.length === 0 ? (
@@ -2118,7 +2136,7 @@ function PokerTable() {
                             <div className="logo-top"></div>
                             <div className="logo-bottom"></div>
                             {value}{suit}
-                          </div>
+            </div>
                         );
                       })
                     )}
@@ -2140,12 +2158,12 @@ function PokerTable() {
                             <div className="logo-top"></div>
                             <div className="logo-bottom"></div>
                             {value}{suit}
-                          </div>
+            </div>
                         );
                       })
-                    )}
-                  </div>
-                </div>
+          )}
+        </div>
+          </div>
               </div>
             </div>
           </div>
@@ -2156,25 +2174,25 @@ function PokerTable() {
                   onClick={() => handleAction('call')}
                 >
                   <MdKeyboardDoubleArrowUp />
-                  <span>Call (Testing)</span>
+                  <span>Call</span>
                 </button>
                 <button 
                   className="check-button" 
                   onClick={() => handleAction('check')}
                 >
                   <MdKeyboardDoubleArrowRight />
-                  <span>Check (Testing)</span>
+                  <span>Check</span>
                 </button>
                 <button 
                   className="fold-button" 
                   onClick={() => handleAction('fold')}
                 >
                   <MdKeyboardDoubleArrowDown />
-                  <span>Fold (Testing)</span>
+                  <span>Fold</span>
                 </button>
                 <div className="raise-controls">
-                  <input
-                    type="text"
+            <input
+              type="text"
                     value={raiseAmount}
                     onChange={(e) => {
                       const value = e.target.value.replace(/[^\d.]/g, '');
@@ -2182,16 +2200,16 @@ function PokerTable() {
                     }}
                     min={parseFloat(currentBet) * 2}
                     step="0.001"
-                  />
-                  <button 
+            />
+            <button 
                     className="raise-button"
                     onClick={() => handleAction('raise', raiseAmount)}
-                  >
-                    Raise to {raiseAmount || '0'} AVAX (Testing)
-                  </button>
-                </div>
-              </div>
-              
+            >
+                    Raise to {raiseAmount || '0'} AVAX
+            </button>
+          </div>
+        </div>
+        
               <div className="table-control-buttons">
                 <button 
                   className={`leave-table-button ${isLeavingTable ? 'loading' : ''}`}
@@ -2233,7 +2251,7 @@ function PokerTable() {
       <div className="table-info">
         <p>Buy-in Range: {table.minBuyIn} - {table.maxBuyIn} AVAX</p>
         <p>Blinds: {table.smallBlind}/{table.bigBlind} AVAX</p>
-        <p>Players: {table.playerCount}/6</p>
+        <p>Players: {table.playerCount || 0}/6</p>
       </div>
       
       <div className="balance-info">
