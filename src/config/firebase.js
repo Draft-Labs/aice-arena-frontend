@@ -11,7 +11,8 @@ import {
   addDoc,
   query,
   orderBy,
-  limit
+  limit,
+  getDocs
 } from 'firebase/firestore';
 import { getAuth, signInAnonymously } from 'firebase/auth';
 import { toast } from 'react-toastify';
@@ -258,5 +259,134 @@ export const subscribeMoveUpdates = (tableId, callback) => {
   } catch (error) {
     console.error('Error setting up move subscription:', error);
     return () => {}; // Return empty function as fallback
+  }
+};
+
+// Chat Functions
+
+// Function to send a chat message
+export const sendChatMessage = async (tableId, message) => {
+  if (!tableId || !message || !message.text) {
+    console.error('Invalid message data:', { tableId, message });
+    throw new Error('Invalid message data');
+  }
+  
+  try {
+    await ensureAuthenticated();
+    const user = auth.currentUser;
+    
+    // Determine if the sender name is a Twitter handle
+    const isTwitterHandle = message.senderName?.startsWith('@');
+    
+    const chatMessage = {
+      senderId: user?.uid || 'anonymous',
+      senderAddress: message.senderAddress || 'Unknown',
+      senderName: message.senderName || (message.senderAddress ? `${message.senderAddress.slice(0, 8)}...` : 'Unknown'),
+      isTwitterHandle: isTwitterHandle,
+      text: message.text.trim(),
+      timestamp: serverTimestamp()
+    };
+    
+    // Add to the chat collection for this table
+    const chatCollectionRef = collection(db, 'pokerTables', tableId.toString(), 'chat');
+    await addDoc(chatCollectionRef, chatMessage);
+    
+    console.log('Chat message sent:', { tableId, ...chatMessage });
+    return true;
+  } catch (error) {
+    console.error('Error sending chat message:', error);
+    throw error;
+  }
+};
+
+// Function to subscribe to chat messages
+export const subscribeChatMessages = (tableId, callback) => {
+  if (!tableId || typeof callback !== 'function') {
+    console.error('Invalid parameters for subscribeChatMessages:', { tableId, callbackType: typeof callback });
+    return () => {}; // Return empty function as fallback
+  }
+  
+  try {
+    const chatCollectionRef = collection(db, 'pokerTables', tableId.toString(), 'chat');
+    
+    // Create a query sorted by timestamp
+    const chatQuery = query(
+      chatCollectionRef,
+      orderBy('timestamp', 'asc'),
+      limit(100) // Limit to last 100 messages
+    );
+    
+    // Set up real-time listener for chat messages
+    const unsubscribe = onSnapshot(chatQuery, (querySnapshot) => {
+      const messages = [];
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        // Validate message data before adding to array
+        if (data && (data.text || data.senderName)) {
+          messages.push({
+            id: doc.id,
+            senderId: data.senderId || 'unknown',
+            senderAddress: data.senderAddress || null,
+            senderName: data.senderName || 'Unknown',
+            isTwitterHandle: data.isTwitterHandle || false,
+            text: data.text || '',
+            timestamp: data.timestamp || new Date()
+          });
+        }
+      });
+      
+      callback(messages);
+    }, (error) => {
+      console.error('Error subscribing to chat messages:', error);
+      // Call callback with empty array to indicate error
+      callback([]);
+    });
+    
+    // Return the unsubscribe function to clean up the listener
+    return unsubscribe;
+  } catch (error) {
+    console.error('Error setting up chat subscription:', error);
+    return () => {}; // Return empty function as fallback
+  }
+};
+
+// Function to get chat history
+export const getChatHistory = async (tableId) => {
+  if (!tableId) {
+    console.error('Invalid tableId for getChatHistory:', tableId);
+    return [];
+  }
+  
+  try {
+    const chatCollectionRef = collection(db, 'pokerTables', tableId.toString(), 'chat');
+    const chatQuery = query(
+      chatCollectionRef,
+      orderBy('timestamp', 'asc'),
+      limit(100) // Limit to last 100 messages
+    );
+    
+    const querySnapshot = await getDocs(chatQuery);
+    const messages = [];
+    
+    querySnapshot.forEach((doc) => {
+      const data = doc.data();
+      // Validate message data before adding to array
+      if (data && (data.text || data.senderName)) {
+        messages.push({
+          id: doc.id,
+          senderId: data.senderId || 'unknown',
+          senderAddress: data.senderAddress || null,
+          senderName: data.senderName || 'Unknown',
+          isTwitterHandle: data.isTwitterHandle || false,
+          text: data.text || '',
+          timestamp: data.timestamp || new Date()
+        });
+      }
+    });
+    
+    return messages;
+  } catch (error) {
+    console.error('Error getting chat history:', error);
+    return [];
   }
 };

@@ -96,6 +96,14 @@
   margin-right: 0.5rem;
 }
 
+.chat-message .timestamp {
+  display: inline-block;
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.5);
+  margin-left: 0.5rem;
+  font-style: italic;
+}
+
 .chat-input {
   display: flex;
   padding: 0.5rem;
@@ -140,6 +148,67 @@
 
 .chat-input button:hover {
   background: rgba(6, 242, 219, 0.3);
+}
+
+.chat-input input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.chat-input button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: rgba(0, 0, 0, 0.3);
+  color: #888;
+  border-color: rgba(100, 100, 100, 0.3);
+}
+
+.chat-input button.sending {
+  opacity: 0.8;
+  background: rgba(6, 242, 219, 0.1);
+  position: relative;
+}
+
+.chat-input button.sending:after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  width: 50%;
+  background: rgba(6, 242, 219, 0.8);
+  animation: sending 1s infinite;
+}
+
+@keyframes sending {
+  0% { width: 0; left: 0; }
+  50% { width: 100%; left: 0; }
+  100% { width: 0; left: 100%; }
+}
+
+/* Chat messages scrollbar styling */
+.chat-messages::-webkit-scrollbar {
+  width: 6px;
+}
+
+.chat-messages::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.chat-messages::-webkit-scrollbar-thumb {
+  background: rgba(6, 242, 219, 0.5);
+  border-radius: 10px;
+}
+
+.chat-messages::-webkit-scrollbar-thumb:hover {
+  background: rgba(6, 242, 219, 0.8);
+}
+
+/* Highlight current user's messages */
+.chat-message.my-message {
+  background: rgba(6, 242, 219, 0.15);
+  border-left: 3px solid #06F2DB;
 }
 
 .table-info {
@@ -1800,4 +1869,23 @@ h2 {
   background-color: #e6e6e6;
   color: #999;
   cursor: not-allowed;
+}
+
+/* Style for Twitter handle in chat */
+.chat-message .sender[data-is-twitter="true"] {
+  color: #1DA1F2; /* Twitter blue */
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.chat-message .sender[data-is-twitter="true"]::before {
+  content: '';
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%231DA1F2"><path d="M23.643 4.937c-.835.37-1.732.62-2.675.733.962-.576 1.7-1.49 2.048-2.578-.9.534-1.897.922-2.958 1.13-.85-.904-2.06-1.47-3.4-1.47-2.572 0-4.658 2.086-4.658 4.66 0 .364.042.718.12 1.06-3.873-.195-7.304-2.05-9.602-4.868-.4.69-.63 1.49-.63 2.342 0 1.616.823 3.043 2.072 3.878-.764-.025-1.482-.234-2.11-.583v.06c0 2.257 1.605 4.14 3.737 4.568-.392.106-.803.162-1.227.162-.3 0-.593-.028-.877-.082.593 1.85 2.313 3.198 4.352 3.234-1.595 1.25-3.604 1.995-5.786 1.995-.376 0-.747-.022-1.112-.065 2.062 1.323 4.51 2.093 7.14 2.093 8.57 0 13.255-7.098 13.255-13.254 0-.2-.005-.402-.014-.602.91-.658 1.7-1.477 2.323-2.41z"></path></svg>');
+  background-repeat: no-repeat;
+  background-size: contain;
+  margin-right: 4px;
 }

@@ -5,7 +5,7 @@ import { ethers } from 'ethers';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import '../../styles/Poker.css';
-import { getTableName, updateCurrentTurn, subscribeTurnUpdates, getCurrentTurnData, recordPlayerMove, subscribeMoveUpdates } from '../../config/firebase';
+import { getTableName, updateCurrentTurn, subscribeTurnUpdates, getCurrentTurnData, recordPlayerMove, subscribeMoveUpdates, sendChatMessage, subscribeChatMessages } from '../../config/firebase';
 import { API_BASE_URL } from '../../config/constants';
 import { db } from '../../config/firebase';
 import { doc, getDoc } from 'firebase/firestore';
@@ -1734,15 +1734,22 @@ function PokerTable() {
     setShowLeaveWarning(true);
   };
 
+  // Update the confirmLeave function to clear chat when leaving
   const confirmLeave = async () => {
     try {
       setShowLeaveWarning(false);
       setIsLeavingTable(true);
       
+      // Clear all chat related state before leaving
+      setChatMessages([]);
+      setChatInput('');
+      setIsSendingMessage(false);
+      
       await leavePokerTable(tableId);
       
       toast.success('Successfully left the table!');
       setHasJoined(false);
+      
       navigate('/poker');
     } catch (err) {
       console.error('Error leaving table:', err);
@@ -1832,6 +1839,128 @@ function PokerTable() {
     </p>
   );
 
+  // Add new state variables for chat
+  const [chatMessages, setChatMessages] = useState([]);
+  const [chatInput, setChatInput] = useState('');
+  const [isSendingMessage, setIsSendingMessage] = useState(false);
+  const chatMessagesRef = useRef(null);
+  
+  // Add a function to handle sending chat messages
+  const handleSendMessage = async () => {
+    if (!chatInput.trim() || !account || !hasJoined || isSendingMessage) return;
+    
+    try {
+      setIsSendingMessage(true);
+      
+      // Get the player's display name using the fetchPlayerName function
+      const playerName = await fetchPlayerName(account);
+      
+      await sendChatMessage(tableId, {
+        senderAddress: account,
+        senderName: playerName,
+        text: chatInput.trim()
+      });
+      
+      setChatInput('');
+    } catch (error) {
+      console.error('Error sending chat message:', error);
+      toast.error('Failed to send message. Please try again.');
+    } finally {
+      setIsSendingMessage(false);
+    }
+  };
+  
+  // Function to handle key press in chat input (send on Enter)
+  const handleChatKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      handleSendMessage();
+    }
+  };
+
+  // Subscribe to chat messages
+  useEffect(() => {
+    if (!tableId) return;
+    
+    let unsubscribe = () => {};
+    
+    try {
+      // Set up subscription to chat messages
+      unsubscribe = subscribeChatMessages(tableId, (messages) => {
+        // Ensure all messages have the required properties
+        const validMessages = messages.filter(msg => msg && msg.id);
+        
+        setChatMessages(validMessages);
+        
+        // Auto-scroll to the bottom of chat when new messages arrive
+        setTimeout(() => {
+          if (chatMessagesRef.current) {
+            chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
+          }
+        }, 100);
+      });
+    } catch (error) {
+      console.error('Error subscribing to chat messages:', error);
+      // Add a system error message
+      setChatMessages([{
+        id: 'system-error',
+        senderName: 'System',
+        text: 'Error connecting to chat. Please refresh the page.',
+        timestamp: new Date()
+      }]);
+    }
+    
+    return () => {
+      try {
+        unsubscribe();
+      } catch (error) {
+        console.error('Error unsubscribing from chat:', error);
+      }
+    };
+  }, [tableId]);
+
+  // Function to format timestamp
+  const formatTimestamp = (timestamp) => {
+    if (!timestamp) return '';
+    
+    // If timestamp is a Firebase Timestamp object, convert to JS Date
+    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+    
+    // Format time as HH:MM
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
+
+  // Add error handling for chat connection issues
+  useEffect(() => {
+    let chatErrorTimer;
+    
+    if (tableId && hasJoined) {
+      // Set up a timer to check if chat is connected
+      chatErrorTimer = setTimeout(() => {
+        if (chatMessages.length === 0) {
+          // No chat messages received, might be connection issue
+          console.warn('No chat messages received, possible connection issue');
+          // Add a system message about possible connection issues
+          setChatMessages(prevMessages => {
+            // Only add the warning if there are still no messages
+            if (prevMessages.length === 0) {
+              return [{
+                id: 'system-connection-warning',
+                senderName: 'System',
+                text: 'Chat connection might be slow. If messages are not appearing, try refreshing the page.',
+                timestamp: new Date()
+              }];
+            }
+            return prevMessages;
+          });
+        }
+      }, 10000); // Check after 10 seconds
+    }
+    
+    return () => {
+      if (chatErrorTimer) clearTimeout(chatErrorTimer);
+    };
+  }, [tableId, hasJoined, chatMessages.length]);
+
   if (!account) {
     return <div className="poker-container">Please connect your wallet</div>;
   }
@@ -1874,23 +2003,52 @@ function PokerTable() {
 
             <div className="chat-box">
               <div className="chat-title">Table Chat</div>
-              <div className="chat-messages">
-                <div className="chat-message">
-                  <span className="sender">Player1:</span>
-                  Nice hand!
-                </div>
-                <div className="chat-message">
-                  <span className="sender">Player2:</span>
-                  Good game everyone
-                </div>
-                <div className="chat-message">
-                  <span className="sender">Player3:</span>
-                  All in next hand 😎
-                </div>
+              <div className="chat-messages" ref={chatMessagesRef}>
+                {chatMessages.length > 0 ? (
+                  chatMessages.map((msg) => (
+                    <div 
+                      key={msg.id} 
+                      className={`chat-message ${msg.senderAddress && account && msg.senderAddress.toLowerCase() === account.toLowerCase() ? 'my-message' : ''}`}
+                    >
+                      <span 
+                        className="sender"
+                        data-is-twitter={msg.isTwitterHandle}
+                      >
+                        {msg.senderName}:
+                      </span>
+                      {msg.text}
+                      {msg.timestamp && (
+                        <span className="timestamp">{formatTimestamp(msg.timestamp)}</span>
+                      )}
+                    </div>
+                  ))
+                ) : (
+                  <div className="chat-message">
+                    <span className="sender">System:</span>
+                    Welcome to the table chat! Be respectful to other players.
+                  </div>
+                )}
               </div>
               <div className="chat-input">
-                <input type="text" placeholder="Type a message..." />
-                <button>Send</button>
+                <input 
+                  type="text" 
+                  placeholder={hasJoined ? "Type a message..." : "Join the table to chat"} 
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleSendMessage();
+                    }
+                  }}
+                  disabled={!hasJoined || !account}
+                />
+                <button 
+                  onClick={handleSendMessage}
+                  disabled={!hasJoined || !account || !chatInput.trim() || isSendingMessage}
+                  className={isSendingMessage ? 'sending' : ''}
+                >
+                  {isSendingMessage ? 'Sending...' : 'Send'}
+                </button>
               </div>
             </div>
           </div>
