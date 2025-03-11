@@ -3,7 +3,10 @@ import {
   getFirestore, 
   doc, 
   setDoc, 
-  getDoc 
+  getDoc,
+  updateDoc,
+  onSnapshot,
+  serverTimestamp
 } from 'firebase/firestore';
 import { getAuth, signInAnonymously } from 'firebase/auth';
 import { toast } from 'react-toastify';
@@ -70,5 +73,100 @@ export const getTableName = async (tableId) => {
   } catch (error) {
     console.error('Error fetching table name:', error);
     return `Table ${tableId}`;
+  }
+};
+
+// NEW FUNCTION: Update current turn in Firebase
+export const updateCurrentTurn = async (tableId, currentTurnData) => {
+  try {
+    await ensureAuthenticated();
+    const tableRef = doc(db, 'pokerTables', tableId.toString());
+    
+    // Get the current document
+    const docSnap = await getDoc(tableRef);
+    
+    if (docSnap.exists()) {
+      // Update the existing document with turn data
+      await updateDoc(tableRef, {
+        currentTurn: currentTurnData.address,
+        currentPosition: currentTurnData.position,
+        gameState: currentTurnData.gameState,
+        gamePhase: currentTurnData.gamePhase,
+        lastUpdated: serverTimestamp()
+      });
+    } else {
+      // Create the document if it doesn't exist
+      await setDoc(tableRef, {
+        name: `Table ${tableId}`,
+        currentTurn: currentTurnData.address,
+        currentPosition: currentTurnData.position,
+        gameState: currentTurnData.gameState,
+        gamePhase: currentTurnData.gamePhase,
+        createdAt: new Date().toISOString(),
+        lastUpdated: serverTimestamp()
+      });
+    }
+    
+    console.log('Current turn updated successfully:', { tableId, ...currentTurnData });
+    return true;
+  } catch (error) {
+    console.error('Error updating current turn:', error);
+    throw error;
+  }
+};
+
+// NEW FUNCTION: Subscribe to turn updates
+export const subscribeTurnUpdates = (tableId, callback) => {
+  try {
+    const tableRef = doc(db, 'pokerTables', tableId.toString());
+    
+    // Set up real-time listener for turn changes
+    const unsubscribe = onSnapshot(tableRef, (doc) => {
+      if (doc.exists()) {
+        const data = doc.data();
+        callback({
+          currentTurn: data.currentTurn || null,
+          currentPosition: data.currentPosition || 0,
+          gameState: data.gameState || 0,
+          gamePhase: data.gamePhase || 'Waiting',
+          lastUpdated: data.lastUpdated || null
+        });
+      } else {
+        console.log(`No Firebase data for table ${tableId}`);
+      }
+    }, (error) => {
+      console.error('Error subscribing to turn updates:', error);
+    });
+    
+    // Return the unsubscribe function to clean up the listener
+    return unsubscribe;
+  } catch (error) {
+    console.error('Error setting up turn subscription:', error);
+    return () => {}; // Return empty function as fallback
+  }
+};
+
+// NEW FUNCTION: Get current turn data from Firebase
+export const getCurrentTurnData = async (tableId) => {
+  try {
+    const tableRef = doc(db, 'pokerTables', tableId.toString());
+    const docSnap = await getDoc(tableRef);
+    
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      return {
+        currentTurn: data.currentTurn || null,
+        currentPosition: data.currentPosition || 0,
+        gameState: data.gameState || 0,
+        gamePhase: data.gamePhase || 'Waiting',
+        lastUpdated: data.lastUpdated || null
+      };
+    } else {
+      console.log(`No Firebase data for table ${tableId}`);
+      return null;
+    }
+  } catch (error) {
+    console.error('Error getting current turn data:', error);
+    return null;
   }
 };

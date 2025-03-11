@@ -5,7 +5,7 @@ import { ethers } from 'ethers';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import '../../styles/Poker.css';
-import { getTableName } from '../../config/firebase';
+import { getTableName, updateCurrentTurn, subscribeTurnUpdates, getCurrentTurnData } from '../../config/firebase';
 import { API_BASE_URL } from '../../config/constants';
 import { db } from '../../config/firebase';
 import { doc, getDoc } from 'firebase/firestore';
@@ -193,9 +193,31 @@ function PokerTable() {
             case 'TurnStarted':
               console.log('Turn started event detected');
               if (log.args && log.args.length >= 2) {
-                const [tableId, player] = log.args;
-                console.log('Turn started:', { tableId: Number(tableId), player });
-                setCurrentTurn(player);
+                const [eventTableId, player] = log.args;
+                console.log('Turn started:', { tableId: Number(eventTableId), player });
+                
+                // Only update if this event is for our table
+                if (Number(eventTableId) === Number(tableId)) {
+                  setCurrentTurn(player);
+                  
+                  // Get game state to include in the Firebase update
+                  pokerContract.getTableInfo(tableId).then(tableInfo => {
+                    const gameStateNum = Number(tableInfo[8]);
+                    const gamePhaseStr = getGameStateString(gameStateNum);
+                    
+                    // Update Firebase with current turn info
+                    updateCurrentTurn(tableId, {
+                      address: player,
+                      position: -1, // We don't have this info from the event
+                      gameState: gameStateNum,
+                      gamePhase: gamePhaseStr
+                    }).catch(err => {
+                      console.error('Error updating Firebase with turn data:', err);
+                    });
+                  }).catch(err => {
+                    console.error('Error getting table info for Firebase update:', err);
+                  });
+                }
               }
               break;
               
@@ -398,97 +420,109 @@ function PokerTable() {
   // Update the handleAction function
   const handleAction = async (action, amount = '0') => {
     try {
-      console.log('=== Starting action:', action, '===');
-      
-      // Convert amount to string if it's a number
-      const amountString = amount.toString();
-      
-      // Validate action first
-      const isValid = await isActionValid(action, tableId, account);
-      if (!isValid) {
-        throw new Error('Invalid action for current game state');
+      if (!pokerContract || !account || !tableId) {
+        toast.error("Missing required connection info");
+        return;
       }
 
-      // Get players and table info
-      const players = await pokerContract.getTablePlayers(tableId);
-      
-      // Log what we know about players
-      console.log('Players list:', players);
-      console.log('Current account:', account);
-      
-      // Try to find the current player's position by checking if it's this player's turn
-      const currentPlayerIndex = players.findIndex(player => 
-        player.toLowerCase() === account.toLowerCase()
-      );
-      
-      console.log('Current player index in players array:', currentPlayerIndex);
-      
-      // Calculate next player's position (circular) - for logging only
-      const nextPosition = (currentPlayerIndex + 1) % players.length;
-      const nextPlayer = players[nextPosition];
-      
-      console.log('Expected next player at position:', nextPosition);
-      console.log('Expected next player address:', nextPlayer);
+      console.log(`Performing action: ${action}${amount !== '0' ? ` with amount ${amount}` : ''}`);
 
       let tx;
-      const options = { 
-        gasLimit: 1000000,
-      };
-      
-      switch (action) {
+      switch (action.toLowerCase()) {
         case 'fold':
-          tx = await pokerContract.fold(tableId, options);
+          tx = await pokerContract.fold(tableId);
           break;
         case 'check':
-          tx = await pokerContract.check(tableId, options);
+          tx = await pokerContract.check(tableId);
           break;
         case 'call':
-          tx = await pokerContract.call(tableId, options);
+          tx = await pokerContract.call(tableId);
           break;
         case 'raise':
-          const raiseAmount = ethers.parseEther(amountString);
-          tx = await pokerContract.raise(tableId, raiseAmount, options);
+          if (amount === '0') {
+            toast.error("Please enter a valid raise amount");
+            return;
+          }
+          tx = await pokerContract.raise(tableId, ethers.parseEther(amount));
           break;
         default:
-          throw new Error(`Unknown action: ${action}`);
+          toast.error("Unknown action");
+          return;
+      }
+
+      toast.info(`${action.toUpperCase()} transaction sent!`);
+      
+      // Wait for transaction to confirm
+      const receipt = await tx.wait();
+      console.log(`${action} transaction confirmed:`, receipt);
+      
+      // Force fetch table data to get the latest state
+      await fetchTableData();
+      
+      // Fetch the players at the table after the action
+      const players = await pokerContract.getTablePlayers(tableId);
+      
+      if (!players || players.length < 2) {
+        console.warn("Not enough players to determine next turn");
+        return;
       }
       
-      console.log(`${action.toUpperCase()} transaction sent:`, tx.hash);
+      console.log("Players after action:", players.map(p => p.slice(0, 8) + '...'));
       
-      // Don't update the turn indicator here - let the checkTurn function handle it
-      // This ensures all players see the same turn indicator
+      // Find the current player's index
+      const currentPlayerIndex = players.findIndex(
+        player => player.toLowerCase() === account.toLowerCase()
+      );
       
-      toast.success(`${action} action submitted - waiting for confirmation`);
+      if (currentPlayerIndex === -1) {
+        console.warn("Current player not found in player list");
+        return;
+      }
       
-      // Start waiting for transaction confirmation
-      const receipt = await tx.wait();
-      console.log('Transaction receipt:', receipt);
+      console.log("Current player index:", currentPlayerIndex);
       
-      toast.success(`${action} action confirmed`);
+      // Determine the next player (simple round-robin)
+      // In a real poker game, this would need to account for folded players, etc.
+      const nextPlayerIndex = (currentPlayerIndex + 1) % players.length;
+      const nextPlayerAddress = players[nextPlayerIndex];
       
-      // After transaction is confirmed, update all game state
-      const [newTableInfo, newCommunityCards, confirmedPlayers] = await Promise.all([
-        pokerContract.getTableInfo(tableId),
-        pokerContract.getCommunityCards(tableId),
-        pokerContract.getTablePlayers(tableId)
-      ]);
+      console.log("Next player index:", nextPlayerIndex);
+      console.log("Next player address:", nextPlayerAddress.slice(0, 8) + '...');
       
-      // Force a refresh of player data to ensure the UI shows current turn correctly
-      console.log('Forcing refresh of player data after action');
-      fetchTableData();
+      // Get the current game state
+      const tableInfo = await pokerContract.getTableInfo(tableId);
+      const gameStateNum = Number(tableInfo[8]);
+      const gamePhaseStr = getGameStateString(gameStateNum);
       
-      // Update game state with null checks
-      setGameState(prevState => ({
-        ...prevState,
-        isPlayerTurn: false, // No longer player's turn after taking an action
-        pot: newTableInfo[6] ? ethers.formatEther(newTableInfo[6]) : '0',
-        currentBet: newTableInfo[4] ? ethers.formatEther(newTableInfo[4]) : '0',
-        gamePhase: getGamePhaseString(Number(newTableInfo[8]))
+      // Update Firebase with the next player's turn
+      await updateCurrentTurn(tableId, {
+        address: nextPlayerAddress,
+        position: nextPlayerIndex,
+        gameState: gameStateNum,
+        gamePhase: gamePhaseStr
+      });
+      
+      // Also update the local turn indicator
+      setCurrentTurn(nextPlayerAddress);
+      
+      // Update game state to reflect turn status
+      setGameState(prev => ({
+        ...prev,
+        isPlayerTurn: false, // No longer current player's turn
+        gamePhase: gamePhaseStr
       }));
       
+      console.log("Turn updated after action:", {
+        from: account.slice(0, 8) + '...',
+        to: nextPlayerAddress.slice(0, 8) + '...',
+        action: action
+      });
+      
+      toast.success(`${action.toUpperCase()} successful!`);
+      
     } catch (error) {
-      console.error('Error performing action:', error);
-      toast.error(`Error: ${error.message}`);
+      console.error(`Error in ${action}:`, error);
+      toast.error(`${action.toUpperCase()} failed: ${error.message}`);
     }
   };
 
@@ -818,6 +852,66 @@ function PokerTable() {
         maxRaise: ethers.formatEther(tableData.maxBet),
         gameState: getGameStateString(tableData.gameState)
       });
+      
+      // After refreshing all player data, validate and update the current turn indicator
+      // if we have at least 2 players
+      if (activePlayers.length >= 2) {
+        // Determine who should have the turn based on the current game state
+        let currentTurnPlayer;
+        
+        // Get the current turn data from Firebase
+        const firebaseData = await getCurrentTurnData(tableId);
+        
+        if (firebaseData && firebaseData.currentTurn) {
+          // Use the player from Firebase if available
+          const currentTurnAddress = firebaseData.currentTurn;
+          
+          // Verify this player is still active at the table
+          const isPlayerActive = activePlayers.some(p => 
+            p.address.toLowerCase() === currentTurnAddress.toLowerCase()
+          );
+          
+          if (isPlayerActive) {
+            currentTurnPlayer = currentTurnAddress;
+            console.log("Using existing turn from Firebase:", currentTurnPlayer.slice(0, 8) + '...');
+          } else {
+            // If the player is no longer active, use the first player
+            currentTurnPlayer = activePlayers[0].address;
+            console.log("Firebase turn player no longer active, using first player:", currentTurnPlayer.slice(0, 8) + '...');
+          }
+        } else {
+          // Default to the first player if no Firebase data
+          currentTurnPlayer = activePlayers[0].address;
+          console.log("No Firebase turn data, using first player:", currentTurnPlayer.slice(0, 8) + '...');
+        }
+        
+        // Find the position of the current turn player
+        const playerIndex = activePlayers.findIndex(p => 
+          p.address.toLowerCase() === currentTurnPlayer.toLowerCase()
+        );
+        
+        // Only update Firebase if we found a valid player
+        if (playerIndex !== -1) {
+          const playerPosition = activePlayers[playerIndex].position;
+          const gameStateNum = Number(tableData.gameState);
+          const gamePhaseStr = getGameStateString(gameStateNum);
+          
+          // Update both Firebase and local state
+          updateCurrentTurn(tableId, {
+            address: currentTurnPlayer,
+            position: playerPosition,
+            gameState: gameStateNum, 
+            gamePhase: gamePhaseStr
+          }).then(() => {
+            console.log("Turn indicator synced with Firebase during data refresh");
+          }).catch(err => {
+            console.error("Failed to sync turn with Firebase:", err);
+          });
+          
+          // Also update the local state for UI rendering
+          setCurrentTurn(currentTurnPlayer);
+        }
+      }
 
     } catch (err) {
       console.error('Error fetching table data:', err);
@@ -1167,11 +1261,44 @@ function PokerTable() {
 
   // Update the effect that checks for turns
   useEffect(() => {
+    if (!tableId) return;
+    
+    console.log('Setting up Firebase turn subscription for table', tableId);
+    
+    // Subscribe to turn updates from Firebase
+    const unsubscribe = subscribeTurnUpdates(tableId, (turnData) => {
+      console.log('Turn update from Firebase:', turnData);
+      
+      if (turnData.currentTurn) {
+        // Update local state with Firebase data
+        setCurrentTurn(turnData.currentTurn);
+        
+        // Check if it's the current user's turn
+        const isMyTurn = turnData.currentTurn.toLowerCase() === account?.toLowerCase();
+        
+        // Update game state to reflect turn status
+        setGameState(prev => ({
+          ...prev,
+          isPlayerTurn: isMyTurn,
+          gamePhase: turnData.gamePhase || prev.gamePhase
+        }));
+        
+        console.log('Turn state updated from Firebase:', {
+          currentPlayer: turnData.currentTurn?.slice(0, 8) + '...',
+          isMyTurn,
+          myAddress: account?.slice(0, 8) + '...',
+          gamePhase: turnData.gamePhase
+        });
+      }
+    });
+    
+    // Also set up a fallback that periodically checks the blockchain
+    // This handles cases where Firebase might miss an update
     const checkTurn = async () => {
       if (!pokerContract || !account || !tableId) return;
       
       try {
-        console.log('Checking current turn...');
+        console.log('Backup turn check from blockchain...');
         
         // Get all needed data in parallel
         const [tableInfoResult, players] = await Promise.all([
@@ -1200,74 +1327,54 @@ function PokerTable() {
         };
         
         // Get the current turn position from the contract
-        // If your contract has this function, use it directly:
         let currentPosition = 0;
         try {
-          const currentPosition = await pokerContract.getCurrentTurnPosition(tableId);
+          currentPosition = await pokerContract.getCurrentTurnPosition(tableId);
           console.log('Current turn position from contract:', currentPosition.toString());
         } catch (err) {
           console.log('Could not get turn position directly from contract:', err.message);
           
-          // Fallback: Try to get it from the active betting round
-          try {
-            const currentBettingRound = await pokerContract.getCurrentBettingRound(tableId);
-            if (currentBettingRound && currentBettingRound.currentPosition !== undefined) {
-              currentPosition = Number(currentBettingRound.currentPosition);
-              console.log('Current turn position from betting round:', currentPosition);
-            }
-          } catch (bettingErr) {
-            console.log('Could not get position from betting round:', bettingErr.message);
-            
-            // Ultimate fallback - use the game state to determine a consistent position for all players
-            // This logic should be identical for all connected players
-            const gameState = Number(tableInfo.gameState);
-            
-            // For pre-flop, the first player should be the one after the big blind (usually position 2)
-            if (gameState === 2) { // PreFlop
-              currentPosition = 2 % players.length; // Start with player after big blind
-            } else {
-              currentPosition = 0; // In other phases start with first player
-            }
-            
-            console.log('Using fallback position calculation:', currentPosition);
+          // Fallback to game state based logic
+          const gameState = Number(tableInfo.gameState);
+          if (gameState === 2) { // PreFlop
+            currentPosition = 2 % players.length; // Start with player after big blind
+          } else {
+            currentPosition = 0; // In other phases start with first player
           }
+          console.log('Using fallback position calculation:', currentPosition);
         }
         
         // Get current player from position, ensuring it's a number
         const safePosition = Number(currentPosition) % players.length;
         const currentPlayerAddress = players[safePosition];
         
-        console.log('Turn check:', {
-          currentPosition: safePosition,
-          players: players.map(p => p.slice(0, 8) + '...'), // Log shortened addresses for debugging
-          currentPlayer: currentPlayerAddress?.slice(0, 8) + '...',
-          isMyTurn: currentPlayerAddress?.toLowerCase() === account?.toLowerCase(),
-          myAddress: account?.slice(0, 8) + '...',
-          gameState: gameState,
-          gamePhase: getGameStateString(Number(tableInfo.gameState))
-        });
-
-        // Only set currentTurn if we have a valid address
+        // Only update Firebase if we found a valid player address
         if (currentPlayerAddress && currentPlayerAddress !== ethers.ZeroAddress) {
-          setCurrentTurn(currentPlayerAddress);
-          
-          // Update game state to reflect if it's my turn
-          setGameState(prev => ({
-            ...prev,
-            isPlayerTurn: currentPlayerAddress?.toLowerCase() === account?.toLowerCase()
-          }));
-        } else {
-          setCurrentTurn(null);
+          // Update Firebase with blockchain data
+          updateCurrentTurn(tableId, {
+            address: currentPlayerAddress,
+            position: safePosition,
+            gameState: Number(tableInfo.gameState),
+            gamePhase: getGameStateString(Number(tableInfo.gameState))
+          }).catch(err => {
+            console.error('Error updating Firebase in backup check:', err);
+          });
         }
       } catch (err) {
-        console.error('Error checking turn:', err);
-        setCurrentTurn(null);
+        console.error('Error in backup turn check:', err);
       }
     };
-
+    
+    // Run the backup check immediately and then periodically
     checkTurn();
-    const interval = setInterval(checkTurn, 3000);
-    return () => clearInterval(interval);
+    const interval = setInterval(checkTurn, 15000); // Every 15 seconds as backup
+    
+    // Clean up all subscriptions
+    return () => {
+      console.log('Cleaning up Firebase turn subscription');
+      unsubscribe();
+      clearInterval(interval);
+    };
   }, [pokerContract, account, tableId]);
 
   // Update the betting controls render
@@ -1467,58 +1574,6 @@ function PokerTable() {
 
   // Add state for the warning modal
   const [showLeaveWarning, setShowLeaveWarning] = useState(false);
-
-  // Add a new useEffect to force refresh of turn indicator when game state changes
-  useEffect(() => {
-    // This effect runs whenever the game state changes
-    if (!pokerContract || !tableId || !hasJoined) return;
-    
-    console.log('Game state changed, refreshing turn indicator');
-    
-    // Force an immediate check of the current turn
-    const checkCurrentTurn = async () => {
-      try {
-        if (!pokerContract || !tableId) return;
-        
-        // Get the players at the table
-        const players = await pokerContract.getTablePlayers(tableId);
-        if (!players || players.length === 0) return;
-        
-        // Get the table info to determine game state
-        const tableInfo = await pokerContract.getTableInfo(tableId);
-        const gameState = Number(tableInfo[8]);
-        
-        console.log('Refreshing turn indicator - game state:', getGameStateString(gameState));
-        
-        // Use the same logic as in checkTurn to determine the current player
-        let currentPosition = 0;
-        
-        // Try to get the current turn position from the contract if available
-        try {
-          currentPosition = await pokerContract.getCurrentTurnPosition(tableId);
-        } catch (err) {
-          // Fallback to game state based logic
-          if (gameState === 2) { // PreFlop
-            currentPosition = 2 % players.length; // Start with player after big blind
-          } else {
-            currentPosition = 0; // In other phases start with first player
-          }
-        }
-        
-        const safePosition = Number(currentPosition) % players.length;
-        const currentPlayerAddress = players[safePosition];
-        
-        if (currentPlayerAddress && currentPlayerAddress !== ethers.ZeroAddress) {
-          console.log('Setting current turn to:', currentPlayerAddress.slice(0, 8) + '...');
-          setCurrentTurn(currentPlayerAddress);
-        }
-      } catch (err) {
-        console.error('Error refreshing turn indicator:', err);
-      }
-    };
-    
-    checkCurrentTurn();
-  }, [pokerContract, tableId, hasJoined, gameState.gamePhase]);
 
   if (!account) {
     return <div className="poker-container">Please connect your wallet</div>;
